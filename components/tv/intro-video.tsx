@@ -82,6 +82,8 @@ export function IntroVideo({ onDone }: { onDone: () => void }) {
 
     // Remote OK / keyboard Enter (and Space) drive the skip prompt.
     const onKey = (e: KeyboardEvent) => {
+      // Ignore auto-repeat (held key) so a single press doesn't reveal AND skip.
+      if (e.repeat) return
       if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
         e.preventDefault()
         onSelect()
