@@ -152,136 +152,115 @@ function HomeTab({ onNav }: { onNav: (id: TabId) => void }) {
   const cur = HERO_SLIDES[slide]
 
   return (
-    <div className="h-full overflow-y-auto">
-      <div className="flex flex-col gap-5 p-6 pb-8">
+    <div className="h-full flex flex-col overflow-hidden px-5 py-3 gap-3">
 
-        {/* Top clock row */}
-        <div className="flex items-center justify-end -mb-1">
-          <Topbar />
+      {/* Top clock row */}
+      <div className="flex items-center justify-end shrink-0">
+        <Topbar />
+      </div>
+
+      {/* Hero banner */}
+      <section className="relative rounded-2xl overflow-hidden shadow-md shrink-0" style={{ height: 210 }}>
+        <div className="absolute inset-0">
+          <Image src="/hero-robot.png" alt="" fill className="object-cover object-center" priority sizes="(max-width: 1920px) 100vw" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/40 to-transparent" />
         </div>
-
-        {/* Hero banner */}
-        <section className="relative rounded-2xl overflow-hidden shadow-md" style={{ minHeight: 230 }}>
-          {/* background photo */}
-          <div className="absolute inset-0">
-            <Image
-              src="/hero-robot.png"
-              alt=""
-              fill
-              className="object-cover object-center"
-              priority
-              sizes="(max-width: 1920px) 100vw"
-            />
-            {/* dark left gradient so text is readable */}
-            <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/40 to-transparent" />
-          </div>
-
-          {/* Content */}
-          <div className="relative z-10 flex items-center h-full p-8" style={{ minHeight: 230 }}>
-            <div className="flex flex-col gap-3 max-w-md">
-              <h2 className="text-3xl font-bold text-white leading-tight text-balance">
-                {cur.title}{' '}
-                <span className="text-blue-300">{cur.highlight}</span>
-              </h2>
-              <p className="text-sm text-white/80 leading-relaxed whitespace-pre-line">{cur.subtitle}</p>
-              <button
-                onClick={() => onNav(cur.ctaTab)}
-                className="inline-flex items-center gap-2 mt-1 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors w-fit shadow-sm"
-              >
-                <Tv2 className="w-4 h-4" />
-                {cur.cta}
-              </button>
-            </div>
-          </div>
-
-          {/* Slide dots */}
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 z-10">
-            {HERO_SLIDES.map((s, i) => (
-              <button key={s.id} onClick={() => setSlide(i)} aria-label={`Slide ${i + 1}`}
-                className={`h-2 rounded-full transition-all ${i === slide ? 'w-6 bg-white' : 'w-2 bg-white/40'}`} />
-            ))}
-          </div>
-          <button onClick={() => setSlide((slide - 1 + HERO_SLIDES.length) % HERO_SLIDES.length)}
-            className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/30 flex items-center justify-center hover:bg-black/50 transition-colors z-10" aria-label="Slide anterior">
-            <ChevronLeft className="w-4 h-4 text-white" />
-          </button>
-          <button onClick={() => setSlide((slide + 1) % HERO_SLIDES.length)}
-            className="absolute right-4 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/30 flex items-center justify-center hover:bg-black/50 transition-colors z-10" aria-label="Próximo slide">
-            <ChevronRight className="w-4 h-4 text-white" />
-          </button>
-        </section>
-
-        {/* Quick category cards */}
-        <div className="grid grid-cols-4 gap-3">
-          {QUICK_CATS.map(({ label, subtitle, icon: Icon, tab, bg }) => (
-            <button key={label} onClick={() => onNav(tab)}
-              className={cn(
-                'relative flex items-center gap-4 p-5 rounded-2xl text-left overflow-hidden transition-all hover:scale-[1.02] shadow-sm hover:shadow-md',
-                bg
-              )}>
-              <Icon className="w-7 h-7 text-white/90 shrink-0" />
-              <div>
-                <p className="font-bold text-white text-base">{label}</p>
-                <p className="text-xs text-white/75 mt-0.5">{subtitle}</p>
-              </div>
+        <div className="relative z-10 flex items-center h-full p-7">
+          <div className="flex flex-col gap-2 max-w-md">
+            <h2 className="text-2xl font-bold text-white leading-tight text-balance">
+              {cur.title}{' '}<span className="text-blue-300">{cur.highlight}</span>
+            </h2>
+            <p className="text-xs text-white/80 leading-relaxed whitespace-pre-line">{cur.subtitle}</p>
+            <button onClick={() => onNav(cur.ctaTab)}
+              className="inline-flex items-center gap-2 mt-1 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors w-fit shadow-sm">
+              <Tv2 className="w-4 h-4" />{cur.cta}
             </button>
+          </div>
+        </div>
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-2 z-10">
+          {HERO_SLIDES.map((s, i) => (
+            <button key={s.id} onClick={() => setSlide(i)} aria-label={`Slide ${i + 1}`}
+              className={`h-1.5 rounded-full transition-all ${i === slide ? 'w-5 bg-white' : 'w-1.5 bg-white/40'}`} />
           ))}
         </div>
+        <button onClick={() => setSlide((slide - 1 + HERO_SLIDES.length) % HERO_SLIDES.length)}
+          className="absolute left-3 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-black/30 flex items-center justify-center hover:bg-black/50 z-10" aria-label="Anterior">
+          <ChevronLeft className="w-3.5 h-3.5 text-white" />
+        </button>
+        <button onClick={() => setSlide((slide + 1) % HERO_SLIDES.length)}
+          className="absolute right-3 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-black/30 flex items-center justify-center hover:bg-black/50 z-10" aria-label="Próximo">
+          <ChevronRight className="w-3.5 h-3.5 text-white" />
+        </button>
+      </section>
 
-        {/* Continuar assistindo */}
-        <section>
-          <h2 className="text-base font-bold text-foreground mb-3">Continuar assistindo</h2>
-          <div className="grid grid-cols-4 gap-3">
-            {WATCHING_ITEMS.map((item) => (
-              <div key={item.id}
-                className="relative rounded-2xl overflow-hidden border border-border shadow-sm hover:shadow-md hover:scale-[1.02] transition-all cursor-pointer bg-card">
-                <div className="relative aspect-video flex flex-col justify-end p-3"
-                  style={{ background: WATCHING_BG[item.title] ?? `linear-gradient(160deg,${item.colorFrom} 0%,${item.colorTo} 100%)` }}>
-                  {item.isNew && (
-                    <span className="absolute top-2 left-2 text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-red-500 text-white">AO VIVO</span>
-                  )}
-                  <p className="text-xs text-white font-bold uppercase leading-tight text-balance">{item.title}</p>
-                  <p className="text-[10px] text-white/70 mt-0.5">{item.episode}</p>
-                </div>
-                <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/10">
-                  <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${item.progress}%` }} />
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Em destaque */}
-        <section>
-          <h2 className="text-base font-bold text-foreground mb-3">Em destaque</h2>
-          <div className="flex gap-3 items-end">
-            <div className="grid grid-cols-6 gap-3 flex-1">
-              {MOVIES.slice(0, 6).map((m) => <ContentCard key={m.id} item={m} onClick={() => {}} />)}
+      {/* Quick category cards */}
+      <div className="grid grid-cols-4 gap-3 shrink-0">
+        {QUICK_CATS.map(({ label, subtitle, icon: Icon, tab, bg }) => (
+          <button key={label} onClick={() => onNav(tab)}
+            className={cn('relative flex items-center gap-3 px-4 py-3 rounded-xl text-left overflow-hidden transition-all hover:scale-[1.02] shadow-sm', bg)}>
+            <Icon className="w-6 h-6 text-white/90 shrink-0" />
+            <div>
+              <p className="font-bold text-white text-sm">{label}</p>
+              <p className="text-[11px] text-white/75">{subtitle}</p>
             </div>
-            {/* Device info card */}
-            <div className="shrink-0 rounded-2xl border border-border bg-card shadow-sm p-4 flex flex-col gap-3" style={{ width: 190 }}>
-              <div className="flex items-start gap-3">
-                <Monitor className="w-5 h-5 text-muted-foreground shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-xs text-muted-foreground">Seu dispositivo</p>
-                  <p className="text-lg font-black text-foreground tracking-wider">{USER.deviceCode}</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <Calendar className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-xs text-muted-foreground">Expira em</p>
-                  <p className="text-sm font-bold text-primary">{USER.validity}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 pt-1 border-t border-border">
-                <Shield className="w-4 h-4 text-muted-foreground shrink-0" />
-                <p className="text-xs text-muted-foreground">Versão do app {USER.appVersion}</p>
-              </div>
-            </div>
-          </div>
-        </section>
+          </button>
+        ))}
       </div>
+
+      {/* Continuar assistindo */}
+      <section className="shrink-0">
+        <h2 className="text-sm font-bold text-foreground mb-2">Continuar assistindo</h2>
+        <div className="grid grid-cols-4 gap-3">
+          {WATCHING_ITEMS.map((item) => (
+            <div key={item.id}
+              className="relative rounded-xl overflow-hidden border border-border shadow-sm hover:shadow-md hover:scale-[1.02] transition-all cursor-pointer bg-card">
+              <div className="relative flex flex-col justify-end p-2.5" style={{ height: 90,
+                background: WATCHING_BG[item.title] ?? `linear-gradient(160deg,${item.colorFrom} 0%,${item.colorTo} 100%)` }}>
+                {item.isNew && (
+                  <span className="absolute top-1.5 left-1.5 text-[8px] font-bold px-1.5 py-0.5 rounded bg-red-500 text-white">AO VIVO</span>
+                )}
+                <p className="text-[11px] text-white font-bold uppercase leading-tight">{item.title}</p>
+                <p className="text-[10px] text-white/70">{item.episode}</p>
+              </div>
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-black/10">
+                <div className="h-full bg-primary rounded-full" style={{ width: `${item.progress}%` }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Em destaque */}
+      <section className="flex-1 min-h-0 flex flex-col">
+        <h2 className="text-sm font-bold text-foreground mb-2 shrink-0">Em destaque</h2>
+        <div className="flex gap-3 flex-1 min-h-0">
+          <div className="grid grid-cols-6 gap-2 flex-1 content-start">
+            {MOVIES.slice(0, 6).map((m) => <ContentCard key={m.id} item={m} onClick={() => {}} />)}
+          </div>
+          {/* Device info card */}
+          <div className="shrink-0 rounded-xl border border-border bg-card shadow-sm p-3 flex flex-col gap-2.5" style={{ width: 170 }}>
+            <div className="flex items-start gap-2">
+              <Monitor className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
+              <div>
+                <p className="text-[10px] text-muted-foreground">Seu dispositivo</p>
+                <p className="text-base font-black text-foreground tracking-wider">{USER.deviceCode}</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-2">
+              <Calendar className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+              <div>
+                <p className="text-[10px] text-muted-foreground">Expira em</p>
+                <p className="text-xs font-bold text-primary">{USER.validity}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 pt-1.5 border-t border-border">
+              <Shield className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+              <p className="text-[10px] text-muted-foreground">Versão {USER.appVersion}</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
     </div>
   )
 }
