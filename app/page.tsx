@@ -268,7 +268,7 @@ function FilmesTab() {
         <div className="flex-1 overflow-y-auto px-6 py-4">
           <p className="text-sm font-semibold text-primary mb-4">{category}</p>
           {filtered.length > 0
-            ? <div className="grid grid-cols-6 gap-3">{filtered.map((m) => <ContentCard key={m.id} item={m} onClick={handleSelect} />)}</div>
+            ? <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 2xl:grid-cols-6 gap-5">{filtered.map((m) => <ContentCard key={m.id} item={m} onClick={handleSelect} />)}</div>
             : <div className="flex items-center justify-center h-48 text-muted-foreground text-sm">Nenhum filme encontrado.</div>
           }
         </div>
@@ -305,7 +305,7 @@ function SeriesTab() {
         <div className="flex-1 overflow-y-auto px-6 py-4">
           <p className="text-sm font-semibold text-primary mb-4">{category}</p>
           {filtered.length > 0
-            ? <div className="grid grid-cols-6 gap-3">{filtered.map((s) => <ContentCard key={s.id} item={s} onClick={handleSelect} />)}</div>
+            ? <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 2xl:grid-cols-6 gap-5">{filtered.map((s) => <ContentCard key={s.id} item={s} onClick={handleSelect} />)}</div>
             : <div className="flex items-center justify-center h-48 text-muted-foreground text-sm">Nenhuma série encontrada.</div>
           }
         </div>
@@ -328,7 +328,7 @@ function CanaisTab() {
 
   // Channel-name flash overlay shown briefly whenever the channel changes.
   const [showNameFlash, setShowNameFlash] = useState(false)
-  // Auto-zoom: after 20s idle on the small preview, expand to fullscreen.
+  // Auto-zoom: only after 30s of true inactivity (no scrolling / channel changes).
   const idleTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // TV behavior: first OK selects the channel (shows preview); a second OK on the
@@ -352,11 +352,12 @@ function CanaisTab() {
     return () => clearTimeout(t)
   }, [selectedChannel])
 
-  // (Re)start the 20s idle countdown; expands to fullscreen when it elapses.
+  // (Re)start the 30s idle countdown; expands to fullscreen only when it elapses.
+  // Any scroll / channel change / interaction calls this and resets the count.
   const resetIdle = useCallback(() => {
     if (idleTimer.current) clearTimeout(idleTimer.current)
     if (fullscreen) return
-    idleTimer.current = setTimeout(() => setFullscreen(true), 20000)
+    idleTimer.current = setTimeout(() => setFullscreen(true), 30000)
   }, [fullscreen])
 
   // Reset the idle timer whenever the channel changes or we leave fullscreen.
@@ -368,7 +369,13 @@ function CanaisTab() {
   return (
     <>
       <ShellHeader />
-      <div className="flex flex-1 overflow-hidden bg-background">
+      <div
+        className="flex flex-1 overflow-hidden bg-background"
+        onWheelCapture={resetIdle}
+        onScrollCapture={resetIdle}
+        onMouseMoveCapture={resetIdle}
+        onKeyDownCapture={resetIdle}
+      >
         {/* Category column — big, TV-sized */}
         <aside className="flex flex-col shrink-0 py-4 gap-1.5 border-r border-border overflow-y-auto scrollbar-none" style={{ width: 240 }}>
           {CHANNEL_CATEGORIES.map((cat) => (
