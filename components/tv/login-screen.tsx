@@ -33,14 +33,10 @@ export function LoginScreen({ onLogin }: { onLogin: () => void }) {
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center overflow-hidden bg-background animate-cp-fade-in">
       {/* ── Cozy living-room background (heavily blurred) ── */}
-      <Image
-        src="/login-room.webp"
-        alt=""
-        fill
-        priority
-        sizes="100vw"
+      <div
         aria-hidden
-        className="object-cover object-center select-none pointer-events-none scale-105 blur-md"
+        className="absolute inset-0 bg-cover bg-center select-none pointer-events-none scale-105 blur-md"
+        style={{ backgroundImage: 'url(/login-room.webp)' }}
       />
 
       {/* ── Moving neon orbs ── */}

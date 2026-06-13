@@ -30,6 +30,10 @@ export function IntroVideo({ onDone }: { onDone: () => void }) {
     // Fade in on next frame.
     const raf = requestAnimationFrame(() => setVisible(true))
 
+    // Preload the next screen's background so it's cached before the card shows.
+    const pre = new window.Image()
+    pre.src = '/login-room.webp'
+
     const v = videoRef.current
     if (!v) return
 
