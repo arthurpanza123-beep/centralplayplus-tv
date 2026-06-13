@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Play, Pause, Volume2, VolumeX, X, Minimize2 } from 'lucide-react'
+import { createPortal } from 'react-dom'
+import { X } from 'lucide-react'
 import type { Channel } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { playCue } from '@/lib/sounds'
@@ -13,8 +14,6 @@ interface ChannelPlayerProps {
 
 /** Fullscreen live player overlay. Opens when a channel is expanded. */
 export function ChannelPlayer({ channel, onClose }: ChannelPlayerProps) {
-  const [playing, setPlaying] = useState(true)
-  const [muted, setMuted] = useState(false)
   const [showControls, setShowControls] = useState(true)
   const closeRef = useRef<HTMLButtonElement>(null)
   const hideTimer = useRef<number | null>(null)
@@ -42,7 +41,7 @@ export function ChannelPlayer({ channel, onClose }: ChannelPlayerProps) {
     return () => window.removeEventListener('keydown', onKey, true)
   }, [channel, onClose])
 
-  // Auto-hide controls after inactivity for an immersive feel.
+  // Auto-hide the overlay info after inactivity for an immersive feel.
   useEffect(() => {
     if (!channel) return
     function bump() {
@@ -60,16 +59,16 @@ export function ChannelPlayer({ channel, onClose }: ChannelPlayerProps) {
     }
   }, [channel])
 
-  if (!channel) return null
+  if (!channel || typeof document === 'undefined') return null
 
   const live = channel.programs.find((p) => p.isLive)
 
-  return (
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
       aria-label={`Reproduzindo ${channel.name}`}
-      className="fixed inset-0 z-50 flex flex-col bg-black animate-cp-fade-in"
+      className="fixed inset-0 z-50 flex flex-col bg-black animate-cp-zoom-in"
     >
       {/* Video surface (simulated) */}
       <div
@@ -88,7 +87,7 @@ export function ChannelPlayer({ channel, onClose }: ChannelPlayerProps) {
         </div>
       </div>
 
-      {/* Top bar */}
+      {/* Top bar — channel info + back */}
       <div
         className={cn(
           'relative z-10 flex items-center justify-between px-8 py-5 bg-gradient-to-b from-black/80 to-transparent transition-opacity duration-300',
@@ -104,16 +103,16 @@ export function ChannelPlayer({ channel, onClose }: ChannelPlayerProps) {
         <button
           ref={closeRef}
           onClick={onClose}
-          aria-label="Fechar player"
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-sm font-semibold backdrop-blur-sm transition-colors outline-none"
+          aria-label="Voltar"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-sm font-semibold backdrop-blur-sm transition-colors outline-none focus-visible:ring-4 focus-visible:ring-white/50"
         >
-          <X className="w-4 h-4" />Fechar
+          <X className="w-4 h-4" />Voltar
         </button>
       </div>
 
       <div className="flex-1" />
 
-      {/* Bottom controls */}
+      {/* Bottom — current program info only (no manual controls) */}
       <div
         className={cn(
           'relative z-10 px-8 py-6 bg-gradient-to-t from-black/85 to-transparent transition-opacity duration-300',
@@ -121,40 +120,17 @@ export function ChannelPlayer({ channel, onClose }: ChannelPlayerProps) {
         )}
       >
         {live && (
-          <div className="mb-4">
+          <>
             <p className="text-white font-bold text-lg">{live.title}</p>
             <p className="text-white/50 text-sm">{live.time} – {live.endTime}</p>
             <div className="mt-2 h-1 w-full max-w-md bg-white/20 rounded-full overflow-hidden">
               <div className="h-full w-1/2 bg-primary rounded-full" />
             </div>
-          </div>
+          </>
         )}
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => setPlaying((v) => !v)}
-            aria-label={playing ? 'Pausar' : 'Reproduzir'}
-            className="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center hover:scale-105 transition-transform outline-none"
-          >
-            {playing ? <Pause className="w-5 h-5 fill-current" /> : <Play className="w-5 h-5 fill-current ml-0.5" />}
-          </button>
-          <button
-            onClick={() => setMuted((v) => !v)}
-            aria-label={muted ? 'Ativar som' : 'Silenciar'}
-            className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors outline-none"
-          >
-            {muted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
-          </button>
-          <span className="text-xs px-2 py-1 rounded border border-white/30 text-white/80 font-semibold">HD</span>
-          <div className="flex-1" />
-          <button
-            onClick={onClose}
-            aria-label="Reduzir"
-            className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors outline-none"
-          >
-            <Minimize2 className="w-5 h-5" />
-          </button>
-        </div>
+        <p className="mt-4 text-xs text-white/40">Pressione Voltar no controle para sair</p>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }

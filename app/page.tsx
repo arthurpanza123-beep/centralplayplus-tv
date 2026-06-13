@@ -1,13 +1,13 @@
 'use client'
 
-import { memo, useState, useMemo, useCallback } from 'react'
+import { memo, useState, useMemo, useCallback, useEffect } from 'react'
 import { Activity } from 'react'
 import Image from 'next/image'
 import {
   Home, Radio, Film, Tv2, Smile, Search, Heart, Settings, Crown,
-  Play, Pause, Volume2, Maximize2, Star,
+  Play,
   Bell, Shield, MessageSquare, MonitorPlay, Monitor, ChevronRight, LogOut,
-  User, Mail, Calendar, Smartphone, ChevronLeft,
+  User, Mail, Calendar, Smartphone,
 } from 'lucide-react'
 import { Topbar } from '@/components/tv/topbar'
 import { ContentCard } from '@/components/tv/content-card'
@@ -156,6 +156,12 @@ function HomeTab({ onNav }: { onNav: (id: TabId) => void }) {
   const [slide, setSlide] = useState(0)
   const [selected, setSelected] = useState<Movie | Series | null>(null)
   const cur = HERO_SLIDES[slide]
+
+  // Auto-rotate the hero banner — no manual controls needed on a TV.
+  useEffect(() => {
+    const id = setInterval(() => setSlide((s) => (s + 1) % HERO_SLIDES.length), 6000)
+    return () => clearInterval(id)
+  }, [])
   const handleSelect = useCallback((item: Movie | Series) => setSelected(item), [])
   const handleClose = useCallback(() => setSelected(null), [])
 
@@ -171,8 +177,8 @@ function HomeTab({ onNav }: { onNav: (id: TabId) => void }) {
       <section className="relative rounded-3xl overflow-hidden shadow-xl shadow-black/10 shrink-0 ring-1 ring-black/5" style={{ height: 212 }}>
         <div className="absolute inset-0">
           <Image src="/hero-robot.png" alt="" fill className="object-cover object-center scale-105" priority sizes="(max-width: 1920px) 100vw" />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/45 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#1d4ed8]/90 via-[#2563eb]/45 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#1e3a8a]/40 to-transparent" />
         </div>
         <div className="relative z-10 flex items-center h-full px-8">
           <div className="flex flex-col gap-2.5 max-w-md">
@@ -189,20 +195,13 @@ function HomeTab({ onNav }: { onNav: (id: TabId) => void }) {
             </button>
           </div>
         </div>
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 z-10">
+        {/* Auto-rotating indicators (non-interactive) */}
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 z-10" aria-hidden>
           {HERO_SLIDES.map((s, i) => (
-            <button key={s.id} onClick={() => setSlide(i)} aria-label={`Slide ${i + 1}`}
-              className={`h-1.5 rounded-full transition-all duration-300 ${i === slide ? 'w-6 bg-white' : 'w-1.5 bg-white/40 hover:bg-white/60'}`} />
+            <span key={s.id}
+              className={`h-1.5 rounded-full transition-all duration-300 ${i === slide ? 'w-6 bg-white' : 'w-1.5 bg-white/40'}`} />
           ))}
         </div>
-        <button onClick={() => setSlide((slide - 1 + HERO_SLIDES.length) % HERO_SLIDES.length)}
-          className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/10 backdrop-blur-sm border border-white/15 flex items-center justify-center hover:bg-white/25 transition-colors z-10" aria-label="Anterior">
-          <ChevronLeft className="w-4 h-4 text-white" />
-        </button>
-        <button onClick={() => setSlide((slide + 1) % HERO_SLIDES.length)}
-          className="absolute right-4 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/10 backdrop-blur-sm border border-white/15 flex items-center justify-center hover:bg-white/25 transition-colors z-10" aria-label="Próximo">
-          <ChevronRight className="w-4 h-4 text-white" />
-        </button>
       </section>
 
       {/* Quick category cards */}
@@ -369,16 +368,9 @@ function SeriesTab() {
 }
 
 // ─── CANAIS TAB ───────────────────────────────────────────────────────────────
-const DAYS = [
-  { short: 'QUI', num: 15 }, { short: 'SEX', num: 16 }, { short: 'SÁB', num: 17 },
-  { short: 'DOM', num: 18 }, { short: 'SEG', num: 19 }, { short: 'TER', num: 20 }, { short: 'QUA', num: 21 },
-]
-
 function CanaisTab() {
   const [category, setCategory] = useState(CHANNEL_CATEGORIES[0])
   const [selectedChannel, setSelectedChannel] = useState<Channel>(CHANNELS[1])
-  const [isPlaying, setIsPlaying] = useState(true)
-  const [selectedDay, setSelectedDay] = useState(2)
   const [fullscreen, setFullscreen] = useState(false)
 
   const filteredChannels = useMemo(
@@ -386,16 +378,10 @@ function CanaisTab() {
     [category]
   )
 
-  // TV behavior: first OK selects the channel (mini-player preview),
-  // pressing OK again on the same channel expands to fullscreen.
-  const handleChannelClick = useCallback((ch: Channel) => {
-    setSelectedChannel((cur) => {
-      if (cur.id === ch.id) {
-        setFullscreen(true)
-        return cur
-      }
-      return ch
-    })
+  // TV behavior: pressing OK on a channel zooms straight into fullscreen.
+  const openChannel = useCallback((ch: Channel) => {
+    setSelectedChannel(ch)
+    setFullscreen(true)
   }, [])
 
   return (
@@ -420,18 +406,17 @@ function CanaisTab() {
           </div>
           {filteredChannels.map((ch) => (
             <div key={ch.id} role="button" tabIndex={0}
-              onClick={() => setSelectedChannel(ch)}
-              onKeyDown={(e) => e.key === 'Enter' && setSelectedChannel(ch)}
-              className={cn('flex items-center gap-3 px-4 py-3.5 border-b border-border/60 text-left transition-colors cursor-pointer',
+              onClick={() => openChannel(ch)}
+              onMouseEnter={() => setSelectedChannel(ch)}
+              onFocus={() => setSelectedChannel(ch)}
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); openChannel(ch) } }}
+              className={cn('flex items-center gap-3 px-4 py-3.5 border-b border-border/60 text-left transition-colors cursor-pointer outline-none',
                 selectedChannel.id === ch.id ? 'bg-primary/10 border-l-2 border-l-primary' : 'hover:bg-accent')}>
               <span className="text-xs text-muted-foreground w-8 shrink-0">{ch.number}</span>
               <div className="w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold text-white shrink-0 shadow-sm" style={{ background: ch.logoColor }}>
                 {ch.logoText}
               </div>
               <span className="text-sm text-foreground font-medium truncate">{ch.name}</span>
-              <button className="ml-auto shrink-0 text-muted-foreground hover:text-yellow-500 transition-colors" aria-label="Favoritar" onClick={(e) => e.stopPropagation()}>
-                <Star className="w-3.5 h-3.5" />
-              </button>
             </div>
           ))}
         </div>
@@ -443,33 +428,37 @@ function CanaisTab() {
             <span className="text-border/80">|</span>
             <span className="text-primary font-semibold">{category}</span>
           </div>
-          <div className="relative rounded-2xl overflow-hidden bg-slate-900 border border-border shadow-sm flex-1 max-h-64">
-            <div className="absolute inset-0 flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#0a1428 0%,#112040 100%)' }}>
+          {/* Clean preview — press OK / click to open fullscreen */}
+          <button
+            onClick={() => openChannel(selectedChannel)}
+            aria-label={`Abrir ${selectedChannel.name} em tela cheia`}
+            className="group/prev relative rounded-2xl overflow-hidden border border-border shadow-lg flex-1 max-h-64 w-full text-left outline-none focus-visible:ring-4 focus-visible:ring-primary/60 transition-transform duration-300 hover:scale-[1.01]"
+          >
+            <div className="absolute inset-0 flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#0f1830 0%,#1a2950 100%)' }}>
               <div className="text-center">
-                <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-lg font-bold text-white mx-auto mb-2 shadow-md" style={{ background: selectedChannel.logoColor }}>
+                <div className="w-20 h-20 rounded-2xl flex items-center justify-center text-2xl font-bold text-white mx-auto mb-3 shadow-lg" style={{ background: selectedChannel.logoColor }}>
                   {selectedChannel.logoText}
                 </div>
-                <p className="text-sm text-white/80">{selectedChannel.name}</p>
-                <p className="text-xs text-white/50 mt-1">{selectedChannel.currentProgram}</p>
+                <p className="text-base text-white font-semibold">{selectedChannel.name}</p>
+                <p className="text-xs text-white/60 mt-1">{selectedChannel.currentProgram}</p>
               </div>
             </div>
-            <div className="absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-500 text-white text-xs font-bold shadow-sm">
-              <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />AO VIVO
+            <div className="absolute top-3 left-3 flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-red-500/90 text-white text-[10px] font-bold">
+              <span className="w-1 h-1 rounded-full bg-white animate-pulse" />AO VIVO
             </div>
-            <div className="absolute bottom-0 left-0 right-0 px-4 py-3 bg-gradient-to-t from-black/80 to-transparent">
-              <div className="flex items-center gap-3">
-                <button onClick={() => setIsPlaying(!isPlaying)} aria-label={isPlaying ? 'Pausar' : 'Reproduzir'} className="text-white hover:text-primary transition-colors">
-                  {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
-                </button>
-                <Volume2 className="w-4 h-4 text-white/70" />
-                <div className="flex-1 h-1 bg-white/20 rounded-full"><div className="h-full w-3/5 bg-primary rounded-full" /></div>
-                <span className="text-xs text-white/70">AO VIVO</span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded border border-white/30 text-white/70">HD</span>
-                <Maximize2 className="w-4 h-4 text-white/70 hover:text-white cursor-pointer transition-colors" />
-              </div>
+            {/* Expand hint */}
+            <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover/prev:opacity-100 group-focus-visible/prev:opacity-100 transition-opacity">
+              <span className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary text-primary-foreground text-sm font-bold shadow-lg">
+                <Play className="w-4 h-4 fill-current" /> Assistir agora
+              </span>
             </div>
-          </div>
+          </button>
+
+          {/* Today's schedule (read-only) */}
           <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
+            <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border/60 bg-white/[0.03]">
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Programação de hoje</span>
+            </div>
             {selectedChannel.programs.map((prog) => (
               <div key={prog.time} className={cn('flex items-center gap-4 px-4 py-3 border-b border-border/60 last:border-0', prog.isLive && 'bg-primary/5')}>
                 <span className="text-sm font-semibold text-foreground w-12 shrink-0">{prog.time}</span>
@@ -481,19 +470,11 @@ function CanaisTab() {
             ))}
           </div>
         </div>
-
-        {/* Day navigator */}
-          <aside className="flex flex-col shrink-0 border-l border-border/40 py-4 gap-1 overflow-y-auto bg-white/[0.03]" style={{ width: 72 }}>
-          {DAYS.map((d, i) => (
-            <button key={d.num} onClick={() => setSelectedDay(i)}
-              className={cn('flex flex-col items-center py-3 mx-2 rounded-xl text-xs font-medium transition-colors',
-                selectedDay === i ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-accent')}>
-              <span className="text-[10px] uppercase tracking-wider">{d.short}</span>
-              <span className="text-base font-bold mt-0.5">{d.num}</span>
-            </button>
-          ))}
-        </aside>
       </div>
+
+      {fullscreen && (
+        <ChannelPlayer channel={selectedChannel} onClose={() => setFullscreen(false)} />
+      )}
     </>
   )
 }
@@ -699,14 +680,14 @@ export default function AppShell() {
 
   return (
     <div className="flex h-screen w-screen overflow-hidden p-4 gap-4 animate-cp-fade-in">
-      {/* Wallpaper — fixed dark cinematic layer behind everything */}
+      {/* Wallpaper — fixed soft graphite layer behind everything */}
       <img
-        src="/bg-dark.png"
+        src="/bg-graphite.png"
         alt=""
         aria-hidden="true"
         className="fixed inset-0 w-full h-full object-cover -z-10 select-none pointer-events-none"
       />
-      <div className="fixed inset-0 -z-10 bg-background/40 pointer-events-none" />
+      <div className="fixed inset-0 -z-10 bg-background/30 pointer-events-none" />
 
       {/* Sidebar */}
       <Sidebar active={active} onNav={setActive} />

@@ -100,3 +100,34 @@ export function toggleMuted(): boolean {
 export function unlockAudio() {
   getCtx()
 }
+
+// ─── Brand music (real .mp3 file) ───────────────────────────────────────────
+// Drop your track at /public/sounds/intro.mp3 and it plays on app entry.
+// Browsers only allow audio AFTER a user gesture, so we trigger it from the
+// activation button click (the first real interaction).
+const INTRO_SRC = '/sounds/intro.mp3'
+let introAudio: HTMLAudioElement | null = null
+
+/** Play the brand intro music. Must be called from a user gesture. */
+export function playIntroMusic() {
+  if (muted || typeof window === 'undefined') return
+  try {
+    if (!introAudio) {
+      introAudio = new Audio(INTRO_SRC)
+      introAudio.volume = 0.6
+    }
+    introAudio.currentTime = 0
+    // Fails silently if the file isn't there yet — safe to ship.
+    void introAudio.play().catch(() => {})
+  } catch {
+    /* no-op */
+  }
+}
+
+/** Stop the brand music (e.g. when leaving the splash/login). */
+export function stopIntroMusic() {
+  if (introAudio) {
+    introAudio.pause()
+    introAudio.currentTime = 0
+  }
+}

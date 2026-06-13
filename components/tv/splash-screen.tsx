@@ -2,15 +2,9 @@
 
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
-import { playCue } from '@/lib/sounds'
 
 export function SplashScreen({ onDone }: { onDone: () => void }) {
   const [progress, setProgress] = useState(0)
-
-  // Brand jingle on open (best-effort; plays once audio is unlocked).
-  useEffect(() => {
-    playCue('jingle')
-  }, [])
 
   useEffect(() => {
     const start = performance.now()
@@ -28,10 +22,10 @@ export function SplashScreen({ onDone }: { onDone: () => void }) {
   }, [onDone])
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center overflow-hidden bg-[#070b16]">
-      {/* Ambient cinematic glow */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_42%,rgba(37,99,235,0.35),transparent_55%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,rgba(59,130,246,0.18),transparent_50%)]" />
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center overflow-hidden bg-background">
+      {/* Soft ambient blue glow on graphite */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_42%,rgba(59,130,246,0.22),transparent_60%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,rgba(59,130,246,0.10),transparent_55%)]" />
 
       {/* Official logo with glow + gentle bob */}
       <div className="relative flex items-center justify-center mb-4">

@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Image from 'next/image'
 import { Loader2, RefreshCw } from 'lucide-react'
-import { playCue, unlockAudio } from '@/lib/sounds'
+import { unlockAudio, playIntroMusic } from '@/lib/sounds'
 
 const DEVICE_KEY = 'A7K9-42XP'
 
@@ -11,25 +11,26 @@ export function LoginScreen({ onLogin }: { onLogin: () => void }) {
   const [loading, setLoading] = useState(false)
 
   function reload() {
+    // First user gesture — unlock audio and start the brand music.
     unlockAudio()
-    playCue('open')
+    playIntroMusic()
     setLoading(true)
     setTimeout(onLogin, 1100)
   }
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center overflow-hidden bg-[#070b16] animate-cp-fade-in">
-      {/* Dark cinematic background */}
+    <div className="fixed inset-0 z-40 flex items-center justify-center overflow-hidden bg-background animate-cp-fade-in">
+      {/* Soft graphite background */}
       <Image
-        src="/bg-dark.png"
+        src="/bg-graphite.png"
         alt=""
         fill
         priority
         aria-hidden="true"
-        className="object-cover select-none pointer-events-none opacity-90"
+        className="object-cover select-none pointer-events-none"
       />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_38%,rgba(37,99,235,0.22),transparent_60%)]" />
-      <div className="absolute inset-0 bg-gradient-to-b from-background/30 via-transparent to-background/70" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_38%,rgba(59,130,246,0.16),transparent_62%)]" />
+      <div className="absolute inset-0 bg-gradient-to-b from-background/20 via-transparent to-background/50" />
 
       {/* ── Activation panel ── */}
       <div className="relative z-10 flex flex-col items-center text-center px-6 w-full max-w-2xl animate-cp-fade-up">

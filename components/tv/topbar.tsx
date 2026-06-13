@@ -1,21 +1,12 @@
 'use client'
 
 import { useState, useEffect, memo } from 'react'
-import { Clock, Volume2, VolumeX } from 'lucide-react'
-import { toggleMuted, unlockAudio, playCue } from '@/lib/sounds'
+import { Clock } from 'lucide-react'
 
 // Isolated so the 1s tick NEVER re-renders parent components
 export const Topbar = memo(function Topbar() {
   const [time, setTime] = useState('')
   const [date, setDate] = useState('')
-  const [muted, setMutedState] = useState(false)
-
-  function handleToggleMute() {
-    unlockAudio()
-    const next = toggleMuted()
-    setMutedState(next)
-    if (!next) playCue('select')
-  }
 
   useEffect(() => {
     function update() {
@@ -49,14 +40,6 @@ export const Topbar = memo(function Topbar() {
       </div>
       <span className="w-px h-4 bg-border" aria-hidden />
       <span className="capitalize">{date}</span>
-      <span className="w-px h-4 bg-border" aria-hidden />
-      <button
-        onClick={handleToggleMute}
-        aria-label={muted ? 'Ativar som' : 'Silenciar som'}
-        className="flex items-center justify-center w-8 h-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors outline-none focus-visible:ring-4 focus-visible:ring-primary/40"
-      >
-        {muted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-      </button>
     </div>
   )
 })

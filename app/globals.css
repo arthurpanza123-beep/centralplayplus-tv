@@ -50,43 +50,43 @@
 
 :root {
   color-scheme: dark;
-  /* Central Play — Dark Cinematic Theme */
-  --background: oklch(0.16 0.022 264);         /* deep midnight navy */
-  --foreground: oklch(0.97 0.005 250);         /* near-white */
-  --card: oklch(0.215 0.026 264);              /* elevated graphite */
-  --card-foreground: oklch(0.97 0.005 250);
-  --popover: oklch(0.19 0.024 264);
-  --popover-foreground: oklch(0.97 0.005 250);
-  --primary: oklch(0.60 0.22 264);             /* bright royal blue */
+  /* Central Play — Soft Graphite + Blue Theme */
+  --background: oklch(0.31 0.012 256);         /* soft cool graphite */
+  --foreground: oklch(0.97 0.004 250);         /* near-white */
+  --card: oklch(0.37 0.013 256);               /* lighter elevated graphite */
+  --card-foreground: oklch(0.97 0.004 250);
+  --popover: oklch(0.35 0.013 256);
+  --popover-foreground: oklch(0.97 0.004 250);
+  --primary: oklch(0.62 0.19 256);             /* brand blue */
   --primary-foreground: oklch(0.99 0 0);
-  --secondary: oklch(0.27 0.022 264);
-  --secondary-foreground: oklch(0.96 0.005 250);
-  --muted: oklch(0.27 0.022 264);
-  --muted-foreground: oklch(0.70 0.02 260);
-  --accent: oklch(0.32 0.03 264);
-  --accent-foreground: oklch(0.98 0 0);
-  --destructive: oklch(0.62 0.23 28);
-  --border: oklch(0.33 0.022 264);
-  --input: oklch(0.30 0.02 264);
-  --ring: oklch(0.64 0.20 264);
-  --chart-1: oklch(0.60 0.22 264);
+  --secondary: oklch(0.42 0.013 256);
+  --secondary-foreground: oklch(0.97 0.004 250);
+  --muted: oklch(0.42 0.013 256);
+  --muted-foreground: oklch(0.78 0.012 256);
+  --accent: oklch(0.46 0.018 256);
+  --accent-foreground: oklch(0.99 0 0);
+  --destructive: oklch(0.62 0.21 25);
+  --border: oklch(0.48 0.014 256);
+  --input: oklch(0.44 0.014 256);
+  --ring: oklch(0.66 0.17 256);
+  --chart-1: oklch(0.62 0.19 256);
   --chart-2: oklch(0.65 0.18 300);
   --chart-3: oklch(0.70 0.18 50);
   --chart-4: oklch(0.60 0.18 175);
-  --chart-5: oklch(0.62 0.23 28);
+  --chart-5: oklch(0.62 0.21 25);
   --radius: 0.875rem;
-  /* Sidebar — dark frosted */
-  --sidebar: oklch(0.185 0.024 264);
-  --sidebar-foreground: oklch(0.97 0.005 250);
-  --sidebar-primary: oklch(0.60 0.22 264);
+  /* Sidebar — graphite */
+  --sidebar: oklch(0.34 0.013 256);
+  --sidebar-foreground: oklch(0.97 0.004 250);
+  --sidebar-primary: oklch(0.62 0.19 256);
   --sidebar-primary-foreground: oklch(0.99 0 0);
-  --sidebar-accent: oklch(0.30 0.03 264);
-  --sidebar-accent-foreground: oklch(0.98 0 0);
-  --sidebar-border: oklch(0.33 0.022 264);
-  --sidebar-ring: oklch(0.64 0.20 264);
+  --sidebar-accent: oklch(0.46 0.018 256);
+  --sidebar-accent-foreground: oklch(0.99 0 0);
+  --sidebar-border: oklch(0.48 0.014 256);
+  --sidebar-ring: oklch(0.66 0.17 256);
   /* TV-specific tokens */
   --tv-sidebar-width: 260px;
-  --tv-card-surface: oklch(0.215 0.026 264);
+  --tv-card-surface: oklch(0.37 0.013 256);
 }
 
 
@@ -137,6 +137,10 @@
   0% { transform: translateX(-120%) skewX(-18deg); }
   60%, 100% { transform: translateX(260%) skewX(-18deg); }
 }
+@keyframes cp-zoom-in {
+  from { opacity: 0; transform: scale(0.88); }
+  to { opacity: 1; transform: scale(1); }
+}
 
 /* ─── TV focus safety net ─────────────────────────────────────────────────── */
 /* Guarantees the selected element is always unmistakable from across the room,
@@ -159,3 +163,4 @@
 .animate-cp-ring-spin { animation: cp-ring-spin 4s linear infinite; }
 .animate-cp-fade-up { animation: cp-fade-up 0.7s cubic-bezier(0.16,1,0.3,1) both; }
 .animate-cp-fade-in { animation: cp-fade-in 0.9s ease-out both; }
+.animate-cp-zoom-in { animation: cp-zoom-in 0.32s cubic-bezier(0.16,1,0.3,1) both; }
