@@ -263,14 +263,14 @@
 }
 .animate-cp-wave { animation: cp-wave 3s ease-out infinite; }
 
-/* Channel-name flash: slide up + fade in, hold, then fade out */
+/* Channel-name flash: quick, discreet fade in/out */
 @keyframes cp-name-flash {
-  0% { opacity: 0; transform: translateY(14px) scale(0.96); }
-  14% { opacity: 1; transform: translateY(0) scale(1); }
-  78% { opacity: 1; transform: translateY(0) scale(1); }
-  100% { opacity: 0; transform: translateY(-6px) scale(0.99); }
+  0% { opacity: 0; transform: translateY(6px); }
+  18% { opacity: 1; transform: translateY(0); }
+  72% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(2px); }
 }
-.animate-cp-name-flash { animation: cp-name-flash 2.6s ease-in-out forwards; }
+.animate-cp-name-flash { animation: cp-name-flash 1.5s ease-in-out forwards; }
 
 .scrollbar-none { scrollbar-width: none; -ms-overflow-style: none; }
 .scrollbar-none::-webkit-scrollbar { display: none; }

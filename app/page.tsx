@@ -338,7 +338,7 @@ function CanaisTab() {
   // Flash the channel name on every change of the selected channel.
   useEffect(() => {
     setShowNameFlash(true)
-    const t = setTimeout(() => setShowNameFlash(false), 2600)
+    const t = setTimeout(() => setShowNameFlash(false), 1500)
     return () => clearTimeout(t)
   }, [selectedChannel])
 
@@ -354,21 +354,6 @@ function CanaisTab() {
     resetIdle()
     return () => { if (idleTimer.current) clearTimeout(idleTimer.current) }
   }, [resetIdle, selectedChannel])
-
-  // "Now / next" program info for the preview bar.
-  const liveIndex = selectedChannel.programs.findIndex((p) => p.isLive)
-  const nextProgram = liveIndex >= 0 ? selectedChannel.programs[liveIndex + 1] : selectedChannel.programs[0]
-  // Live progress from the current program's start/end time vs. now.
-  const liveProgress = useMemo(() => {
-    const live = selectedChannel.programs.find((p) => p.isLive)
-    if (!live) return 35
-    const toMin = (t: string) => { const [h, m] = t.split(':').map(Number); return h * 60 + m }
-    const start = toMin(live.time)
-    const end = toMin(live.endTime)
-    const now = new Date().getHours() * 60 + new Date().getMinutes()
-    if (end <= start) return 35
-    return Math.min(Math.max(((now - start) / (end - start)) * 100, 5), 98)
-  }, [selectedChannel])
 
   return (
     <>
@@ -439,80 +424,33 @@ function CanaisTab() {
             aria-label={`Abrir ${selectedChannel.name} em tela cheia`}
             className="group/prev relative aspect-video w-full max-w-xl rounded-2xl overflow-hidden border border-white/10 shadow-2xl ring-1 ring-black/40 text-left outline-none focus-visible:ring-4 focus-visible:ring-primary/60 transition-transform duration-300 hover:scale-[1.025]"
           >
-            {/* Cinematic channel-tinted backdrop */}
+            {/* Clean, dark backdrop — focus stays on the channel feed */}
             <div
               className="absolute inset-0"
-              style={{ background: `radial-gradient(circle at 50% 35%, ${selectedChannel.logoColor} 0%, #070b14 72%)` }}
+              style={{ background: `linear-gradient(160deg, ${selectedChannel.logoColor}22 0%, #070b14 70%)` }}
             />
-            <div className="absolute inset-0 opacity-40" style={{ background: `radial-gradient(circle at 80% 90%, ${selectedChannel.logoColor}88 0%, transparent 55%)` }} />
 
-            {/* Animated "live signal" waves behind the logo */}
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none" aria-hidden>
-              <span className="absolute w-40 h-40 rounded-full border border-white/10 animate-cp-wave" />
-              <span className="absolute w-40 h-40 rounded-full border border-white/10 animate-cp-wave [animation-delay:1s]" />
-              <span className="absolute w-40 h-40 rounded-full border border-white/10 animate-cp-wave [animation-delay:2s]" />
-            </div>
-
-            {/* Channel logo bug */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
-              <div
-                className="w-28 h-28 rounded-[1.75rem] flex items-center justify-center text-4xl font-black text-white shadow-2xl ring-1 ring-white/15"
-                style={{ background: selectedChannel.logoColor }}
-              >
-                {selectedChannel.logoText}
-              </div>
-              <span className="text-sm font-semibold text-white/55 tracking-wide">{selectedChannel.category}</span>
-            </div>
-
-            {/* Top badges: AO VIVO + HD */}
-            <div className="absolute top-4 left-4 flex items-center gap-2">
-              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-red-600 text-white text-[11px] font-bold shadow-lg">
+            {/* Small AO VIVO badge, top-left */}
+            <div className="absolute top-3 left-3">
+              <span className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-red-600 text-white text-[10px] font-bold shadow">
                 <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />AO VIVO
               </span>
-              <span className="px-2 py-1 rounded-md bg-white/15 backdrop-blur-sm text-white text-[11px] font-bold">HD</span>
             </div>
 
-            {/* Bottom info bar — NOW + NEXT + live progress */}
-            <div className="absolute inset-x-0 bottom-0 p-5 bg-gradient-to-t from-black/90 via-black/50 to-transparent">
-              <p className="text-2xl font-black text-white leading-tight drop-shadow">{selectedChannel.name}</p>
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1.5">
-                <span className="text-sm text-white/85 truncate">
-                  <span className="text-primary font-bold">AGORA</span> · {selectedChannel.currentProgram}
-                </span>
-                {nextProgram && (
-                  <span className="text-sm text-white/55 truncate">
-                    <span className="font-bold">A SEGUIR</span> · {nextProgram.title} · {nextProgram.time}
-                  </span>
-                )}
-              </div>
-              <div className="mt-3 h-1.5 w-full max-w-md bg-white/20 rounded-full overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-primary to-cyan-400 rounded-full transition-all" style={{ width: `${liveProgress}%` }} />
-              </div>
-            </div>
-
-            {/* Channel-name flash — appears briefly when the channel changes */}
+            {/* Discreet channel-name flash — small chip, bottom-left, fades quickly */}
             {showNameFlash && (
-              <div key={selectedChannel.id} className="absolute inset-0 flex items-center justify-center pointer-events-none animate-cp-name-flash">
-                <div className="flex items-center gap-4 px-6 py-4 rounded-2xl bg-black/55 backdrop-blur-md ring-1 ring-white/15 shadow-2xl">
-                  <div className="w-14 h-14 rounded-xl flex items-center justify-center text-xl font-black text-white shrink-0 shadow-lg" style={{ background: selectedChannel.logoColor }}>
-                    {selectedChannel.logoText}
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-xl font-black text-white leading-tight">{selectedChannel.name}</span>
-                    <span className="flex items-center gap-1.5 text-[11px] font-bold text-red-400 mt-0.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />AO VIVO
-                    </span>
-                  </div>
-                </div>
+              <div key={selectedChannel.id} className="absolute bottom-3 left-3 animate-cp-name-flash">
+                <span className="px-2.5 py-1 rounded-md bg-black/60 backdrop-blur-sm text-white text-xs font-semibold shadow">
+                  {selectedChannel.name}
+                </span>
               </div>
             )}
 
             {/* Expand hint */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/40 opacity-0 group-hover/prev:opacity-100 group-focus-visible/prev:opacity-100 transition-opacity">
-              <span className="flex items-center gap-2 px-6 py-3 rounded-full bg-primary text-primary-foreground text-base font-bold shadow-lg">
-                <Play className="w-5 h-5 fill-current" /> Assistir agora
+            <div className="absolute inset-0 flex items-center justify-center bg-black/35 opacity-0 group-hover/prev:opacity-100 group-focus-visible/prev:opacity-100 transition-opacity">
+              <span className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary text-primary-foreground text-sm font-bold shadow-lg">
+                <Play className="w-4 h-4 fill-current" /> Assistir agora
               </span>
-              <span className="text-[11px] text-white/70 font-medium">Tela cheia automática em 20s</span>
             </div>
           </button>
           </div>
