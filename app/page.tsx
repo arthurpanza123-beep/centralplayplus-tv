@@ -1,6 +1,6 @@
 'use client'
 
-import { memo, useState, useMemo, useCallback, useEffect } from 'react'
+import { memo, useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { Activity } from 'react'
 import Image from 'next/image'
 import {
@@ -326,11 +326,36 @@ function CanaisTab() {
     [category]
   )
 
+  // Channel-name flash overlay shown briefly whenever the channel changes.
+  const [showNameFlash, setShowNameFlash] = useState(false)
+  // Auto-zoom: after 20s idle on the small preview, expand to fullscreen.
+  const idleTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
   // TV behavior: pressing OK on a channel zooms straight into fullscreen.
   const openChannel = useCallback((ch: Channel) => {
     setSelectedChannel(ch)
     setFullscreen(true)
   }, [])
+
+  // Flash the channel name on every change of the selected channel.
+  useEffect(() => {
+    setShowNameFlash(true)
+    const t = setTimeout(() => setShowNameFlash(false), 2600)
+    return () => clearTimeout(t)
+  }, [selectedChannel])
+
+  // (Re)start the 20s idle countdown; expands to fullscreen when it elapses.
+  const resetIdle = useCallback(() => {
+    if (idleTimer.current) clearTimeout(idleTimer.current)
+    if (fullscreen) return
+    idleTimer.current = setTimeout(() => setFullscreen(true), 20000)
+  }, [fullscreen])
+
+  // Reset the idle timer whenever the channel changes or we leave fullscreen.
+  useEffect(() => {
+    resetIdle()
+    return () => { if (idleTimer.current) clearTimeout(idleTimer.current) }
+  }, [resetIdle, selectedChannel])
 
   // "Now / next" program info for the preview bar.
   const liveIndex = selectedChannel.programs.findIndex((p) => p.isLive)
@@ -409,11 +434,12 @@ function CanaisTab() {
             <span className="text-border/80">|</span>
             <span className="text-primary font-semibold">{category}</span>
           </div>
-          {/* Immersive TV-style preview — press OK / click to open fullscreen */}
+          {/* Reduced 16:9 preview, centered — click (or 20s idle) zooms to fullscreen */}
+          <div className="flex items-center justify-center pt-2 pb-1" onMouseMove={resetIdle}>
           <button
             onClick={() => openChannel(selectedChannel)}
             aria-label={`Abrir ${selectedChannel.name} em tela cheia`}
-            className="group/prev relative rounded-2xl overflow-hidden border border-border shadow-xl flex-1 min-h-0 w-full text-left outline-none focus-visible:ring-4 focus-visible:ring-primary/60 transition-transform duration-300 hover:scale-[1.005]"
+            className="group/prev relative aspect-video w-full max-w-xl rounded-2xl overflow-hidden border border-white/10 shadow-2xl ring-1 ring-black/40 text-left outline-none focus-visible:ring-4 focus-visible:ring-primary/60 transition-transform duration-300 hover:scale-[1.025]"
           >
             {/* Cinematic channel-tinted backdrop */}
             <div
@@ -466,13 +492,32 @@ function CanaisTab() {
               </div>
             </div>
 
+            {/* Channel-name flash — appears briefly when the channel changes */}
+            {showNameFlash && (
+              <div key={selectedChannel.id} className="absolute inset-0 flex items-center justify-center pointer-events-none animate-cp-name-flash">
+                <div className="flex items-center gap-4 px-6 py-4 rounded-2xl bg-black/55 backdrop-blur-md ring-1 ring-white/15 shadow-2xl">
+                  <div className="w-14 h-14 rounded-xl flex items-center justify-center text-xl font-black text-white shrink-0 shadow-lg" style={{ background: selectedChannel.logoColor }}>
+                    {selectedChannel.logoText}
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-xl font-black text-white leading-tight">{selectedChannel.name}</span>
+                    <span className="flex items-center gap-1.5 text-[11px] font-bold text-red-400 mt-0.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />AO VIVO
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Expand hint */}
-            <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover/prev:opacity-100 group-focus-visible/prev:opacity-100 transition-opacity">
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/40 opacity-0 group-hover/prev:opacity-100 group-focus-visible/prev:opacity-100 transition-opacity">
               <span className="flex items-center gap-2 px-6 py-3 rounded-full bg-primary text-primary-foreground text-base font-bold shadow-lg">
                 <Play className="w-5 h-5 fill-current" /> Assistir agora
               </span>
+              <span className="text-[11px] text-white/70 font-medium">Tela cheia automática em 20s</span>
             </div>
           </button>
+          </div>
 
           {/* Today's schedule (read-only) */}
           <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
