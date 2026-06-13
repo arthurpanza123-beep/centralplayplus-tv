@@ -139,11 +139,11 @@ const PosterRow = memo(function PosterRow({
   title, items, onSelect,
 }: { title: string; items: (Movie | Series)[]; onSelect: (i: Movie | Series) => void }) {
   return (
-    <section className="flex flex-col gap-2">
+    <section className="flex flex-col gap-3.5">
       <h2 className="text-lg font-bold text-foreground px-8 tracking-tight">{title}</h2>
-      <div className="flex items-start gap-2.5 overflow-x-auto overflow-y-visible px-8 py-2 scrollbar-none">
+      <div className="flex items-start gap-4 overflow-x-auto overflow-y-visible px-8 py-2 scrollbar-none">
         {items.map((item) => (
-          <div key={item.id} className="shrink-0 w-[140px]">
+          <div key={item.id} className="shrink-0 w-[150px]">
             <ContentCard item={item} onClick={onSelect} />
           </div>
         ))}
@@ -200,7 +200,7 @@ function HomeTab({ onNav }: { onNav: (id: TabId) => void }) {
       </section>
 
       {/* Rows — pulled up to overlap the hero fade */}
-      <div className="relative z-10 flex flex-col gap-6 -mt-12 pb-10">
+      <div className="relative z-10 flex flex-col gap-9 mt-2 pb-10">
         <PosterRow title="Em alta hoje" items={MOVIES.slice(0, 10)} onSelect={handleSelect} />
         <PosterRow title="Continue assistindo" items={MOVIES.slice(10, 18)} onSelect={handleSelect} />
         <PosterRow title="Séries em destaque" items={SERIES.slice(0, 10)} onSelect={handleSelect} />
