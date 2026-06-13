@@ -4,11 +4,9 @@ const DEVICE_KEY = 'cpp_device_key'
 /** Characters used for the device key (no ambiguous 0/O/1/I). */
 const KEY_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
 
-/** Generate a fresh device key: 4 blocks of 4 alphanumeric chars (XXXX-XXXX-XXXX-XXXX). */
+/** Generate a fresh device key: 4 alphanumeric characters (e.g. "A7K9"). */
 function generateDeviceKey(): string {
-  const block = () =>
-    Array.from({ length: 4 }, () => KEY_ALPHABET[Math.floor(Math.random() * KEY_ALPHABET.length)]).join('')
-  return Array.from({ length: 4 }, block).join('-')
+  return Array.from({ length: 4 }, () => KEY_ALPHABET[Math.floor(Math.random() * KEY_ALPHABET.length)]).join('')
 }
 
 /**
@@ -16,7 +14,7 @@ function generateDeviceKey(): string {
  * The same key is reused for the lifetime of the install (until reset).
  */
 export function getDeviceKey(): string {
-  if (typeof window === 'undefined') return 'XXXX-XXXX-XXXX-XXXX'
+  if (typeof window === 'undefined') return 'XXXX'
   try {
     let key = window.localStorage.getItem(DEVICE_KEY)
     if (!key) {

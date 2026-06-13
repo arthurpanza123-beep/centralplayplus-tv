@@ -403,7 +403,7 @@ function ConfiguracoesTab() {
   const [notifications, setNotifications] = useState(USER.notifications)
   const [autoplay, setAutoplay] = useState(USER.autoplay)
   // This device's persistent key (read on the client to avoid SSR mismatch).
-  const [deviceKey, setDeviceKey] = useState('····-····-····-····')
+  const [deviceKey, setDeviceKey] = useState('····')
 
   useEffect(() => {
     setDeviceKey(getDeviceKey())

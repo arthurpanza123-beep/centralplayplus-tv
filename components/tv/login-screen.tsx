@@ -11,7 +11,7 @@ export function LoginScreen({ onLogin }: { onLogin: () => void }) {
   // Simulated activation: device is only considered activated after the first check.
   const [activated, setActivated] = useState(false)
   // This device's persistent key (read on the client to avoid SSR mismatch).
-  const [deviceKey, setDeviceKey] = useState('····-····-····-····')
+  const [deviceKey, setDeviceKey] = useState('····')
 
   useEffect(() => {
     setDeviceKey(getDeviceKey())
@@ -75,7 +75,7 @@ export function LoginScreen({ onLogin }: { onLogin: () => void }) {
         {/* Device key */}
         <div className="mt-7 w-full rounded-2xl bg-white/[0.04] border border-white/10 px-6 py-5">
           <p className="text-[10px] font-bold tracking-[0.4em] text-white/45">DEVICE KEY</p>
-          <p className="mt-2 text-xl font-black tracking-[0.12em] text-white tabular-nums whitespace-nowrap drop-shadow-[0_0_18px_rgba(96,165,250,0.35)]">
+          <p className="mt-2 text-5xl font-black tracking-[0.2em] text-white tabular-nums whitespace-nowrap drop-shadow-[0_0_18px_rgba(96,165,250,0.35)]">
             {deviceKey}
           </p>
         </div>
