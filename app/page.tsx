@@ -597,6 +597,77 @@ function SearchInput({ placeholder, value, onChange }: { placeholder: string; va
   )
 }
 
+// ─── KIDS TAB ─────────────────────────────────────────────────────────────────
+function KidsTab() {
+  // KIDS_ITEMS is small; tile it into a fuller, playful grid.
+  const tiles = [...KIDS_ITEMS, ...KIDS_ITEMS].slice(0, 8)
+  const ageChips = ['Todos', '0-3 anos', '4-6 anos', '7-9 anos', '10-12 anos']
+  const [age, setAge] = useState(ageChips[0])
+
+  return (
+    <>
+      <ShellHeader title="Kids" />
+      <div className="flex-1 overflow-y-auto px-6 py-5">
+        {/* Playful banner */}
+        <div className="relative overflow-hidden rounded-3xl p-7 mb-6 bg-gradient-to-br from-teal-500 to-cyan-600 shadow-lg shadow-cyan-900/30">
+          <div className="relative z-10 max-w-md">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 text-white text-xs font-bold mb-3">
+              <Smile className="w-3.5 h-3.5" /> Modo Kids
+            </span>
+            <h2 className="text-3xl font-black text-white text-balance leading-tight mb-1.5 drop-shadow">
+              Diversão segura para os pequenos
+            </h2>
+            <p className="text-sm text-white/85 leading-relaxed">
+              Desenhos, aventuras e histórias selecionadas com controle parental ativo.
+            </p>
+          </div>
+          {/* Decorative bubbles */}
+          <div className="absolute -right-6 -top-6 w-40 h-40 rounded-full bg-white/10" aria-hidden />
+          <div className="absolute right-24 bottom-0 w-24 h-24 rounded-full bg-white/10" aria-hidden />
+        </div>
+
+        {/* Age chips */}
+        <div className="flex flex-wrap gap-2 mb-6">
+          {ageChips.map((c) => (
+            <button
+              key={c}
+              onClick={() => setAge(c)}
+              className={cn(
+                'px-4 py-2 rounded-full text-sm font-semibold transition-colors outline-none focus-visible:ring-4 focus-visible:ring-primary/50',
+                age === c ? 'bg-primary text-primary-foreground' : 'bg-white/5 text-muted-foreground hover:text-foreground hover:bg-accent'
+              )}
+            >
+              {c}
+            </button>
+          ))}
+        </div>
+
+        <p className="text-sm font-semibold text-primary mb-4">Programas favoritos</p>
+        <div className="grid grid-cols-4 gap-4">
+          {tiles.map((item, i) => (
+            <button
+              key={`${item.id}-${i}`}
+              aria-label={`Assistir ${item.title}`}
+              className="group/kid relative aspect-video rounded-3xl overflow-hidden outline-none shadow-md transition-transform duration-300 hover:scale-[1.04] focus-visible:scale-[1.04] focus-visible:ring-4 focus-visible:ring-primary/60"
+              style={{ background: `linear-gradient(150deg, ${item.colorFrom} 0%, ${item.colorTo} 100%)` }}
+            >
+              {/* Play affordance */}
+              <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-14 h-14 rounded-full bg-white/95 flex items-center justify-center shadow-lg scale-75 opacity-0 transition-all duration-300 group-hover/kid:scale-100 group-hover/kid:opacity-100 group-focus-visible/kid:scale-100 group-focus-visible/kid:opacity-100">
+                <Play className="w-6 h-6 text-teal-700 fill-current ml-0.5" />
+              </span>
+              <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/70 to-transparent">
+                <p className="text-white font-bold text-base leading-tight text-left text-balance drop-shadow">
+                  {item.title}
+                </p>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+    </>
+  )
+}
+
 // ─── STUB TABS ────────────────────────────────────────────────────────────────
 function StubTab({ title }: { title: string }) {
   return (
@@ -656,7 +727,7 @@ export default function AppShell() {
               {tab === 'series' && <SeriesTab />}
               {tab === 'canais' && <CanaisTab />}
               {tab === 'configuracoes' && <ConfiguracoesTab />}
-              {tab === 'kids' && <StubTab title="Kids" />}
+              {tab === 'kids' && <KidsTab />}
               {tab === 'buscar' && <StubTab title="Buscar" />}
               {tab === 'favoritos' && <StubTab title="Favoritos" />}
             </div>
