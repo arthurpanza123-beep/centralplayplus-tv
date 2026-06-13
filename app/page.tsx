@@ -13,6 +13,7 @@ import { Topbar } from '@/components/tv/topbar'
 import { ContentCard } from '@/components/tv/content-card'
 import { ContentDetail } from '@/components/tv/content-detail'
 import { ChannelPlayer } from '@/components/tv/channel-player'
+import { MascotVideo } from '@/components/tv/mascot-video'
 import { LoginScreen } from '@/components/tv/login-screen'
 import { IntroVideo } from '@/components/tv/intro-video'
 import { LoadingScreen } from '@/components/tv/loading-screen'
@@ -104,13 +105,9 @@ const Sidebar = memo(function Sidebar({ active, onNav, collapsed }: { active: Ta
 
       {/* Plan badge — plan type + days left. Full card when expanded, icon only when collapsed */}
       <div className={cn('relative pb-5', collapsed ? 'px-2.5' : 'px-3')}>
-        {/* Mascot tumbles in and freezes peeking out from behind the plan card */}
+        {/* Mascot video tumbles once then freezes on the last frame behind the card */}
         {!collapsed && (
-          <div className="pointer-events-none absolute left-0 right-0 bottom-[60px] mx-auto w-20 h-20 z-0">
-            <div className="relative w-full h-full animate-cp-mascot-tumble drop-shadow-[0_4px_14px_rgba(37,99,235,0.45)]">
-              <Image src="/mascot-character.png" alt="" fill className="object-contain" />
-            </div>
-          </div>
+          <MascotVideo className="pointer-events-none absolute left-0 right-0 bottom-[52px] mx-auto w-24 h-24 z-0 drop-shadow-[0_4px_14px_rgba(37,99,235,0.45)]" />
         )}
         <button
           title={collapsed ? `${planTitle} · ${planSubtitle}` : undefined}
