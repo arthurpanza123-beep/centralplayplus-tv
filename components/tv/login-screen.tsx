@@ -89,7 +89,7 @@ export function LoginScreen({ onLogin }: { onLogin: () => void }) {
           className="group mt-7 w-full flex items-center justify-center gap-3 py-4 rounded-2xl bg-primary text-primary-foreground text-base font-bold tracking-wide shadow-xl shadow-primary/40 transition-all hover:bg-primary/90 hover:scale-[1.02] outline-none focus-visible:ring-4 focus-visible:ring-primary/60 disabled:opacity-80"
         >
           <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : 'group-hover:rotate-180 transition-transform duration-500'}`} />
-          {loading ? 'Recarregando…' : 'Já ativei — entrar'}
+          {loading ? 'Recarregando…' : 'Já ativei — recarregar'}
         </button>
       </div>
     </div>
