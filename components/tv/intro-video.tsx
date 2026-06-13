@@ -18,8 +18,15 @@ export function IntroVideo({ onDone }: { onDone: () => void }) {
   const [ready, setReady] = useState(false)
   // TV-style skip: first OK/Enter reveals the prompt, second one confirms.
   const [promptVisible, setPromptVisible] = useState(false)
+  // Mirror of promptVisible so the (once-bound) key listener reads a fresh value.
+  const promptVisibleRef = useRef(false)
   const done = useRef(false)
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  function setPrompt(open: boolean) {
+    promptVisibleRef.current = open
+    setPromptVisible(open)
+  }
 
   function finish() {
     if (done.current) return
@@ -31,15 +38,15 @@ export function IntroVideo({ onDone }: { onDone: () => void }) {
 
   // Reveal the skip prompt and auto-hide it after a few idle seconds.
   function revealPrompt() {
-    setPromptVisible(true)
+    setPrompt(true)
     if (hideTimer.current) clearTimeout(hideTimer.current)
-    hideTimer.current = setTimeout(() => setPromptVisible(false), 4000)
+    hideTimer.current = setTimeout(() => setPrompt(false), 4000)
   }
 
   // OK/Enter (or click): first press reveals, second press skips.
   function onSelect() {
     if (done.current) return
-    if (promptVisible) finish()
+    if (promptVisibleRef.current) finish()
     else revealPrompt()
   }
 
