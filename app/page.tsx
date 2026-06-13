@@ -7,7 +7,7 @@ import {
   Home, Radio, Film, Tv2, Smile, Search, Heart, Settings, Crown,
   Play, Info, Star,
   Bell, Shield, MessageSquare, MonitorPlay, Monitor, ChevronRight, LogOut,
-  User, Mail, Calendar, Smartphone,
+  User, Mail, Calendar, Smartphone, RefreshCw,
 } from 'lucide-react'
 import { Topbar } from '@/components/tv/topbar'
 import { ContentCard } from '@/components/tv/content-card'
@@ -18,7 +18,7 @@ import { IntroVideo } from '@/components/tv/intro-video'
 import { LoadingScreen } from '@/components/tv/loading-screen'
 import { useTvNavigation } from '@/hooks/use-tv-navigation'
 import { playCue } from '@/lib/sounds'
-import { isDeviceActivated } from '@/lib/activation'
+import { isDeviceActivated, getDeviceKey, regenerateDeviceKey } from '@/lib/activation'
 import { cn } from '@/lib/utils'
 import {
   MOVIES, SERIES, CHANNELS, KIDS_ITEMS, USER,
@@ -402,13 +402,29 @@ function CanaisTab() {
 function ConfiguracoesTab() {
   const [notifications, setNotifications] = useState(USER.notifications)
   const [autoplay, setAutoplay] = useState(USER.autoplay)
+  // This device's persistent key (read on the client to avoid SSR mismatch).
+  const [deviceKey, setDeviceKey] = useState('····-····-····-····')
+
+  useEffect(() => {
+    setDeviceKey(getDeviceKey())
+  }, [])
+
+  function handleRegenerate() {
+    if (
+      window.confirm(
+        'Gerar um novo código vai desconectar esta TV e exigir uma nova ativação. Deseja continuar?',
+      )
+    ) {
+      setDeviceKey(regenerateDeviceKey())
+    }
+  }
 
   const accountRows = [
     { icon: User, label: 'Nome', value: USER.name },
     { icon: Mail, label: 'E-mail', value: USER.email },
     { icon: Crown, label: 'Plano', value: USER.plan },
     { icon: Calendar, label: 'Validade', value: USER.validity },
-    { icon: Smartphone, label: 'Código do dispositivo', value: USER.deviceCode },
+    { icon: Smartphone, label: 'Código do dispositivo', value: deviceKey },
   ]
   const settingsRows = [
     { icon: Bell, label: 'Notificações', description: 'Receba novidades e alertas', type: 'toggle' as const, value: notifications, onToggle: () => setNotifications((v) => !v) },
@@ -466,6 +482,26 @@ function ConfiguracoesTab() {
               </div>
             ))}
           </div>
+
+          {/* Device key — persistent per install, with option to generate a new one. */}
+          <div className="flex items-center gap-4 rounded-2xl border border-border bg-card shadow-sm px-5 py-4">
+            <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+              <Smartphone className="w-4 h-4 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-foreground">Código do dispositivo</p>
+              <p className="text-lg font-black tracking-[0.06em] text-foreground tabular-nums mt-0.5">{deviceKey}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Fixo para esta TV. Gere um novo apenas se precisar reativar.</p>
+            </div>
+            <button
+              onClick={handleRegenerate}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border bg-accent/40 hover:bg-accent transition-colors text-sm font-semibold text-foreground shrink-0 outline-none focus-visible:ring-4 focus-visible:ring-primary/40"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Gerar novo código
+            </button>
+          </div>
+
           <div className="grid grid-cols-3 rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
             <div className="flex items-center gap-3 px-5 py-4 border-r border-border">
               <Shield className="w-4 h-4 text-primary shrink-0" />

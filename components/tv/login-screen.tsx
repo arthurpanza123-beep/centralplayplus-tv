@@ -1,17 +1,21 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import { RefreshCw } from 'lucide-react'
 import { unlockAudio } from '@/lib/sounds'
-import { markDeviceActivated } from '@/lib/activation'
-
-const DEVICE_KEY = 'A7K9-42XP'
+import { markDeviceActivated, getDeviceKey } from '@/lib/activation'
 
 export function LoginScreen({ onLogin }: { onLogin: () => void }) {
   const [shake, setShake] = useState(false)
   // Simulated activation: device is only considered activated after the first check.
   const [activated, setActivated] = useState(false)
+  // This device's persistent key (read on the client to avoid SSR mismatch).
+  const [deviceKey, setDeviceKey] = useState('····-····-····-····')
+
+  useEffect(() => {
+    setDeviceKey(getDeviceKey())
+  }, [])
 
   function reload() {
     // First user gesture — unlock audio so it can play once activated.
@@ -71,8 +75,8 @@ export function LoginScreen({ onLogin }: { onLogin: () => void }) {
         {/* Device key */}
         <div className="mt-7 w-full rounded-2xl bg-white/[0.04] border border-white/10 px-6 py-5">
           <p className="text-[10px] font-bold tracking-[0.4em] text-white/45">DEVICE KEY</p>
-          <p className="mt-2 text-4xl font-black tracking-[0.05em] text-white tabular-nums whitespace-nowrap drop-shadow-[0_0_18px_rgba(96,165,250,0.35)]">
-            {DEVICE_KEY}
+          <p className="mt-2 text-xl font-black tracking-[0.12em] text-white tabular-nums whitespace-nowrap drop-shadow-[0_0_18px_rgba(96,165,250,0.35)]">
+            {deviceKey}
           </p>
         </div>
 
