@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useRef } from 'react'
 import { X, Play, Plus, Star } from 'lucide-react'
 import type { Movie, Series } from '@/lib/types'
 import { cn } from '@/lib/utils'
@@ -10,6 +11,30 @@ interface ContentModalProps {
 }
 
 export function ContentModal({ item, onClose }: ContentModalProps) {
+  const watchBtnRef = useRef<HTMLButtonElement>(null)
+
+  // Move focus into the modal when it opens (TV remote starts on "Assistir").
+  useEffect(() => {
+    if (item) {
+      const id = window.setTimeout(() => watchBtnRef.current?.focus(), 60)
+      return () => window.clearTimeout(id)
+    }
+  }, [item])
+
+  // Escape / Back closes the modal. Capture phase so it runs before global nav.
+  useEffect(() => {
+    if (!item) return
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape' || e.key === 'Backspace') {
+        e.preventDefault()
+        e.stopImmediatePropagation()
+        onClose()
+      }
+    }
+    window.addEventListener('keydown', onKey, true)
+    return () => window.removeEventListener('keydown', onKey, true)
+  }, [item, onClose])
+
   if (!item) return null
 
   const isMovie = item.type === 'movie'
@@ -82,7 +107,10 @@ export function ContentModal({ item, onClose }: ContentModalProps) {
 
             {/* Actions */}
             <div className="flex flex-wrap gap-3 mb-6">
-              <button className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors">
+              <button
+                ref={watchBtnRef}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors outline-none focus-visible:ring-4 focus-visible:ring-primary/60"
+              >
                 <Play className="w-4 h-4 fill-current" />
                 Assistir
               </button>

@@ -14,6 +14,7 @@ import { ContentCard } from '@/components/tv/content-card'
 import { ContentModal } from '@/components/tv/content-modal'
 import { SplashScreen } from '@/components/tv/splash-screen'
 import { LoginScreen } from '@/components/tv/login-screen'
+import { useTvNavigation } from '@/hooks/use-tv-navigation'
 import { cn } from '@/lib/utils'
 import {
   MOVIES, SERIES, CHANNELS, WATCHING_ITEMS, KIDS_ITEMS, USER,
@@ -607,6 +608,13 @@ type AppStage = 'splash' | 'login' | 'app'
 export default function AppShell() {
   const [active, setActive] = useState<TabId>('home')
   const [stage, setStage] = useState<AppStage>('splash')
+
+  // TV-remote-style spatial navigation. Re-focuses when the active tab changes.
+  // "Back" returns to Home (the modal handles its own Escape via capture phase).
+  useTvNavigation({
+    deps: [active, stage],
+    onBack: () => setActive((cur) => (cur === 'home' ? cur : 'home')),
+  })
 
   if (stage === 'splash') return <SplashScreen onDone={() => setStage('login')} />
   if (stage === 'login') return <LoginScreen onLogin={() => setStage('app')} />
