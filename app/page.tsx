@@ -103,12 +103,20 @@ const Sidebar = memo(function Sidebar({ active, onNav, collapsed }: { active: Ta
       </nav>
 
       {/* Plan badge — plan type + days left. Full card when expanded, icon only when collapsed */}
-      <div className={cn('pb-5', collapsed ? 'px-2.5' : 'px-3')}>
+      <div className={cn('relative pb-5', collapsed ? 'px-2.5' : 'px-3')}>
+        {/* Mascot tumbles in and freezes peeking out from behind the plan card */}
+        {!collapsed && (
+          <div className="pointer-events-none absolute left-0 right-0 bottom-[60px] mx-auto w-20 h-20 z-0">
+            <div className="relative w-full h-full animate-cp-mascot-tumble drop-shadow-[0_4px_14px_rgba(37,99,235,0.45)]">
+              <Image src="/mascot-character.png" alt="" fill className="object-contain" />
+            </div>
+          </div>
+        )}
         <button
           title={collapsed ? `${planTitle} · ${planSubtitle}` : undefined}
           aria-label={`${planTitle}, ${planSubtitle}`}
           className={cn(
-            'group/plan w-full flex items-center rounded-xl border border-primary/30 bg-gradient-to-br from-primary/20 to-primary/5 hover:from-primary/30 hover:to-primary/10 transition-all text-left shadow-sm hover:shadow-md outline-none focus-visible:ring-4 focus-visible:ring-primary/40',
+            'relative z-10 group/plan w-full flex items-center rounded-xl border border-primary/30 bg-gradient-to-br from-primary/30 to-primary/10 hover:from-primary/40 hover:to-primary/15 transition-all text-left shadow-sm hover:shadow-md outline-none focus-visible:ring-4 focus-visible:ring-primary/40 backdrop-blur-sm',
             collapsed ? 'justify-center px-0 py-3' : 'gap-3 px-4 py-3'
           )}
         >
@@ -638,64 +646,69 @@ function SearchInput({ placeholder, value, onChange }: { placeholder: string; va
 
 // ─── KIDS TAB ────────────────────────────────���────────────────────────────────
 function KidsTab() {
-  // KIDS_ITEMS is small; tile it into a fuller, playful grid.
-  const tiles = [...KIDS_ITEMS, ...KIDS_ITEMS].slice(0, 8)
   const ageChips = ['Todos', '0-3 anos', '4-6 anos', '7-9 anos', '10-12 anos']
   const [age, setAge] = useState(ageChips[0])
 
   return (
     <>
       <ShellHeader title="Kids" />
-      <div className="flex-1 overflow-y-auto px-6 py-5">
-        {/* Playful banner */}
-        <div className="relative overflow-hidden rounded-3xl p-7 mb-6 bg-gradient-to-br from-teal-500 to-cyan-600 shadow-lg shadow-cyan-900/30">
-          <div className="relative z-10 max-w-md">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 text-white text-xs font-bold mb-3">
-              <Smile className="w-3.5 h-3.5" /> Modo Kids
+      <div className="flex-1 overflow-y-auto px-6 py-5 bg-gradient-to-b from-sky-50/5 to-transparent">
+        {/* Playful, colorful banner */}
+        <div className="relative overflow-hidden rounded-[2rem] p-8 mb-7 shadow-xl shadow-fuchsia-900/20"
+          style={{ background: 'linear-gradient(120deg, #f472b6 0%, #a855f7 38%, #38bdf8 72%, #22d3ee 100%)' }}>
+          <div className="relative z-10 max-w-lg">
+            <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/25 backdrop-blur-sm text-white text-sm font-bold mb-3">
+              <Smile className="w-4 h-4" /> Modo Kids
             </span>
-            <h2 className="text-3xl font-black text-white text-balance leading-tight mb-1.5 drop-shadow">
+            <h2 className="text-4xl font-black text-white text-balance leading-tight mb-2 drop-shadow-md">
               Diversão segura para os pequenos
             </h2>
-            <p className="text-sm text-white/85 leading-relaxed">
+            <p className="text-base text-white/90 leading-relaxed">
               Desenhos, aventuras e histórias selecionadas com controle parental ativo.
             </p>
           </div>
           {/* Decorative bubbles */}
-          <div className="absolute -right-6 -top-6 w-40 h-40 rounded-full bg-white/10" aria-hidden />
-          <div className="absolute right-24 bottom-0 w-24 h-24 rounded-full bg-white/10" aria-hidden />
+          <div className="absolute -right-8 -top-8 w-48 h-48 rounded-full bg-white/15" aria-hidden />
+          <div className="absolute right-28 bottom-2 w-28 h-28 rounded-full bg-white/15" aria-hidden />
+          <div className="absolute right-6 -bottom-10 w-36 h-36 rounded-full bg-white/10" aria-hidden />
         </div>
 
         {/* Age chips */}
-        <div className="flex flex-wrap gap-2 mb-6">
-          {ageChips.map((c) => (
-            <button
-              key={c}
-              onClick={() => setAge(c)}
-              className={cn(
-                'px-4 py-2 rounded-full text-sm font-semibold transition-colors outline-none focus-visible:ring-4 focus-visible:ring-primary/50',
-                age === c ? 'bg-primary text-primary-foreground' : 'bg-white/5 text-muted-foreground hover:text-foreground hover:bg-accent'
-              )}
-            >
-              {c}
-            </button>
-          ))}
+        <div className="flex flex-wrap gap-2.5 mb-7">
+          {ageChips.map((c, i) => {
+            const chipColors = ['bg-pink-500', 'bg-sky-500', 'bg-emerald-500', 'bg-amber-500', 'bg-violet-500']
+            return (
+              <button
+                key={c}
+                onClick={() => setAge(c)}
+                className={cn(
+                  'px-5 py-2.5 rounded-full text-base font-bold transition-all outline-none focus-visible:ring-4 focus-visible:ring-white/40',
+                  age === c ? cn(chipColors[i % chipColors.length], 'text-white shadow-lg scale-105') : 'bg-white/10 text-muted-foreground hover:text-foreground hover:bg-white/20'
+                )}
+              >
+                {c}
+              </button>
+            )
+          })}
         </div>
 
-        <p className="text-sm font-semibold text-primary mb-4">Programas favoritos</p>
-        <div className="grid grid-cols-4 gap-4">
-          {tiles.map((item, i) => (
+        <p className="text-lg font-black text-foreground mb-4">Programas favoritos</p>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-5">
+          {KIDS_ITEMS.map((item) => (
             <button
-              key={`${item.id}-${i}`}
+              key={item.id}
               aria-label={`Assistir ${item.title}`}
-              className="group/kid relative aspect-video rounded-3xl overflow-hidden outline-none shadow-md transition-transform duration-300 hover:scale-[1.04] focus-visible:scale-[1.04] focus-visible:ring-4 focus-visible:ring-primary/60"
+              className="group/kid relative aspect-video rounded-[1.75rem] overflow-hidden outline-none shadow-lg transition-transform duration-300 hover:scale-[1.04] focus-visible:scale-[1.04] focus-visible:ring-4 focus-visible:ring-white/60"
               style={{ background: `linear-gradient(150deg, ${item.colorFrom} 0%, ${item.colorTo} 100%)` }}
             >
+              {/* Real colorful cartoon cover */}
+              <Image src={`/kids/${item.id}.png`} alt={item.title} fill sizes="(max-width: 768px) 50vw, 30vw" className="object-cover" />
               {/* Play affordance */}
-              <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-14 h-14 rounded-full bg-white/95 flex items-center justify-center shadow-lg scale-75 opacity-0 transition-all duration-300 group-hover/kid:scale-100 group-hover/kid:opacity-100 group-focus-visible/kid:scale-100 group-focus-visible/kid:opacity-100">
-                <Play className="w-6 h-6 text-teal-700 fill-current ml-0.5" />
+              <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full bg-white/95 flex items-center justify-center shadow-xl scale-75 opacity-0 transition-all duration-300 group-hover/kid:scale-100 group-hover/kid:opacity-100 group-focus-visible/kid:scale-100 group-focus-visible/kid:opacity-100">
+                <Play className="w-7 h-7 text-pink-600 fill-current ml-0.5" />
               </span>
-              <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/70 to-transparent">
-                <p className="text-white font-bold text-base leading-tight text-left text-balance drop-shadow">
+              <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/75 to-transparent">
+                <p className="text-white font-black text-lg leading-tight text-left text-balance drop-shadow-md">
                   {item.title}
                 </p>
               </div>

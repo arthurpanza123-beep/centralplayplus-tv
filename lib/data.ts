@@ -903,31 +903,13 @@ export const WATCHING_ITEMS: WatchingItem[] = [
 ]
 
 export const KIDS_ITEMS: KidsItem[] = [
-  {
-    id: 'k1',
-    title: 'Aventuras no Céu',
-    colorFrom: '#0a1a3a',
-    colorTo: '#1040a0',
-  },
-  {
-    id: 'k2',
-    title: 'O Dragão e o Menino',
-    colorFrom: '#1a0a08',
-    colorTo: '#3a1510',
-  },
-  {
-    id: 'k3',
-    title: 'Amiguinhos do Planeta',
-    colorFrom: '#0a1a08',
-    colorTo: '#183810',
-  },
-  {
-    id: 'k4',
-    title: 'Exploradores da Floresta',
-    colorFrom: '#080a18',
-    colorTo: '#101430',
-  },
-]
+  { id: 'k1', title: 'Aventuras no Céu', colorFrom: '#38bdf8', colorTo: '#2563eb' },
+  { id: 'k2', title: 'O Dragão e o Menino', colorFrom: '#fb923c', colorTo: '#f97316' },
+  { id: 'k3', title: 'Amiguinhos do Planeta', colorFrom: '#34d399', colorTo: '#059669' },
+  { id: 'k4', title: 'Exploradores da Floresta', colorFrom: '#a3e635', colorTo: '#16a34a' },
+  { id: 'k5', title: 'Robôs Saltitantes', colorFrom: '#c084fc', colorTo: '#7c3aed' },
+  { id: 'k6', title: 'A Princesa Estrela', colorFrom: '#f472b6', colorTo: '#db2777' },
+  ]
 
 /** Whether a plan label represents a free trial / test (vs a paid plan). */
 export function isTrialPlan(plan: string): boolean {

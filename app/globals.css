@@ -272,5 +272,14 @@
 }
 .animate-cp-name-flash { animation: cp-name-flash 2.4s ease-in-out forwards; }
 
+/* Mascot tumble: rolls in with a couple of flips, then settles upright and frozen */
+@keyframes cp-mascot-tumble {
+  0%   { opacity: 0; transform: translateX(-70px) translateY(10px) rotate(-720deg) scale(0.55); }
+  60%  { opacity: 1; transform: translateX(6px) translateY(0) rotate(28deg) scale(1.04); }
+  78%  { transform: translateX(-3px) rotate(-10deg) scale(0.99); }
+  100% { opacity: 1; transform: translateX(0) translateY(0) rotate(0deg) scale(1); }
+}
+.animate-cp-mascot-tumble { animation: cp-mascot-tumble 1.7s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+
 .scrollbar-none { scrollbar-width: none; -ms-overflow-style: none; }
 .scrollbar-none::-webkit-scrollbar { display: none; }
