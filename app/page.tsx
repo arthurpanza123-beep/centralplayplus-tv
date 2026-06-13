@@ -21,7 +21,7 @@ import { playCue } from '@/lib/sounds'
 import { isDeviceActivated, getDeviceKey, regenerateDeviceKey } from '@/lib/activation'
 import { cn } from '@/lib/utils'
 import {
-  MOVIES, SERIES, CHANNELS, KIDS_ITEMS, USER,
+  MOVIES, SERIES, CHANNELS, KIDS_ITEMS, USER, daysRemaining,
   MOVIE_CATEGORIES, SERIES_CATEGORIES, CHANNEL_CATEGORIES,
 } from '@/lib/data'
 import type { Movie, Series, Channel } from '@/lib/types'
@@ -43,6 +43,7 @@ const NAV_ITEMS: { id: TabId; label: string; icon: React.ElementType }[] = [
 
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
 const Sidebar = memo(function Sidebar({ active, onNav, collapsed }: { active: TabId; onNav: (id: TabId) => void; collapsed: boolean }) {
+  const planDays = daysRemaining(USER.validity)
   return (
     <aside
       className="flex flex-col bg-sidebar border-r border-white/5 shrink-0 overflow-hidden transition-[width] duration-300 ease-out"
@@ -93,26 +94,26 @@ const Sidebar = memo(function Sidebar({ active, onNav, collapsed }: { active: Ta
         </ul>
       </nav>
 
-      {/* Plan badge — full card when expanded, crown only when collapsed */}
+      {/* Plan badge — plan type + days left. Full card when expanded, icon only when collapsed */}
       <div className={cn('pb-5', collapsed ? 'px-2.5' : 'px-3')}>
         <button
-          title={collapsed ? 'Plano Premium ativado' : undefined}
-          aria-label="Plano Premium ativado"
+          title={collapsed ? `${USER.plan} · ${planDays} dias restantes` : undefined}
+          aria-label={`${USER.plan}, ${planDays} dias restantes`}
           className={cn(
-            'group/plan w-full flex items-center rounded-xl border border-amber-400/30 bg-gradient-to-br from-amber-500/15 to-yellow-500/10 hover:from-amber-500/25 hover:to-yellow-500/15 transition-all text-left shadow-sm hover:shadow-md outline-none focus-visible:ring-4 focus-visible:ring-amber-400/40',
+            'group/plan w-full flex items-center rounded-xl border border-primary/30 bg-gradient-to-br from-primary/20 to-primary/5 hover:from-primary/30 hover:to-primary/10 transition-all text-left shadow-sm hover:shadow-md outline-none focus-visible:ring-4 focus-visible:ring-primary/40',
             collapsed ? 'justify-center px-0 py-3' : 'gap-3 px-4 py-3'
           )}
         >
-          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-amber-400 to-yellow-500 flex items-center justify-center shrink-0 shadow-lg shadow-amber-500/30">
-            <Crown className="w-5 h-5 text-amber-950" />
+          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-primary to-cyan-500 flex items-center justify-center shrink-0 shadow-lg shadow-primary/40">
+            <Crown className="w-5 h-5 text-white" />
           </div>
           {!collapsed && (
             <>
               <div className="flex flex-col leading-tight min-w-0 flex-1">
-                <span className="text-sm font-bold text-amber-300 truncate">Plano Ativado</span>
-                <span className="text-xs text-amber-400/80 truncate font-medium">Premium</span>
+                <span className="text-sm font-bold text-primary truncate capitalize">{USER.plan}</span>
+                <span className="text-xs text-primary/75 truncate font-medium">{planDays} dias restantes</span>
               </div>
-              <ChevronRight className="w-4 h-4 text-amber-400/60 shrink-0 group-hover/plan:translate-x-0.5 transition-transform" />
+              <ChevronRight className="w-4 h-4 text-primary/60 shrink-0 group-hover/plan:translate-x-0.5 transition-transform" />
             </>
           )}
         </button>

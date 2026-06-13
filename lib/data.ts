@@ -837,11 +837,22 @@ export const KIDS_ITEMS: KidsItem[] = [
   },
 ]
 
+/** Days left until a DD/MM/YYYY validity date (never negative). */
+export function daysRemaining(validity: string): number {
+  const [d, m, y] = validity.split('/').map(Number)
+  if (!d || !m || !y) return 0
+  const end = new Date(y, m - 1, d)
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const diff = Math.ceil((end.getTime() - today.getTime()) / 86_400_000)
+  return Math.max(diff, 0)
+}
+
 export const USER: User = {
   name: 'João da Silva',
   email: 'joao.silva@email.com',
   plan: 'Plano mensal',
-  validity: '20/06/2025',
+  validity: '10/07/2026',
   deviceCode: '3GK689',
   notifications: true,
   autoplay: true,

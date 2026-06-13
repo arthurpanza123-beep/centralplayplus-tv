@@ -1,6 +1,6 @@
 import { memo } from 'react'
 import Image from 'next/image'
-import { Play, Star } from 'lucide-react'
+import { Star } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { Movie, Series } from '@/lib/types'
 
@@ -20,7 +20,8 @@ export const ContentCard = memo(function ContentCard({ item, onClick, className 
         'transition-[transform,box-shadow] duration-300 ease-out',
         'hover:scale-[1.08] hover:z-10 focus-visible:scale-[1.08] focus-visible:z-10',
         'shadow-md hover:shadow-2xl hover:shadow-black/60',
-        'focus-visible:ring-2 focus-visible:ring-white focus-visible:shadow-2xl',
+        // White selection contour on hover/focus
+        'ring-0 ring-white hover:ring-[3px] focus-visible:ring-[3px] focus-visible:shadow-2xl',
         className
       )}
       aria-label={`Abrir detalhes de ${item.title}`}
@@ -42,11 +43,6 @@ export const ContentCard = memo(function ContentCard({ item, onClick, className 
 
         {/* Hover/focus reveal overlay */}
         <div className="absolute inset-0 z-10 flex flex-col justify-end p-3 bg-gradient-to-t from-black via-black/55 to-transparent opacity-0 transition-opacity duration-300 group-hover/card:opacity-100 group-focus-visible/card:opacity-100">
-          {/* Play affordance */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-lg scale-75 transition-transform duration-300 group-hover/card:scale-100 group-focus-visible/card:scale-100">
-            <Play className="w-5 h-5 text-black fill-current ml-0.5" />
-          </div>
-
           <p className="text-balance text-white font-semibold text-sm leading-tight text-left">
             {item.title}
           </p>
