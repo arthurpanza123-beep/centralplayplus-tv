@@ -64,11 +64,17 @@ const Sidebar = memo(function Sidebar({ active, onNav, collapsed }: { active: Ta
       className="flex flex-col bg-sidebar border-r border-white/5 shrink-0 overflow-hidden transition-[width] duration-300 ease-out"
       style={{ width: collapsed ? 84 : 240 }}
     >
-      {/* Logo — short mascot only, larger when expanded */}
-      <div className="flex items-center justify-center pt-7 pb-5 mb-2 border-b border-white/5">
-        <div className={cn('relative drop-shadow-[0_2px_12px_rgba(37,99,235,0.4)] transition-all duration-300 ease-out', collapsed ? 'w-10 h-10' : 'w-14 h-14')}>
-          <Image src="/mascot-icon.png" alt="Central Play Plus" fill className="object-contain" priority />
-        </div>
+      {/* Logo — mascot icon when collapsed, full wordmark when expanded */}
+      <div className="flex items-center justify-center pt-7 pb-5 mb-2 border-b border-white/5 px-4">
+        {collapsed ? (
+          <div className="relative w-10 h-10 drop-shadow-[0_2px_12px_rgba(37,99,235,0.4)] transition-all duration-300 ease-out">
+            <Image src="/mascot-icon.png" alt="Central Play Plus" fill className="object-contain" priority />
+          </div>
+        ) : (
+          <div className="relative w-full h-12 drop-shadow-[0_2px_12px_rgba(37,99,235,0.35)] transition-all duration-300 ease-out">
+            <Image src="/logo-central-play.png" alt="Central Play Plus" fill className="object-contain object-center" priority />
+          </div>
+        )}
       </div>
 
       {/* Nav */}
@@ -105,9 +111,13 @@ const Sidebar = memo(function Sidebar({ active, onNav, collapsed }: { active: Ta
 
       {/* Plan badge — plan type + days left. Full card when expanded, icon only when collapsed */}
       <div className={cn('relative pb-5', collapsed ? 'px-2.5' : 'px-3')}>
-        {/* Mascot video tumbles once then freezes on the last frame behind the card */}
+        {/* Mascot video tumbles once then freezes standing on top of the plan card */}
         {!collapsed && (
-          <MascotVideo className="pointer-events-none absolute left-0 right-0 bottom-[76px] mx-auto w-32 h-32 z-20 drop-shadow-[0_6px_18px_rgba(37,99,235,0.5)]" />
+          <>
+            {/* Soft contact shadow under the mascot's feet, resting on the card */}
+            <span className="pointer-events-none absolute left-0 right-0 bottom-[70px] mx-auto w-16 h-2.5 rounded-[50%] bg-black/45 blur-[3px] z-10" aria-hidden />
+            <MascotVideo className="pointer-events-none absolute left-0 right-0 bottom-[64px] mx-auto w-40 h-40 z-20 drop-shadow-[0_8px_16px_rgba(0,0,0,0.45)]" />
+          </>
         )}
         <button
           title={collapsed ? `${planTitle} · ${planSubtitle}` : undefined}
