@@ -49,43 +49,44 @@
 }
 
 :root {
-  color-scheme: dark;
-  /* TV Dark Navy Theme */
-  --background: oklch(0.10 0.04 264);
-  --foreground: oklch(0.93 0.015 248);
-  --card: oklch(0.14 0.045 264);
-  --card-foreground: oklch(0.93 0.015 248);
-  --popover: oklch(0.14 0.045 264);
-  --popover-foreground: oklch(0.93 0.015 248);
-  --primary: oklch(0.49 0.243 264);
-  --primary-foreground: oklch(0.97 0.01 264);
-  --secondary: oklch(0.18 0.05 264);
-  --secondary-foreground: oklch(0.93 0.015 248);
-  --muted: oklch(0.17 0.05 264);
-  --muted-foreground: oklch(0.62 0.04 240);
-  --accent: oklch(0.20 0.06 264);
-  --accent-foreground: oklch(0.93 0.015 248);
-  --destructive: oklch(0.62 0.22 28);
-  --border: oklch(0.97 0.01 264 / 0.10);
-  --input: oklch(0.97 0.01 264 / 0.12);
-  --ring: oklch(0.49 0.243 264);
-  --chart-1: oklch(0.49 0.243 264);
-  --chart-2: oklch(0.62 0.04 240);
-  --chart-3: oklch(0.35 0.08 264);
-  --chart-4: oklch(0.20 0.06 264);
-  --chart-5: oklch(0.14 0.045 264);
-  --radius: 0.75rem;
-  --sidebar: oklch(0.12 0.04 264);
-  --sidebar-foreground: oklch(0.93 0.015 248);
-  --sidebar-primary: oklch(0.49 0.243 264);
-  --sidebar-primary-foreground: oklch(0.97 0.01 264);
-  --sidebar-accent: oklch(0.18 0.05 264);
-  --sidebar-accent-foreground: oklch(0.93 0.015 248);
-  --sidebar-border: oklch(0.97 0.01 264 / 0.08);
-  --sidebar-ring: oklch(0.49 0.243 264);
+  color-scheme: light;
+  /* Central Play — Light Warm Theme */
+  --background: oklch(0.965 0.008 80);        /* warm off-white / cream */
+  --foreground: oklch(0.18 0.02 250);          /* near-black */
+  --card: oklch(1 0 0);                        /* pure white cards */
+  --card-foreground: oklch(0.18 0.02 250);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.18 0.02 250);
+  --primary: oklch(0.52 0.245 264);            /* royal blue */
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.94 0.01 80);
+  --secondary-foreground: oklch(0.25 0.02 250);
+  --muted: oklch(0.93 0.01 80);
+  --muted-foreground: oklch(0.50 0.015 250);
+  --accent: oklch(0.95 0.015 80);
+  --accent-foreground: oklch(0.18 0.02 250);
+  --destructive: oklch(0.60 0.22 28);
+  --border: oklch(0.88 0.01 80);
+  --input: oklch(0.88 0.01 80);
+  --ring: oklch(0.52 0.245 264);
+  --chart-1: oklch(0.52 0.245 264);
+  --chart-2: oklch(0.65 0.18 300);
+  --chart-3: oklch(0.70 0.18 50);
+  --chart-4: oklch(0.60 0.18 175);
+  --chart-5: oklch(0.55 0.22 28);
+  --radius: 0.875rem;
+  /* Sidebar — pure white */
+  --sidebar: oklch(1 0 0);
+  --sidebar-foreground: oklch(0.18 0.02 250);
+  --sidebar-primary: oklch(0.52 0.245 264);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.95 0.015 80);
+  --sidebar-accent-foreground: oklch(0.18 0.02 250);
+  --sidebar-border: oklch(0.90 0.01 80);
+  --sidebar-ring: oklch(0.52 0.245 264);
   /* TV-specific tokens */
-  --tv-sidebar-width: 280px;
-  --tv-card-surface: oklch(0.16 0.05 264);
+  --tv-sidebar-width: 260px;
+  --tv-card-surface: oklch(1 0 0);
 }
 
 
@@ -94,8 +95,9 @@
   * {
     @apply border-border outline-ring/50;
   }
-  body {
+  html, body {
     @apply bg-background text-foreground;
+    color-scheme: light;
   }
   html {
     @apply font-sans;

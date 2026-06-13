@@ -14,7 +14,7 @@ export const ContentCard = memo(function ContentCard({ item, onClick, className 
     <button
       onClick={() => onClick(item)}
       className={cn(
-        'group relative flex flex-col rounded-xl overflow-hidden border border-border/30 transition-all duration-200 hover:border-primary/60 hover:scale-[1.03] hover:shadow-lg hover:shadow-black/40 focus-visible:outline-2 focus-visible:outline-primary',
+        'group relative flex flex-col rounded-2xl overflow-hidden border border-border transition-all duration-200 hover:border-primary/50 hover:scale-[1.03] hover:shadow-lg hover:shadow-black/15 focus-visible:outline-2 focus-visible:outline-primary shadow-sm',
         className
       )}
       aria-label={`Abrir detalhes de ${item.title}`}

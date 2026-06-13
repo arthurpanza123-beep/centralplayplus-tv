@@ -57,7 +57,7 @@ export function ContentModal({ item, onClose }: ContentModalProps) {
             <div className="flex flex-wrap items-center gap-2 mb-4 text-sm text-muted-foreground">
               <span>{isMovie ? (item as Movie).year : (item as Series).year}</span>
               <span className="w-px h-4 bg-border" aria-hidden />
-              <span className="px-2 py-0.5 rounded bg-yellow-500/20 text-yellow-300 text-xs font-bold">
+              <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-700 text-xs font-bold border border-amber-200">
                 {item.rating}
               </span>
               <span className="w-px h-4 bg-border" aria-hidden />
