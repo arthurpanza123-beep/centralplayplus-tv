@@ -52,7 +52,7 @@ const Sidebar = memo(function Sidebar({ active, onNav, collapsed }: { active: Ta
       <div className={cn('flex items-center py-6 transition-all', collapsed ? 'justify-center px-0' : 'justify-center px-5')}>
         {collapsed ? (
           <div className="relative w-11 h-11 drop-shadow-[0_2px_12px_rgba(37,99,235,0.4)]">
-            <Image src="/mascot.webp" alt="Central Play Plus" fill className="object-contain" priority />
+            <Image src="/mascot-icon.png" alt="Central Play Plus" fill className="object-contain" priority />
           </div>
         ) : (
           <div className="relative w-full h-12 drop-shadow-[0_2px_12px_rgba(37,99,235,0.35)]">
@@ -349,18 +349,29 @@ function CanaisTab() {
               onMouseEnter={() => setSelectedChannel(ch)}
               onFocus={() => setSelectedChannel(ch)}
               onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); openChannel(ch) } }}
-              className={cn('flex items-center gap-3 px-4 py-3 border-b border-border/60 text-left transition-colors cursor-pointer outline-none',
-                selectedChannel.id === ch.id ? 'bg-primary/10 border-l-2 border-l-primary' : 'hover:bg-accent')}>
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold text-white shrink-0 shadow-sm" style={{ background: ch.logoColor }}>
+              className={cn('group/ch relative flex items-center gap-3 px-4 py-3 border-b border-border/60 text-left transition-all duration-300 cursor-pointer outline-none overflow-hidden',
+                selectedChannel.id === ch.id
+                  ? 'bg-primary/15 shadow-[inset_0_0_24px_rgba(37,99,235,0.25)]'
+                  : 'hover:bg-accent')}>
+              {/* Animated active accent bar (blue/white) */}
+              {selectedChannel.id === ch.id && (
+                <span className="absolute left-0 top-0 h-full w-1 bg-gradient-to-b from-cyan-300 via-primary to-cyan-300 bg-[length:100%_200%] animate-cp-accent-slide shadow-[0_0_12px_rgba(37,99,235,0.9)]" />
+              )}
+              <div className={cn('w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold text-white shrink-0 shadow-sm transition-all duration-300',
+                selectedChannel.id === ch.id && 'ring-2 ring-cyan-300/70 ring-offset-2 ring-offset-card scale-105')}
+                style={{ background: ch.logoColor }}>
                 {ch.logoText}
               </div>
               <div className="flex flex-col min-w-0 flex-1">
-                <span className="text-sm text-foreground font-medium truncate">{ch.name}</span>
+                <span className={cn('text-sm font-medium truncate transition-colors', selectedChannel.id === ch.id ? 'text-white' : 'text-foreground')}>{ch.name}</span>
                 <span className="text-[11px] text-muted-foreground truncate">{ch.currentProgram}</span>
               </div>
               {selectedChannel.id === ch.id && (
-                <span className="flex items-center gap-1 text-[9px] font-bold text-red-500 shrink-0" aria-label="Ao vivo">
-                  <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                <span className="flex items-end gap-0.5 h-4 shrink-0" aria-label="No ar">
+                  <span className="w-0.5 bg-cyan-300 rounded-full animate-cp-eq-1" />
+                  <span className="w-0.5 bg-white rounded-full animate-cp-eq-2" />
+                  <span className="w-0.5 bg-primary rounded-full animate-cp-eq-3" />
+                  <span className="w-0.5 bg-cyan-300 rounded-full animate-cp-eq-2" />
                 </span>
               )}
             </div>
@@ -567,7 +578,7 @@ function ConfiguracoesTab() {
   )
 }
 
-// ─── SHARED SEARCH INPUT ──────────────────────────────────────────────────────
+// ─── SHARED SEARCH INPUT ───────────────────────────────────���──────────────────
 function SearchInput({ placeholder, value, onChange }: { placeholder: string; value: string; onChange: (v: string) => void }) {
   return (
     <div className="relative ml-4">

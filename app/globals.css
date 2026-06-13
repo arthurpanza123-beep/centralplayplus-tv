@@ -241,5 +241,20 @@
 }
 .animate-cp-shake { animation: cp-shake 0.5s cubic-bezier(0.36,0.07,0.19,0.97) both; }
 
+/* Selected-channel accent bar — flowing blue/white highlight */
+@keyframes cp-accent-slide {
+  0% { background-position: 0% 0%; }
+  100% { background-position: 0% -200%; }
+}
+.animate-cp-accent-slide { animation: cp-accent-slide 1.6s linear infinite; }
+
+/* Live "on air" equalizer bars */
+@keyframes cp-eq-1 { 0%,100% { height: 35%; } 50% { height: 100%; } }
+@keyframes cp-eq-2 { 0%,100% { height: 100%; } 50% { height: 45%; } }
+@keyframes cp-eq-3 { 0%,100% { height: 60%; } 50% { height: 90%; } }
+.animate-cp-eq-1 { animation: cp-eq-1 0.9s ease-in-out infinite; }
+.animate-cp-eq-2 { animation: cp-eq-2 0.7s ease-in-out infinite; }
+.animate-cp-eq-3 { animation: cp-eq-3 1.1s ease-in-out infinite; }
+
 .scrollbar-none { scrollbar-width: none; -ms-overflow-style: none; }
 .scrollbar-none::-webkit-scrollbar { display: none; }
