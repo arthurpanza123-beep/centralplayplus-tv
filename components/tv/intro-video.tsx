@@ -15,7 +15,6 @@ export function IntroVideo({ onDone }: { onDone: () => void }) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [visible, setVisible] = useState(false)
   const [closing, setClosing] = useState(false)
-  const [ready, setReady] = useState(false)
   // TV-style skip: first OK/Enter reveals the prompt, second one confirms.
   const [promptVisible, setPromptVisible] = useState(false)
   // Mirror of promptVisible so the (once-bound) key listener reads a fresh value.
@@ -117,7 +116,6 @@ export function IntroVideo({ onDone }: { onDone: () => void }) {
         playsInline
         autoPlay
         preload="auto"
-        onCanPlay={() => setReady(true)}
         onEnded={finish}
       />
 
@@ -129,7 +127,7 @@ export function IntroVideo({ onDone }: { onDone: () => void }) {
           finish()
         }}
         className={`group absolute bottom-6 right-6 z-10 flex items-center gap-2 rounded-full border border-white/20 bg-black/55 px-4 py-2 text-sm font-semibold tracking-wide text-white backdrop-blur-md transition-all duration-300 hover:border-primary/60 hover:bg-black/75 outline-none focus-visible:ring-2 focus-visible:ring-primary/60 ${
-          promptVisible && ready && !closing ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'
+          promptVisible && !closing ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'
         }`}
         aria-label="Pular abertura"
       >
