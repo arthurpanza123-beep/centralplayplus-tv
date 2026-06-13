@@ -38,7 +38,7 @@ const NAV_ITEMS: { id: TabId; label: string; icon: React.ElementType }[] = [
 const Sidebar = memo(function Sidebar({ active, onNav }: { active: TabId; onNav: (id: TabId) => void }) {
   return (
     <aside
-      className="flex flex-col h-screen bg-white/35 backdrop-blur-xl border-r border-white/30 shrink-0"
+      className="flex flex-col h-screen bg-gradient-to-b from-white/70 via-white/55 to-white/20 border-r border-white/40 shrink-0"
       style={{ width: 'var(--tv-sidebar-width)' }}
     >
       {/* Logo */}
