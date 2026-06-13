@@ -11,7 +11,7 @@ interface TVLayoutProps {
 // Layout is stable — Topbar is isolated so its clock tick never propagates up
 export const TVLayout = memo(function TVLayout({ children, title, headerRight }: TVLayoutProps) {
   return (
-    <div className="flex h-screen w-screen bg-background overflow-hidden">
+    <div className="flex h-screen w-screen overflow-hidden">
       <Sidebar />
 
       <div className="flex flex-col flex-1 min-w-0">
