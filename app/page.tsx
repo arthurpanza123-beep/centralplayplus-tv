@@ -15,6 +15,7 @@ import { ContentModal } from '@/components/tv/content-modal'
 import { ChannelPlayer } from '@/components/tv/channel-player'
 import { SplashScreen } from '@/components/tv/splash-screen'
 import { LoginScreen } from '@/components/tv/login-screen'
+import { IntroVideo } from '@/components/tv/intro-video'
 import { useTvNavigation } from '@/hooks/use-tv-navigation'
 import { playCue } from '@/lib/sounds'
 import { cn } from '@/lib/utils'
@@ -579,7 +580,7 @@ function StubTab({ title }: { title: string }) {
 // ─── ROOT SHELL ───────────────────────────────────────────────────────────────
 const TABS: TabId[] = ['home', 'canais', 'filmes', 'series', 'kids', 'buscar', 'favoritos', 'configuracoes']
 
-type AppStage = 'splash' | 'login' | 'app'
+type AppStage = 'splash' | 'login' | 'intro' | 'app'
 
 export default function AppShell() {
   const [active, setActive] = useState<TabId>('home')
@@ -598,7 +599,8 @@ export default function AppShell() {
   }, [stage])
 
   if (stage === 'splash') return <SplashScreen onDone={() => setStage('login')} />
-  if (stage === 'login') return <LoginScreen onLogin={() => setStage('app')} />
+  if (stage === 'login') return <LoginScreen onLogin={() => setStage('intro')} />
+  if (stage === 'intro') return <IntroVideo onDone={() => setStage('app')} />
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-background animate-cp-power-on">
