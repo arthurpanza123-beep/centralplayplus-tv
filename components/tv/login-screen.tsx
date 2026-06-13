@@ -9,10 +9,23 @@ const DEVICE_KEY = 'A7K9-42XP'
 
 export function LoginScreen({ onLogin }: { onLogin: () => void }) {
   const [loading, setLoading] = useState(false)
+  const [shake, setShake] = useState(false)
+  // Simulated activation: device is only considered activated after the first check.
+  const [activated, setActivated] = useState(false)
 
   function reload() {
-    // First user gesture — unlock audio and start the brand music.
+    // First user gesture — unlock audio so it can play once activated.
     unlockAudio()
+
+    if (!activated) {
+      // Not activated yet: shake the button and arm activation for next time.
+      setActivated(true)
+      setShake(true)
+      setTimeout(() => setShake(false), 500)
+      return
+    }
+
+    // Activated — play the brand music and run the loading motion into the app.
     playIntroMusic()
     setLoading(true)
     setTimeout(onLogin, 2000)
@@ -85,19 +98,25 @@ export function LoginScreen({ onLogin }: { onLogin: () => void }) {
         {/* Status */}
         <div className="mt-5 flex items-center justify-center gap-2.5">
           <span className="relative flex h-4 w-4 items-center justify-center">
-            <span className="absolute inline-flex h-4 w-4 rounded-full border-2 border-primary/30 border-t-primary animate-cp-ring-spin" />
+            {activated ? (
+              <span className="inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.8)]" />
+            ) : (
+              <span className="absolute inline-flex h-4 w-4 rounded-full border-2 border-primary/30 border-t-primary animate-cp-ring-spin" />
+            )}
           </span>
-          <span className="text-sm text-white/65 font-medium">Aguardando ativação…</span>
+          <span className="text-sm text-white/65 font-medium">
+            {activated ? 'Ativado! Clique para entrar.' : 'Aguardando ativação…'}
+          </span>
         </div>
 
         {/* Reload button */}
         <button
           onClick={reload}
           autoFocus
-          className="group mt-7 w-full flex items-center justify-center gap-3 py-4 rounded-2xl bg-primary text-primary-foreground text-base font-bold tracking-wide shadow-xl shadow-primary/40 transition-all hover:bg-primary/90 hover:scale-[1.02] outline-none focus-visible:ring-4 focus-visible:ring-primary/60"
+          className={`group mt-7 w-full flex items-center justify-center gap-3 py-4 rounded-2xl bg-primary text-primary-foreground text-base font-bold tracking-wide shadow-xl shadow-primary/40 transition-all hover:bg-primary/90 hover:scale-[1.02] outline-none focus-visible:ring-4 focus-visible:ring-primary/60 ${shake ? 'animate-cp-shake' : ''}`}
         >
           <RefreshCw className="w-5 h-5 group-hover:rotate-180 transition-transform duration-500" />
-          Recarregar
+          {activated ? 'Entrar' : 'Recarregar'}
         </button>
       </div>
       )}
