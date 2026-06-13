@@ -263,14 +263,14 @@
 }
 .animate-cp-wave { animation: cp-wave 3s ease-out infinite; }
 
-/* Channel-name flash: quick, discreet fade in/out */
+/* Channel-name popup: slide in from the right, hold, slide out — "skip intro" style */
 @keyframes cp-name-flash {
-  0% { opacity: 0; transform: translateY(6px); }
-  18% { opacity: 1; transform: translateY(0); }
-  72% { opacity: 1; transform: translateY(0); }
-  100% { opacity: 0; transform: translateY(2px); }
+  0% { opacity: 0; transform: translateX(20px); }
+  16% { opacity: 1; transform: translateX(0); }
+  78% { opacity: 1; transform: translateX(0); }
+  100% { opacity: 0; transform: translateX(14px); }
 }
-.animate-cp-name-flash { animation: cp-name-flash 1.5s ease-in-out forwards; }
+.animate-cp-name-flash { animation: cp-name-flash 2.4s ease-in-out forwards; }
 
 .scrollbar-none { scrollbar-width: none; -ms-overflow-style: none; }
 .scrollbar-none::-webkit-scrollbar { display: none; }
