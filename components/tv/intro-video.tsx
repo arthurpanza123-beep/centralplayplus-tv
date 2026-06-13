@@ -58,7 +58,7 @@ export function IntroVideo({ onDone }: { onDone: () => void }) {
       <video
         ref={videoRef}
         src="/intro.webm"
-        className="h-full w-full object-contain"
+        className="h-full w-full object-cover"
         playsInline
         autoPlay
         preload="auto"
