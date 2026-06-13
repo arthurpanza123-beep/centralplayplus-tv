@@ -1,55 +1,60 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { SkipForward, Volume2, VolumeX } from 'lucide-react'
+import { SkipForward } from 'lucide-react'
 
 /**
  * Full-screen brand intro video — the very first thing shown when the app loads.
  *
- * Because it runs before any user gesture, browsers block autoplay WITH sound,
- * so we start muted (which is always allowed) and offer an "Ativar som" toggle.
- *
- * It calls onDone() when the video ends, when the user skips, or if the file
- * is missing/unsupported — so the app never gets stuck on this screen.
+ * It tries to play WITH sound by default; if the browser blocks unmuted
+ * autoplay (no prior gesture), it silently falls back to muted playback.
+ * Fades in on mount and fades out before handing off via onDone().
+ * onDone() also fires on end, on skip, or on load error — so it never traps.
  */
 export function IntroVideo({ onDone }: { onDone: () => void }) {
   const videoRef = useRef<HTMLVideoElement>(null)
+  const [visible, setVisible] = useState(false)
+  const [closing, setClosing] = useState(false)
   const [ready, setReady] = useState(false)
-  const [muted, setMuted] = useState(true)
   const done = useRef(false)
 
-  // Fire onDone only once, no matter which path triggers it.
   function finish() {
     if (done.current) return
     done.current = true
-    onDone()
-  }
-
-  function toggleSound() {
-    const v = videoRef.current
-    if (!v) return
-    const next = !muted
-    v.muted = next
-    if (!next) v.play().catch(() => {})
-    setMuted(next)
+    setClosing(true)
+    // Wait for the fade-out before advancing.
+    setTimeout(onDone, 600)
   }
 
   useEffect(() => {
+    // Fade in on next frame.
+    const raf = requestAnimationFrame(() => setVisible(true))
+
     const v = videoRef.current
     if (!v) return
 
-    // Muted autoplay is always permitted — guarantees the intro plays first.
-    v.muted = true
-    v.play().catch(() => finish())
+    // Sound ON by default. If the browser blocks it, fall back to muted.
+    v.muted = false
+    v.volume = 1
+    v.play().catch(() => {
+      v.muted = true
+      v.play().catch(() => finish())
+    })
 
-    // Safety net: if the source can't load at all, don't trap the user.
     const onError = () => finish()
     v.addEventListener('error', onError)
-    return () => v.removeEventListener('error', onError)
+    return () => {
+      cancelAnimationFrame(raf)
+      v.removeEventListener('error', onError)
+    }
   }, [])
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black">
+    <div
+      className={`fixed inset-0 z-50 flex items-center justify-center bg-black transition-opacity duration-500 ${
+        visible && !closing ? 'opacity-100' : 'opacity-0'
+      }`}
+    >
       <video
         ref={videoRef}
         src="/intro.webm"
@@ -61,28 +66,16 @@ export function IntroVideo({ onDone }: { onDone: () => void }) {
         onEnded={finish}
       />
 
-      {/* Sound toggle — bottom-right. */}
-      <button
-        onClick={toggleSound}
-        className={`absolute bottom-8 right-8 z-10 flex items-center gap-2 rounded-full border border-white/20 bg-black/50 px-4 py-2.5 text-sm font-medium text-white/80 backdrop-blur-md transition-all hover:border-white/40 hover:bg-black/70 hover:text-white outline-none focus-visible:ring-2 focus-visible:ring-white/60 ${
-          ready ? 'opacity-100' : 'opacity-0'
-        }`}
-        aria-label={muted ? 'Ativar som' : 'Silenciar'}
-      >
-        {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
-        {muted ? 'Ativar som' : 'Som ligado'}
-      </button>
-
-      {/* Skip button — small, bottom-left, appears once the video can play. */}
+      {/* Compact, branded skip pill — bottom-right. */}
       <button
         onClick={finish}
-        className={`group absolute bottom-8 left-8 z-10 flex items-center gap-2 rounded-full border border-white/20 bg-black/50 px-4 py-2.5 text-sm font-medium text-white/80 backdrop-blur-md transition-all hover:border-white/40 hover:bg-black/70 hover:text-white outline-none focus-visible:ring-2 focus-visible:ring-white/60 ${
-          ready ? 'opacity-100' : 'opacity-0'
+        className={`group absolute bottom-6 right-6 z-10 flex items-center gap-1.5 rounded-full border border-white/15 bg-black/45 px-3.5 py-1.5 text-xs font-semibold tracking-wide text-white/75 backdrop-blur-md transition-all duration-300 hover:border-primary/60 hover:bg-black/70 hover:text-white outline-none focus-visible:ring-2 focus-visible:ring-primary/60 ${
+          ready && !closing ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
         aria-label="Pular abertura"
       >
-        <SkipForward className="h-4 w-4" />
-        Clique para pular abertura
+        Pular
+        <SkipForward className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
       </button>
     </div>
   )

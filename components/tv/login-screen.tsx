@@ -3,12 +3,12 @@
 import { useState } from 'react'
 import Image from 'next/image'
 import { RefreshCw } from 'lucide-react'
-import { unlockAudio, playIntroMusic } from '@/lib/sounds'
+import { unlockAudio } from '@/lib/sounds'
+import { markDeviceActivated } from '@/lib/activation'
 
 const DEVICE_KEY = 'A7K9-42XP'
 
 export function LoginScreen({ onLogin }: { onLogin: () => void }) {
-  const [loading, setLoading] = useState(false)
   const [shake, setShake] = useState(false)
   // Simulated activation: device is only considered activated after the first check.
   const [activated, setActivated] = useState(false)
@@ -25,10 +25,9 @@ export function LoginScreen({ onLogin }: { onLogin: () => void }) {
       return
     }
 
-    // Activated — play the brand music and run the loading motion into the app.
-    playIntroMusic()
-    setLoading(true)
-    setTimeout(onLogin, 2000)
+    // Activated — persist it and hand off to the loading stage.
+    markDeviceActivated()
+    onLogin()
   }
 
   return (
@@ -55,22 +54,7 @@ export function LoginScreen({ onLogin }: { onLogin: () => void }) {
       <div className="absolute inset-0 bg-background/55" />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_30%,rgba(0,0,0,0.65)_100%)]" />
 
-      {/* ── Loading overlay (elegant brand motion) ── */}
-      {loading && (
-        <div className="relative z-10 flex flex-col items-center text-center px-4 animate-cp-fade-in">
-          <div className="relative w-72 h-20 animate-cp-logo-pulse">
-            <Image src="/logo-full.webp" alt="Central Play Plus" fill className="object-contain object-center" priority />
-          </div>
-          {/* Progress bar */}
-          <div className="mt-9 w-64 h-1.5 rounded-full bg-white/10 overflow-hidden">
-            <div className="h-full w-2/5 rounded-full bg-gradient-to-r from-primary/40 via-primary to-cyan-400 animate-cp-loadbar" />
-          </div>
-          <p className="mt-4 text-sm font-medium tracking-wide text-white/70">Liberando seu acesso…</p>
-        </div>
-      )}
-
       {/* ── Centered activation card ── */}
-      {!loading && (
       <div className="relative z-10 w-full max-w-md mx-4 flex flex-col items-center text-center rounded-[1.75rem] bg-black/55 backdrop-blur-xl border border-white/15 ring-1 ring-white/5 shadow-2xl shadow-black/70 px-10 py-12 animate-cp-fade-up overflow-hidden">
         {/* Subtle top sheen */}
         <div aria-hidden className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent" />
@@ -120,7 +104,6 @@ export function LoginScreen({ onLogin }: { onLogin: () => void }) {
           {activated ? 'Entrar' : 'Recarregar'}
         </button>
       </div>
-      )}
     </div>
   )
 }

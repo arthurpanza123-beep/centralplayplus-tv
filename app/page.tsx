@@ -13,11 +13,12 @@ import { Topbar } from '@/components/tv/topbar'
 import { ContentCard } from '@/components/tv/content-card'
 import { ContentModal } from '@/components/tv/content-modal'
 import { ChannelPlayer } from '@/components/tv/channel-player'
-import { SplashScreen } from '@/components/tv/splash-screen'
 import { LoginScreen } from '@/components/tv/login-screen'
 import { IntroVideo } from '@/components/tv/intro-video'
+import { LoadingScreen } from '@/components/tv/loading-screen'
 import { useTvNavigation } from '@/hooks/use-tv-navigation'
 import { playCue } from '@/lib/sounds'
+import { isDeviceActivated } from '@/lib/activation'
 import { cn } from '@/lib/utils'
 import {
   MOVIES, SERIES, CHANNELS, KIDS_ITEMS, USER,
@@ -580,7 +581,7 @@ function StubTab({ title }: { title: string }) {
 // ─── ROOT SHELL ───────────────────────────────────────────────────────────────
 const TABS: TabId[] = ['home', 'canais', 'filmes', 'series', 'kids', 'buscar', 'favoritos', 'configuracoes']
 
-type AppStage = 'splash' | 'login' | 'intro' | 'app'
+type AppStage = 'intro' | 'login' | 'loading' | 'app'
 
 export default function AppShell() {
   const [active, setActive] = useState<TabId>('home')
@@ -598,9 +599,10 @@ export default function AppShell() {
     if (stage === 'app') playCue('open')
   }, [stage])
 
-  if (stage === 'intro') return <IntroVideo onDone={() => setStage('splash')} />
-  if (stage === 'splash') return <SplashScreen onDone={() => setStage('login')} />
-  if (stage === 'login') return <LoginScreen onLogin={() => setStage('app')} />
+  if (stage === 'intro')
+    return <IntroVideo onDone={() => setStage(isDeviceActivated() ? 'loading' : 'login')} />
+  if (stage === 'login') return <LoginScreen onLogin={() => setStage('loading')} />
+  if (stage === 'loading') return <LoadingScreen onDone={() => setStage('app')} />
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-background animate-cp-power-on">
