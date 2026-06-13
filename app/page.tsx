@@ -42,21 +42,27 @@ const NAV_ITEMS: { id: TabId; label: string; icon: React.ElementType }[] = [
 ]
 
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
-const Sidebar = memo(function Sidebar({ active, onNav }: { active: TabId; onNav: (id: TabId) => void }) {
+const Sidebar = memo(function Sidebar({ active, onNav, collapsed }: { active: TabId; onNav: (id: TabId) => void; collapsed: boolean }) {
   return (
     <aside
-      className="flex flex-col bg-sidebar border-r border-white/5 shrink-0 overflow-hidden"
-      style={{ width: 'var(--tv-sidebar-width)' }}
+      className="flex flex-col bg-sidebar border-r border-white/5 shrink-0 overflow-hidden transition-[width] duration-300 ease-out"
+      style={{ width: collapsed ? 84 : 240 }}
     >
-      {/* Logo */}
-      <div className="flex items-center justify-center px-5 py-6">
-        <div className="relative w-full h-12 drop-shadow-[0_2px_12px_rgba(37,99,235,0.35)]">
-          <Image src="/logo-full.webp" alt="Central Play Plus" fill className="object-contain object-left" priority />
-        </div>
+      {/* Logo — full wordmark when expanded, mascot only when collapsed */}
+      <div className={cn('flex items-center py-6 transition-all', collapsed ? 'justify-center px-0' : 'justify-center px-5')}>
+        {collapsed ? (
+          <div className="relative w-11 h-11 drop-shadow-[0_2px_12px_rgba(37,99,235,0.4)]">
+            <Image src="/mascot.webp" alt="Central Play Plus" fill className="object-contain" priority />
+          </div>
+        ) : (
+          <div className="relative w-full h-12 drop-shadow-[0_2px_12px_rgba(37,99,235,0.35)]">
+            <Image src="/logo-full.webp" alt="Central Play Plus" fill className="object-contain object-left" priority />
+          </div>
+        )}
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 py-2 overflow-y-auto px-3" aria-label="Navegação principal">
+      <nav className={cn('flex-1 py-2 overflow-y-auto overflow-x-hidden', collapsed ? 'px-2.5' : 'px-3')} aria-label="Navegação principal">
         <ul className="flex flex-col gap-1">
           {NAV_ITEMS.map((item, idx) => {
             if (!item) return <li key={`div-${idx}`}><hr className="my-2.5 border-border/60" /></li>
@@ -66,17 +72,20 @@ const Sidebar = memo(function Sidebar({ active, onNav }: { active: TabId; onNav:
               <li key={id}>
                 <button
                   onClick={() => onNav(id)}
+                  title={collapsed ? label : undefined}
+                  aria-label={label}
                   className={cn(
-                    'group/nav relative w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 outline-none',
+                    'group/nav relative w-full flex items-center rounded-xl text-sm font-semibold transition-all duration-200 outline-none',
                     'focus-visible:ring-4 focus-visible:ring-primary/40',
+                    collapsed ? 'justify-center px-0 py-3' : 'gap-3 px-4 py-3',
                     isActive
                       ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/30'
                       : 'text-muted-foreground hover:text-foreground hover:bg-accent'
                   )}
                 >
-                  {isActive && <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-full bg-primary-foreground/80" />}
+                  {isActive && !collapsed && <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-full bg-primary-foreground/80" />}
                   <Icon className={cn('w-5 h-5 shrink-0 transition-transform', !isActive && 'group-hover/nav:scale-110')} />
-                  <span>{label}</span>
+                  {!collapsed && <span className="truncate">{label}</span>}
                 </button>
               </li>
             )
@@ -84,17 +93,28 @@ const Sidebar = memo(function Sidebar({ active, onNav }: { active: TabId; onNav:
         </ul>
       </nav>
 
-      {/* Plan badge */}
-      <div className="px-3 pb-5">
-        <button className="group/plan w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-amber-400/30 bg-gradient-to-br from-amber-500/15 to-yellow-500/10 hover:from-amber-500/25 hover:to-yellow-500/15 transition-all text-left shadow-sm hover:shadow-md outline-none focus-visible:ring-4 focus-visible:ring-amber-400/40">
+      {/* Plan badge — full card when expanded, crown only when collapsed */}
+      <div className={cn('pb-5', collapsed ? 'px-2.5' : 'px-3')}>
+        <button
+          title={collapsed ? 'Plano Premium ativado' : undefined}
+          aria-label="Plano Premium ativado"
+          className={cn(
+            'group/plan w-full flex items-center rounded-xl border border-amber-400/30 bg-gradient-to-br from-amber-500/15 to-yellow-500/10 hover:from-amber-500/25 hover:to-yellow-500/15 transition-all text-left shadow-sm hover:shadow-md outline-none focus-visible:ring-4 focus-visible:ring-amber-400/40',
+            collapsed ? 'justify-center px-0 py-3' : 'gap-3 px-4 py-3'
+          )}
+        >
           <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-amber-400 to-yellow-500 flex items-center justify-center shrink-0 shadow-lg shadow-amber-500/30">
             <Crown className="w-5 h-5 text-amber-950" />
           </div>
-          <div className="flex flex-col leading-tight min-w-0 flex-1">
-            <span className="text-sm font-bold text-amber-300 truncate">Plano Ativado</span>
-            <span className="text-xs text-amber-400/80 truncate font-medium">Premium</span>
-          </div>
-          <ChevronRight className="w-4 h-4 text-amber-400/60 shrink-0 group-hover/plan:translate-x-0.5 transition-transform" />
+          {!collapsed && (
+            <>
+              <div className="flex flex-col leading-tight min-w-0 flex-1">
+                <span className="text-sm font-bold text-amber-300 truncate">Plano Ativado</span>
+                <span className="text-xs text-amber-400/80 truncate font-medium">Premium</span>
+              </div>
+              <ChevronRight className="w-4 h-4 text-amber-400/60 shrink-0 group-hover/plan:translate-x-0.5 transition-transform" />
+            </>
+          )}
         </button>
       </div>
     </aside>
@@ -331,7 +351,6 @@ function CanaisTab() {
               onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); openChannel(ch) } }}
               className={cn('flex items-center gap-3 px-4 py-3 border-b border-border/60 text-left transition-colors cursor-pointer outline-none',
                 selectedChannel.id === ch.id ? 'bg-primary/10 border-l-2 border-l-primary' : 'hover:bg-accent')}>
-              <span className="text-xs text-muted-foreground w-8 shrink-0 tabular-nums">{ch.number}</span>
               <div className="w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold text-white shrink-0 shadow-sm" style={{ background: ch.logoColor }}>
                 {ch.logoText}
               </div>
@@ -375,13 +394,10 @@ function CanaisTab() {
               </div>
             </div>
 
-            {/* Top-left live badge + channel number */}
+            {/* Top-left live badge */}
             <div className="absolute top-3 left-3 flex items-center gap-2">
               <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-red-600 text-white text-[11px] font-bold shadow-lg">
                 <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />AO VIVO
-              </span>
-              <span className="px-2 py-1 rounded-md bg-black/50 backdrop-blur-sm text-white/90 text-[11px] font-bold tabular-nums">
-                {selectedChannel.number}
               </span>
             </div>
 
@@ -562,7 +578,7 @@ function SearchInput({ placeholder, value, onChange }: { placeholder: string; va
   )
 }
 
-// ─── KIDS TAB ─────────────────────────────────────────────────────────────────
+// ─── KIDS TAB ────────────────────────────────���────────────────────────────────
 function KidsTab() {
   // KIDS_ITEMS is small; tile it into a fuller, playful grid.
   const tiles = [...KIDS_ITEMS, ...KIDS_ITEMS].slice(0, 8)
@@ -671,8 +687,8 @@ export default function AppShell() {
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-background animate-cp-power-on">
-      {/* Sidebar */}
-      <Sidebar active={active} onNav={setActive} />
+      {/* Sidebar — full on Início, slim icon-rail elsewhere (Claro TV+ style) */}
+      <Sidebar active={active} onNav={setActive} collapsed={active !== 'home'} />
 
       <div className="flex flex-col flex-1 min-w-0 relative bg-background overflow-hidden">
         {TABS.map((tab) => (
