@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { Search } from 'lucide-react'
 import { TVLayout } from '@/components/tv/tv-layout'
 import { CategorySidebar } from '@/components/tv/category-sidebar'
@@ -14,15 +14,21 @@ export default function FilmesPage() {
   const [selected, setSelected] = useState<Movie | Series | null>(null)
   const [search, setSearch] = useState('')
 
-  const filtered = MOVIES.filter((m) => {
-    const matchSearch = m.title.toLowerCase().includes(search.toLowerCase())
-    const matchCategory =
-      category === 'Lançamentos' ||
-      category === 'Em alta' ||
-      m.genre.toLowerCase() === category.toLowerCase() ||
-      (category === 'Infantil' && m.rating <= 10)
-    return matchSearch && matchCategory
-  })
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase()
+    return MOVIES.filter((m) => {
+      const matchSearch = !q || m.title.toLowerCase().includes(q)
+      const matchCategory =
+        category === 'Lançamentos' ||
+        category === 'Em alta' ||
+        m.genre.toLowerCase() === category.toLowerCase() ||
+        (category === 'Infantil' && m.rating <= 10)
+      return matchSearch && matchCategory
+    })
+  }, [search, category])
+
+  const handleSelect = useCallback((item: Movie | Series) => setSelected(item), [])
+  const handleClose = useCallback(() => setSelected(null), [])
 
   return (
     <TVLayout
@@ -52,7 +58,7 @@ export default function FilmesPage() {
           {filtered.length > 0 ? (
             <div className="grid grid-cols-6 gap-3">
               {filtered.map((movie) => (
-                <ContentCard key={movie.id} item={movie} onClick={setSelected} />
+                <ContentCard key={movie.id} item={movie} onClick={handleSelect} />
               ))}
             </div>
           ) : (
@@ -63,7 +69,7 @@ export default function FilmesPage() {
         </div>
       </div>
 
-      <ContentModal item={selected} onClose={() => setSelected(null)} />
+      <ContentModal item={selected} onClose={handleClose} />
     </TVLayout>
   )
 }

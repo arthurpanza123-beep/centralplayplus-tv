@@ -18,6 +18,8 @@ export interface Movie {
   director: string
   colorFrom: string
   colorTo: string
+  /** Pre-computed CSS gradient string — avoids template literal on every render */
+  gradient?: string
   type: 'movie'
 }
 
@@ -34,6 +36,8 @@ export interface Series {
   creator: string
   colorFrom: string
   colorTo: string
+  /** Pre-computed CSS gradient string — avoids template literal on every render */
+  gradient?: string
   type: 'series'
 }
 

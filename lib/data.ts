@@ -1,5 +1,10 @@
 import type { Movie, Series, Channel, WatchingItem, KidsItem, User } from './types'
 
+/** Pre-compute gradient strings at module-load time so JSX never runs template literals on each render */
+function g(from: string, to: string): string {
+  return `linear-gradient(160deg, ${from} 0%, ${to} 100%)`
+}
+
 export const MOVIES: Movie[] = [
   {
     id: 'm1',
@@ -880,3 +885,7 @@ export const CHANNEL_CATEGORIES = [
   'Desenhos',
   'Jogos do dia',
 ]
+
+// Inject pre-computed gradient strings so components never run template literals on each render
+MOVIES.forEach((m) => { m.gradient = g(m.colorFrom, m.colorTo) })
+SERIES.forEach((s) => { s.gradient = g(s.colorFrom, s.colorTo) })

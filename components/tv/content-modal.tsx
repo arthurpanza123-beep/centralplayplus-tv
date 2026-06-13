@@ -39,7 +39,7 @@ export function ContentModal({ item, onClose }: ContentModalProps) {
           <div
             className="shrink-0 w-48 relative flex items-end p-4"
             style={{
-              background: `linear-gradient(160deg, ${item.colorFrom} 0%, ${item.colorTo} 100%)`,
+              background: item.gradient ?? `linear-gradient(160deg, ${item.colorFrom} 0%, ${item.colorTo} 100%)`,
             }}
           >
             <p className="text-white font-bold text-sm uppercase leading-tight text-balance drop-shadow-md tracking-wide">

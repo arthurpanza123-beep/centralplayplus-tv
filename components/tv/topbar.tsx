@@ -1,29 +1,35 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, memo } from 'react'
 import { Clock } from 'lucide-react'
 
-export function Topbar() {
+// Isolated so the 1s tick NEVER re-renders parent components
+export const Topbar = memo(function Topbar() {
   const [time, setTime] = useState('')
   const [date, setDate] = useState('')
 
   useEffect(() => {
     function update() {
       const now = new Date()
-      setTime(
-        now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
-      )
-      setDate(
-        now.toLocaleDateString('pt-BR', {
-          weekday: 'short',
-          day: 'numeric',
-          month: 'short',
-        })
-      )
+      const newTime = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+      const newDate = now.toLocaleDateString('pt-BR', {
+        weekday: 'short',
+        day: 'numeric',
+        month: 'short',
+      })
+      setTime(newTime)
+      setDate(newDate)
     }
     update()
-    const id = setInterval(update, 1000)
-    return () => clearInterval(id)
+    // Sync to the next full minute boundary so we only tick 60x/min instead of every second
+    const now = new Date()
+    const msToNextMin = (60 - now.getSeconds()) * 1000 - now.getMilliseconds()
+    const timeout = setTimeout(() => {
+      update()
+      const id = setInterval(update, 60_000)
+      return () => clearInterval(id)
+    }, msToNextMin)
+    return () => clearTimeout(timeout)
   }, [])
 
   return (
@@ -36,4 +42,4 @@ export function Topbar() {
       <span className="capitalize">{date}</span>
     </div>
   )
-}
+})
