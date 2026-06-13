@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
-import { Loader2, RefreshCw, Headphones } from 'lucide-react'
+import { Loader2, RefreshCw } from 'lucide-react'
+import { playCue, unlockAudio } from '@/lib/sounds'
 
 const DEVICE_KEY = 'A7K9-42XP'
 
@@ -10,38 +11,31 @@ export function LoginScreen({ onLogin }: { onLogin: () => void }) {
   const [loading, setLoading] = useState(false)
 
   function reload() {
+    unlockAudio()
+    playCue('open')
     setLoading(true)
     setTimeout(onLogin, 1100)
   }
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center overflow-hidden animate-cp-fade-in">
-      {/* Warm wallpaper background (same cozy room as the app) */}
+    <div className="fixed inset-0 z-40 flex items-center justify-center overflow-hidden bg-[#070b16] animate-cp-fade-in">
+      {/* Dark cinematic background */}
       <Image
-        src="/bg-wall.png"
+        src="/bg-dark.png"
         alt=""
         fill
         priority
         aria-hidden="true"
-        className="object-cover select-none pointer-events-none"
+        className="object-cover select-none pointer-events-none opacity-90"
       />
-      {/* Soft light wash to keep content readable */}
-      <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/20 to-background/55" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_38%,rgba(37,99,235,0.22),transparent_60%)]" />
+      <div className="absolute inset-0 bg-gradient-to-b from-background/30 via-transparent to-background/70" />
 
       {/* ── Activation panel ── */}
       <div className="relative z-10 flex flex-col items-center text-center px-6 w-full max-w-2xl animate-cp-fade-up">
-        {/* Brand */}
-        <div className="flex items-center gap-3 mb-8">
-          <div className="relative w-14 h-14 drop-shadow-[0_4px_12px_rgba(37,99,235,0.35)]">
-            <Image src="/mascot-icon.png" alt="Central Play Plus" fill className="object-contain" priority />
-          </div>
-          <div className="flex flex-col items-start leading-none">
-            <span className="text-2xl font-black tracking-tight text-foreground">Central</span>
-            <span className="text-2xl font-black tracking-tight -mt-0.5">
-              <span className="text-primary">Play</span>{' '}
-              <span className="text-sm align-top font-extrabold text-primary-foreground bg-primary px-1.5 py-0.5 rounded-md">PLUS</span>
-            </span>
-          </div>
+        {/* Brand logo */}
+        <div className="relative w-72 h-24 mb-6 drop-shadow-[0_4px_24px_rgba(37,99,235,0.45)]">
+          <Image src="/logo-full.png" alt="Central Play Plus" fill className="object-contain" priority />
         </div>
 
         {/* Title */}
@@ -53,12 +47,12 @@ export function LoginScreen({ onLogin }: { onLogin: () => void }) {
         </p>
 
         {/* Device key card */}
-        <div className="mt-8 w-full max-w-xl rounded-3xl bg-white/55 backdrop-blur-xl border border-white/60 shadow-2xl shadow-black/10 px-10 py-9">
+        <div className="mt-8 w-full max-w-xl rounded-3xl bg-card/70 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/50 px-10 py-9">
           <p className="text-sm font-bold tracking-[0.35em] text-muted-foreground">DEVICE KEY</p>
-          <p className="mt-3 text-6xl md:text-7xl font-black tracking-[0.08em] text-foreground tabular-nums">
+          <p className="mt-3 text-6xl md:text-7xl font-black tracking-[0.08em] text-foreground tabular-nums drop-shadow-[0_0_18px_rgba(96,165,250,0.25)]">
             {DEVICE_KEY}
           </p>
-          <div className="my-6 h-px w-full bg-border" />
+          <div className="my-6 h-px w-full bg-white/10" />
           <div className="flex items-center justify-center gap-3">
             {loading ? (
               <Loader2 className="w-5 h-5 text-primary animate-spin" />
@@ -83,15 +77,6 @@ export function LoginScreen({ onLogin }: { onLogin: () => void }) {
           <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : 'group-hover:rotate-180 transition-transform duration-500'}`} />
           {loading ? 'Recarregando…' : 'Já ativou? Recarregar acesso'}
         </button>
-
-        {/* Support footer */}
-        <p className="mt-6 flex items-center gap-2 text-sm text-muted-foreground">
-          <Headphones className="w-4 h-4" />
-          Precisa de ajuda?{' '}
-          <button className="text-primary font-semibold hover:text-primary/80 transition-colors outline-none focus-visible:underline">
-            Fale com o suporte
-          </button>
-        </p>
       </div>
     </div>
   )

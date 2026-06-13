@@ -12,6 +12,7 @@ import {
 import { Topbar } from '@/components/tv/topbar'
 import { ContentCard } from '@/components/tv/content-card'
 import { ContentModal } from '@/components/tv/content-modal'
+import { ChannelPlayer } from '@/components/tv/channel-player'
 import { SplashScreen } from '@/components/tv/splash-screen'
 import { LoginScreen } from '@/components/tv/login-screen'
 import { useTvNavigation } from '@/hooks/use-tv-navigation'
@@ -41,20 +42,13 @@ const NAV_ITEMS: { id: TabId; label: string; icon: React.ElementType }[] = [
 const Sidebar = memo(function Sidebar({ active, onNav }: { active: TabId; onNav: (id: TabId) => void }) {
   return (
     <aside
-      className="flex flex-col rounded-2xl bg-gradient-to-b from-white/80 via-white/60 to-white/15 border border-white/50 shadow-sm shrink-0 overflow-hidden"
+      className="flex flex-col rounded-2xl bg-card/60 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/40 shrink-0 overflow-hidden"
       style={{ width: 'var(--tv-sidebar-width)' }}
     >
       {/* Logo */}
-      <div className="flex items-center gap-3 px-6 py-5">
-        <div className="relative w-12 h-12 shrink-0 drop-shadow-[0_2px_8px_rgba(37,99,235,0.3)]">
-          <Image src="/mascot-icon.png" alt="Central Play Plus mascote" fill className="object-contain" />
-        </div>
-        <div className="flex flex-col leading-none">
-          <span className="text-[11px] text-muted-foreground font-bold tracking-[0.18em] uppercase">Central</span>
-          <span className="text-xl font-black tracking-tight leading-none">
-            <span className="text-foreground">PLAY</span>{' '}
-            <span className="text-primary">PLUS</span>
-          </span>
+      <div className="flex items-center justify-center px-5 py-5">
+        <div className="relative w-full h-14 drop-shadow-[0_2px_12px_rgba(37,99,235,0.35)]">
+          <Image src="/logo-full.png" alt="Central Play Plus" fill className="object-contain object-left" priority />
         </div>
       </div>
 
@@ -89,15 +83,15 @@ const Sidebar = memo(function Sidebar({ active, onNav }: { active: TabId; onNav:
 
       {/* Plan badge */}
       <div className="px-3 pb-5">
-        <button className="group/plan w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-amber-300/60 bg-gradient-to-br from-amber-50 to-yellow-100/80 hover:from-amber-100 hover:to-yellow-100 transition-all text-left shadow-sm hover:shadow-md outline-none focus-visible:ring-4 focus-visible:ring-amber-300/50">
-          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-amber-400 to-yellow-500 flex items-center justify-center shrink-0 shadow-sm">
-            <Crown className="w-5 h-5 text-white" />
+        <button className="group/plan w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-amber-400/30 bg-gradient-to-br from-amber-500/15 to-yellow-500/10 hover:from-amber-500/25 hover:to-yellow-500/15 transition-all text-left shadow-sm hover:shadow-md outline-none focus-visible:ring-4 focus-visible:ring-amber-400/40">
+          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-amber-400 to-yellow-500 flex items-center justify-center shrink-0 shadow-lg shadow-amber-500/30">
+            <Crown className="w-5 h-5 text-amber-950" />
           </div>
           <div className="flex flex-col leading-tight min-w-0 flex-1">
-            <span className="text-sm font-bold text-amber-800 truncate">Plano Ativado</span>
-            <span className="text-xs text-amber-600/90 truncate font-medium">Premium</span>
+            <span className="text-sm font-bold text-amber-300 truncate">Plano Ativado</span>
+            <span className="text-xs text-amber-400/80 truncate font-medium">Premium</span>
           </div>
-          <ChevronRight className="w-4 h-4 text-amber-500/70 shrink-0 group-hover/plan:translate-x-0.5 transition-transform" />
+          <ChevronRight className="w-4 h-4 text-amber-400/60 shrink-0 group-hover/plan:translate-x-0.5 transition-transform" />
         </button>
       </div>
     </aside>
@@ -122,7 +116,7 @@ const CategorySidebar = memo(function CategorySidebar({
   categories, selected, onSelect,
 }: { categories: string[]; selected: string; onSelect: (c: string) => void }) {
   return (
-    <aside className="flex flex-col shrink-0 py-3 gap-0.5 border-r border-border/40 overflow-y-auto bg-white/50 backdrop-blur-sm" style={{ width: 180 }}>
+    <aside className="flex flex-col shrink-0 py-3 gap-0.5 border-r border-border/40 overflow-y-auto bg-white/[0.03]" style={{ width: 180 }}>
       {categories.map((cat) => (
         <button key={cat} onClick={() => onSelect(cat)}
           className={cn(
@@ -385,18 +379,31 @@ function CanaisTab() {
   const [selectedChannel, setSelectedChannel] = useState<Channel>(CHANNELS[1])
   const [isPlaying, setIsPlaying] = useState(true)
   const [selectedDay, setSelectedDay] = useState(2)
+  const [fullscreen, setFullscreen] = useState(false)
 
   const filteredChannels = useMemo(
     () => CHANNELS.filter((c) => category === 'Esportes' ? c.category === 'Esportes' : true),
     [category]
   )
 
+  // TV behavior: first OK selects the channel (mini-player preview),
+  // pressing OK again on the same channel expands to fullscreen.
+  const handleChannelClick = useCallback((ch: Channel) => {
+    setSelectedChannel((cur) => {
+      if (cur.id === ch.id) {
+        setFullscreen(true)
+        return cur
+      }
+      return ch
+    })
+  }, [])
+
   return (
     <>
       <ShellHeader />
       <div className="flex flex-1 overflow-hidden">
         {/* Category */}
-    <aside className="flex flex-col shrink-0 py-3 gap-0.5 border-r border-border/40 overflow-y-auto bg-white/50 backdrop-blur-sm" style={{ width: 180 }}>
+    <aside className="flex flex-col shrink-0 py-3 gap-0.5 border-r border-border/40 overflow-y-auto bg-white/[0.03]" style={{ width: 180 }}>
           {CHANNEL_CATEGORIES.map((cat) => (
             <button key={cat} onClick={() => setCategory(cat)}
               className={cn('flex items-center px-5 py-2.5 mx-2 rounded-lg text-sm font-medium transition-colors text-left',
@@ -407,7 +414,7 @@ function CanaisTab() {
         </aside>
 
         {/* Channel list */}
-          <div className="flex flex-col shrink-0 border-r border-border/40 overflow-y-auto bg-white/50 backdrop-blur-sm" style={{ width: 240 }}>
+          <div className="flex flex-col shrink-0 border-r border-border/40 overflow-y-auto bg-white/[0.03]" style={{ width: 240 }}>
           <div className="px-3 py-3 border-b border-border">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Canais &bull; {category}</p>
           </div>
@@ -476,7 +483,7 @@ function CanaisTab() {
         </div>
 
         {/* Day navigator */}
-          <aside className="flex flex-col shrink-0 border-l border-border/40 py-4 gap-1 overflow-y-auto bg-white/50 backdrop-blur-sm" style={{ width: 72 }}>
+          <aside className="flex flex-col shrink-0 border-l border-border/40 py-4 gap-1 overflow-y-auto bg-white/[0.03]" style={{ width: 72 }}>
           {DAYS.map((d, i) => (
             <button key={d.num} onClick={() => setSelectedDay(i)}
               className={cn('flex flex-col items-center py-3 mx-2 rounded-xl text-xs font-medium transition-colors',
@@ -528,15 +535,15 @@ function ConfiguracoesTab() {
                 </div>
               ))}
             </div>
-            <button className="flex items-center gap-4 p-5 rounded-2xl border border-orange-200 bg-orange-50 hover:bg-orange-100 transition-colors text-left group shadow-sm">
-              <div className="w-10 h-10 rounded-xl border border-orange-200 bg-orange-100 flex items-center justify-center shrink-0">
-                <LogOut className="w-5 h-5 text-orange-500" />
+            <button className="flex items-center gap-4 p-5 rounded-2xl border border-red-500/25 bg-red-500/10 hover:bg-red-500/20 transition-colors text-left group shadow-sm outline-none focus-visible:ring-4 focus-visible:ring-red-500/40">
+              <div className="w-10 h-10 rounded-xl border border-red-500/30 bg-red-500/15 flex items-center justify-center shrink-0">
+                <LogOut className="w-5 h-5 text-red-400" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-orange-700">Sair do aplicativo</p>
-                <p className="text-xs text-orange-500/80 mt-0.5">Encerrar sessão neste dispositivo</p>
+                <p className="text-sm font-semibold text-red-300">Sair do aplicativo</p>
+                <p className="text-xs text-red-400/70 mt-0.5">Encerrar sessão neste dispositivo</p>
               </div>
-              <ChevronRight className="w-4 h-4 text-orange-400/60 group-hover:text-orange-500 transition-colors shrink-0" />
+              <ChevronRight className="w-4 h-4 text-red-400/50 group-hover:text-red-400 transition-colors shrink-0" />
             </button>
           </div>
           <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
@@ -621,18 +628,19 @@ export default function AppShell() {
 
   return (
     <div className="flex h-screen w-screen overflow-hidden p-4 gap-4 animate-cp-fade-in">
-      {/* Wallpaper — fixed layer behind everything */}
+      {/* Wallpaper — fixed dark cinematic layer behind everything */}
       <img
-        src="/bg-wall.png"
+        src="/bg-dark.png"
         alt=""
         aria-hidden="true"
         className="fixed inset-0 w-full h-full object-cover -z-10 select-none pointer-events-none"
       />
+      <div className="fixed inset-0 -z-10 bg-background/40 pointer-events-none" />
 
       {/* Sidebar */}
       <Sidebar active={active} onNav={setActive} />
 
-      <div className="flex flex-col flex-1 min-w-0 relative rounded-2xl bg-white/80 overflow-hidden border border-white/50 shadow-sm">
+      <div className="flex flex-col flex-1 min-w-0 relative rounded-2xl bg-card/70 backdrop-blur-xl overflow-hidden border border-white/10 shadow-2xl shadow-black/40">
         {TABS.map((tab) => (
           <Activity key={tab} mode={active === tab ? 'visible' : 'hidden'}>
             <div

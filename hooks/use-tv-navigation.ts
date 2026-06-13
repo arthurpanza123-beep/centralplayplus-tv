@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import { playCue, unlockAudio } from '@/lib/sounds'
 
 type Dir = 'up' | 'down' | 'left' | 'right'
 
@@ -110,7 +111,8 @@ function findNext(current: HTMLElement, dir: Dir, candidates: HTMLElement[]): HT
 
 function focusEl(el: HTMLElement) {
   el.focus({ preventScroll: true })
-  el.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' })
+  // Keep the focused item comfortably in view — centered like a real TV UI.
+  el.scrollIntoView({ block: 'center', inline: 'center', behavior: 'smooth' })
 }
 
 /**
@@ -140,16 +142,25 @@ export function useTvNavigation(options?: { onBack?: () => void; deps?: unknown[
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
+      // Any key press unlocks the audio context on strict browsers.
+      unlockAudio()
+
       // Let text inputs handle their own arrow/typing behavior.
       const target = e.target as HTMLElement | null
       const isTextField =
         target &&
         (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
 
+      // Confirm sound on activation.
+      if ((e.key === 'Enter' || e.key === ' ') && !isTextField) {
+        playCue('select')
+      }
+
       if (e.key === 'Escape' || e.key === 'Backspace') {
         if (e.key === 'Backspace' && isTextField) return
         if (onBack) {
           e.preventDefault()
+          playCue('back')
           onBack()
         }
         return
@@ -176,6 +187,7 @@ export function useTvNavigation(options?: { onBack?: () => void; deps?: unknown[
       const next = findNext(current, dir, candidates)
       if (next) {
         e.preventDefault()
+        playCue('nav')
         focusEl(next)
       }
     }
