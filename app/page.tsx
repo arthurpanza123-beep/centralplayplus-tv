@@ -589,6 +589,14 @@ export default function AppShell() {
 
   return (
     <div className="flex h-screen w-screen overflow-hidden">
+      {/* Wallpaper — fixed layer behind everything */}
+      <img
+        src="/bg-wall.png"
+        alt=""
+        aria-hidden="true"
+        className="fixed inset-0 w-full h-full object-cover -z-10 select-none pointer-events-none"
+      />
+
       {/* Sidebar */}
       <Sidebar active={active} onNav={setActive} />
 

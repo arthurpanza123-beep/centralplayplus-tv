@@ -98,11 +98,7 @@
   html, body {
     @apply text-foreground;
     color-scheme: light;
-    background-image: url('/bg-wall.png');
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    background-attachment: fixed;
+    background: transparent;
   }
   html {
     @apply font-sans;
