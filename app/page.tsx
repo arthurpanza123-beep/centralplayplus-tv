@@ -588,10 +588,7 @@ export default function AppShell() {
   const [active, setActive] = useState<TabId>('home')
 
   return (
-    <div
-      className="flex h-screen w-screen overflow-hidden"
-      style={{ backgroundImage: 'url(/bg-wall.png)', backgroundSize: 'cover', backgroundPosition: 'center' }}
-    >
+    <div className="flex h-screen w-screen overflow-hidden">
       {/* Sidebar */}
       <Sidebar active={active} onNav={setActive} />
 

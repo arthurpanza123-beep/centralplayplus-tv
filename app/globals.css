@@ -96,8 +96,13 @@
     @apply border-border outline-ring/50;
   }
   html, body {
-    @apply bg-background text-foreground;
+    @apply text-foreground;
     color-scheme: light;
+    background-image: url('/bg-wall.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
   }
   html {
     @apply font-sans;
