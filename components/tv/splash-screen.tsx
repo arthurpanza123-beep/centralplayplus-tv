@@ -46,7 +46,7 @@ export function SplashScreen({ onDone }: { onDone: () => void }) {
         {/* Pops in, then idles with a soft wiggle */}
         <div className="animate-cp-mascot-in">
           <div className="animate-cp-wiggle relative h-36 w-36 drop-shadow-[0_8px_40px_rgba(37,99,235,0.6)]">
-            <Image src="/mascot.png" alt="Central Play Plus" fill className="object-contain" priority />
+            <Image src="/mascot.webp" alt="Central Play Plus" fill className="object-contain" priority />
           </div>
         </div>
       </div>
@@ -56,7 +56,7 @@ export function SplashScreen({ onDone }: { onDone: () => void }) {
         className="animate-cp-logo-reveal relative z-10 h-24 w-80 max-w-[80vw]"
         style={{ animationDelay: '0.8s' }}
       >
-        <Image src="/logo-full.png" alt="Central Play Plus" fill className="object-contain object-center" priority />
+        <Image src="/logo-full.webp" alt="Central Play Plus" fill className="object-contain object-center" priority />
       </div>
 
       {/* Progress bar */}

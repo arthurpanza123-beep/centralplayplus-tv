@@ -39,7 +39,7 @@ export function Sidebar() {
       <div className="flex items-center gap-3 px-6 py-5 border-b border-sidebar-border">
         <div className="relative w-10 h-10 shrink-0">
           <Image
-            src="/mascot.png"
+            src="/mascot.webp"
             alt="Central Play mascote"
             fill
             className="object-contain"

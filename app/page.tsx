@@ -49,7 +49,7 @@ const Sidebar = memo(function Sidebar({ active, onNav }: { active: TabId; onNav:
       {/* Logo */}
       <div className="flex items-center justify-center px-5 py-6">
         <div className="relative w-full h-12 drop-shadow-[0_2px_12px_rgba(37,99,235,0.35)]">
-          <Image src="/logo-full.png" alt="Central Play Plus" fill className="object-contain object-left" priority />
+          <Image src="/logo-full.webp" alt="Central Play Plus" fill className="object-contain object-left" priority />
         </div>
       </div>
 

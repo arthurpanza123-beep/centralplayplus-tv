@@ -35,10 +35,11 @@ export function LoginScreen({ onLogin }: { onLogin: () => void }) {
     <div className="fixed inset-0 z-40 flex items-center justify-center overflow-hidden bg-background animate-cp-fade-in">
       {/* ── Cozy living-room background (heavily blurred) ── */}
       <Image
-        src="/login-room.png"
+        src="/login-room.webp"
         alt=""
         fill
         priority
+        sizes="100vw"
         aria-hidden
         className="object-cover object-center select-none pointer-events-none scale-105 blur-md"
       />
@@ -58,7 +59,7 @@ export function LoginScreen({ onLogin }: { onLogin: () => void }) {
       {loading && (
         <div className="relative z-10 flex flex-col items-center text-center px-4 animate-cp-fade-in">
           <div className="relative w-72 h-20 animate-cp-logo-pulse">
-            <Image src="/logo-full.png" alt="Central Play Plus" fill className="object-contain object-center" priority />
+            <Image src="/logo-full.webp" alt="Central Play Plus" fill className="object-contain object-center" priority />
           </div>
           {/* Progress bar */}
           <div className="mt-9 w-64 h-1.5 rounded-full bg-white/10 overflow-hidden">
@@ -77,7 +78,7 @@ export function LoginScreen({ onLogin }: { onLogin: () => void }) {
 
         {/* Brand logo */}
         <div className="relative w-full max-w-[16rem] h-16 mx-auto mb-3 drop-shadow-[0_6px_32px_rgba(37,99,235,0.6)]">
-          <Image src="/logo-full.png" alt="Central Play Plus" fill className="object-contain object-center" priority />
+          <Image src="/logo-full.webp" alt="Central Play Plus" fill className="object-contain object-center" priority />
         </div>
 
         <h1 className="text-3xl font-black tracking-tight text-white text-balance leading-tight drop-shadow-lg">
