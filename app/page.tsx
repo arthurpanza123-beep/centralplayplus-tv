@@ -331,7 +331,15 @@ function CanaisTab() {
   // Auto-zoom: after 20s idle on the small preview, expand to fullscreen.
   const idleTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // TV behavior: pressing OK on a channel zooms straight into fullscreen.
+  // TV behavior: first OK selects the channel (shows preview); a second OK on the
+  // already-selected channel expands it to fullscreen.
+  const handleChannelClick = useCallback((ch: Channel) => {
+    setSelectedChannel((prev) => {
+      if (prev.id === ch.id) setFullscreen(true)
+      return ch
+    })
+  }, [])
+  // Clicking the preview itself always expands to fullscreen.
   const openChannel = useCallback((ch: Channel) => {
     setSelectedChannel(ch)
     setFullscreen(true)
@@ -360,91 +368,82 @@ function CanaisTab() {
   return (
     <>
       <ShellHeader />
-      <div className="flex flex-1 overflow-hidden">
-        {/* Category column */}
-        <aside className="flex flex-col shrink-0 py-3 gap-0.5 border-r border-border/40 overflow-y-auto bg-white/[0.03]" style={{ width: 170 }}>
+      <div className="flex flex-1 overflow-hidden bg-background">
+        {/* Category column — big, TV-sized */}
+        <aside className="flex flex-col shrink-0 py-4 gap-1.5 border-r border-border overflow-y-auto scrollbar-none" style={{ width: 240 }}>
           {CHANNEL_CATEGORIES.map((cat) => (
             <button key={cat} onClick={() => setCategory(cat)}
-              className={cn('flex items-center px-4 py-2.5 mx-2 rounded-lg text-sm font-medium transition-colors text-left',
-                category === cat ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-accent')}>
+              className={cn('flex items-center px-5 py-3.5 mx-3 rounded-xl text-lg font-semibold transition-colors text-left outline-none focus-visible:ring-2 focus-visible:ring-primary/60',
+                category === cat ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' : 'text-muted-foreground hover:text-foreground hover:bg-accent')}>
               {cat}
             </button>
           ))}
         </aside>
 
-        {/* Channel list */}
-          <div className="flex flex-col shrink-0 border-r border-border/40 overflow-y-auto bg-white/[0.03]" style={{ width: 260 }}>
-          <div className="px-4 py-3.5 border-b border-border">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Canais &bull; {category}</p>
+        {/* Channel list — big icons + titles */}
+        <div className="flex flex-col shrink-0 border-r border-border overflow-y-auto scrollbar-none" style={{ width: 340 }}>
+          <div className="px-5 py-4 border-b border-border shrink-0">
+            <p className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Canais &bull; {category}</p>
           </div>
           {filteredChannels.map((ch) => (
             <div key={ch.id} role="button" tabIndex={0}
-              onClick={() => openChannel(ch)}
-              onMouseEnter={() => setSelectedChannel(ch)}
+              onClick={() => handleChannelClick(ch)}
               onFocus={() => setSelectedChannel(ch)}
-              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); openChannel(ch) } }}
-              className={cn('group/ch relative flex items-center gap-3 px-4 py-3 border-b border-border/60 text-left transition-all duration-300 cursor-pointer outline-none overflow-hidden',
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleChannelClick(ch) } }}
+              className={cn('group/ch relative flex items-center gap-4 px-5 py-4 border-b border-border/60 text-left transition-all duration-300 cursor-pointer outline-none overflow-hidden shrink-0',
                 selectedChannel.id === ch.id
                   ? 'bg-primary/15 shadow-[inset_0_0_24px_rgba(37,99,235,0.25)]'
                   : 'hover:bg-accent')}>
               {/* Animated active accent bar (blue/white) */}
               {selectedChannel.id === ch.id && (
-                <span className="absolute left-0 top-0 h-full w-1 bg-gradient-to-b from-cyan-300 via-primary to-cyan-300 bg-[length:100%_200%] animate-cp-accent-slide shadow-[0_0_12px_rgba(37,99,235,0.9)]" />
+                <span className="absolute left-0 top-0 h-full w-1.5 bg-gradient-to-b from-cyan-300 via-primary to-cyan-300 bg-[length:100%_200%] animate-cp-accent-slide shadow-[0_0_12px_rgba(37,99,235,0.9)]" />
               )}
-              <div className={cn('w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold text-white shrink-0 shadow-sm transition-all duration-300',
+              <div className={cn('w-16 h-16 rounded-2xl flex items-center justify-center text-lg font-black text-white shrink-0 shadow-md transition-all duration-300',
                 selectedChannel.id === ch.id && 'ring-2 ring-cyan-300/70 ring-offset-2 ring-offset-card scale-105')}
                 style={{ background: ch.logoColor }}>
                 {ch.logoText}
               </div>
               <div className="flex flex-col min-w-0 flex-1">
-                <span className={cn('text-sm font-medium truncate transition-colors', selectedChannel.id === ch.id ? 'text-white' : 'text-foreground')}>{ch.name}</span>
-                <span className="text-[11px] text-muted-foreground truncate">{ch.currentProgram}</span>
+                <span className={cn('text-lg font-bold truncate transition-colors', selectedChannel.id === ch.id ? 'text-white' : 'text-foreground')}>{ch.name}</span>
+                <span className="text-sm text-muted-foreground truncate">{ch.currentProgram}</span>
               </div>
               {selectedChannel.id === ch.id && (
-                <span className="flex items-end gap-0.5 h-4 shrink-0" aria-label="No ar">
-                  <span className="w-0.5 bg-cyan-300 rounded-full animate-cp-eq-1" />
-                  <span className="w-0.5 bg-white rounded-full animate-cp-eq-2" />
-                  <span className="w-0.5 bg-primary rounded-full animate-cp-eq-3" />
-                  <span className="w-0.5 bg-cyan-300 rounded-full animate-cp-eq-2" />
+                <span className="flex items-end gap-0.5 h-5 shrink-0" aria-label="No ar">
+                  <span className="w-1 bg-cyan-300 rounded-full animate-cp-eq-1" />
+                  <span className="w-1 bg-white rounded-full animate-cp-eq-2" />
+                  <span className="w-1 bg-primary rounded-full animate-cp-eq-3" />
+                  <span className="w-1 bg-cyan-300 rounded-full animate-cp-eq-2" />
                 </span>
               )}
             </div>
           ))}
         </div>
 
-        {/* Player + EPG */}
-        <div className="flex-1 flex flex-col overflow-hidden p-4 gap-4">
-          <div className="flex items-center justify-end gap-2.5 min-w-0">
-            <span className="text-base font-bold text-foreground truncate text-right">{selectedChannel.name}</span>
-            <span className="text-xs text-muted-foreground shrink-0">{selectedChannel.category}</span>
-            <span className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-red-600 text-white text-[10px] font-bold shrink-0">
-              <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />AO VIVO
-            </span>
+        {/* Player + EPG — fills the remaining space */}
+        <div className="flex-1 flex flex-col overflow-hidden p-6 gap-4 min-w-0">
+          {/* Channel name on the LEFT, above the preview */}
+          <div className="flex items-baseline gap-3 min-w-0 shrink-0">
+            <h2 className="text-3xl font-black text-foreground truncate">{selectedChannel.name}</h2>
+            <span className="text-base text-muted-foreground shrink-0">{selectedChannel.category}</span>
           </div>
-          {/* Reduced 16:9 preview, centered — click (or 20s idle) zooms to fullscreen */}
-          <div className="flex items-center justify-center pt-2 pb-1" onMouseMove={resetIdle}>
+
+          {/* Large preview — fills width and most of the height */}
+          <div className="flex-[3] min-h-0" onMouseMove={resetIdle}>
           <button
             onClick={() => openChannel(selectedChannel)}
             aria-label={`Abrir ${selectedChannel.name} em tela cheia`}
-            className="group/prev relative aspect-video w-full max-w-xl rounded-2xl overflow-hidden border border-white/10 shadow-2xl ring-1 ring-black/40 text-left outline-none focus-visible:ring-4 focus-visible:ring-primary/60 transition-transform duration-300 hover:scale-[1.025]"
+            className="group/prev relative h-full w-full rounded-2xl overflow-hidden border border-border shadow-2xl text-left outline-none focus-visible:ring-4 focus-visible:ring-primary/60 transition-transform duration-300 hover:scale-[1.005]"
           >
             {/* Clean, dark backdrop — focus stays on the channel feed */}
             <div
               className="absolute inset-0"
-              style={{ background: `linear-gradient(160deg, ${selectedChannel.logoColor}22 0%, #070b14 70%)` }}
+              style={{ background: `linear-gradient(155deg, ${selectedChannel.logoColor}26 0%, #070b14 72%)` }}
             />
 
-            {/* Small AO VIVO badge, top-left */}
-            <div className="absolute top-3 left-3">
-              <span className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-red-600 text-white text-[10px] font-bold shadow">
-                <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />AO VIVO
-              </span>
-            </div>
-
-            {/* Channel-name popup — bottom-right, "skip intro" style, fades quickly */}
+            {/* Channel-name popup — bottom-left, "skip intro" style, fades quickly */}
             {showNameFlash && (
-              <div key={selectedChannel.id} className="absolute bottom-3 right-3 animate-cp-name-flash">
-                <span className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-black/70 backdrop-blur-md ring-1 ring-white/15 text-white text-sm font-semibold shadow-lg">
+              <div key={selectedChannel.id} className="absolute bottom-4 left-4 animate-cp-name-flash">
+                <span className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-black/70 backdrop-blur-md ring-1 ring-white/15 text-white text-base font-bold shadow-lg">
                   {selectedChannel.name}
                 </span>
               </div>
@@ -452,39 +451,34 @@ function CanaisTab() {
 
             {/* Expand hint */}
             <div className="absolute inset-0 flex items-center justify-center bg-black/35 opacity-0 group-hover/prev:opacity-100 group-focus-visible/prev:opacity-100 transition-opacity">
-              <span className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary text-primary-foreground text-sm font-bold shadow-lg">
-                <Play className="w-4 h-4 fill-current" /> Assistir agora
+              <span className="flex items-center gap-2.5 px-7 py-3.5 rounded-full bg-primary text-primary-foreground text-lg font-bold shadow-lg">
+                <Play className="w-5 h-5 fill-current" /> Assistir agora
               </span>
             </div>
           </button>
           </div>
 
-          {/* EPG — program guide, always visible below the preview */}
-          <div className="flex-1 min-h-0 rounded-2xl border border-border bg-card shadow-sm overflow-hidden flex flex-col">
-            <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border/60 bg-white/[0.03] shrink-0">
+          {/* EPG — compact program guide below the preview */}
+          <div className="flex-[2] min-h-0 rounded-2xl border border-border bg-card shadow-sm overflow-hidden flex flex-col">
+            <div className="flex items-center gap-2 px-5 py-3 border-b border-border shrink-0">
               <CalendarClock className="w-4 h-4 text-primary" />
-              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Guia de programação · {selectedChannel.name}</span>
+              <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Guia de programação</span>
             </div>
             <div className="overflow-y-auto scrollbar-none">
               {selectedChannel.programs.map((prog, i) => {
                 const next = !prog.isLive && (i === 0 || selectedChannel.programs[i - 1]?.isLive)
                 return (
-                  <div key={prog.time} className={cn('flex items-center gap-4 px-4 py-3 border-b border-border/60 last:border-0 transition-colors', prog.isLive ? 'bg-primary/10' : 'hover:bg-accent/40')}>
-                    <span className={cn('text-sm font-semibold w-12 shrink-0', prog.isLive ? 'text-primary' : 'text-foreground')}>{prog.time}</span>
+                  <div key={prog.time} className={cn('flex items-center gap-4 px-5 py-3 border-b border-border/60 last:border-0 transition-colors', prog.isLive ? 'bg-primary/10' : 'hover:bg-accent/40')}>
+                    <span className={cn('text-base font-semibold w-14 shrink-0', prog.isLive ? 'text-primary' : 'text-foreground')}>{prog.time}</span>
                     {prog.isLive ? (
-                      <span className="flex items-center gap-1.5 px-1.5 py-0.5 rounded bg-primary text-primary-foreground text-[9px] font-bold shrink-0 w-14 justify-center">AGORA</span>
+                      <span className="px-2 py-0.5 rounded bg-primary text-primary-foreground text-[10px] font-bold shrink-0 w-16 text-center">AGORA</span>
                     ) : next ? (
-                      <span className="px-1.5 py-0.5 rounded bg-white/10 text-muted-foreground text-[9px] font-bold shrink-0 w-14 text-center">A SEGUIR</span>
+                      <span className="px-2 py-0.5 rounded bg-white/10 text-muted-foreground text-[10px] font-bold shrink-0 w-16 text-center">A SEGUIR</span>
                     ) : (
-                      <span className="w-14 shrink-0" />
+                      <span className="w-16 shrink-0" />
                     )}
-                    <span className={cn('text-sm flex-1 truncate', prog.isLive ? 'text-foreground font-semibold' : 'text-muted-foreground')}>{prog.title}</span>
-                    <span className="text-xs text-muted-foreground shrink-0 hidden sm:block">{prog.time} – {prog.endTime}</span>
-                    {prog.isLive && (
-                      <div className="h-1.5 w-28 bg-muted rounded-full shrink-0 overflow-hidden">
-                        <div className="h-full bg-gradient-to-r from-primary to-cyan-400 rounded-full" style={{ width: '55%' }} />
-                      </div>
-                    )}
+                    <span className={cn('text-base flex-1 truncate', prog.isLive ? 'text-foreground font-semibold' : 'text-muted-foreground')}>{prog.title}</span>
+                    <span className="text-sm text-muted-foreground shrink-0 hidden md:block">{prog.time} – {prog.endTime}</span>
                   </div>
                 )
               })}
