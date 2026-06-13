@@ -20,8 +20,8 @@ export const ContentCard = memo(function ContentCard({ item, onClick, className 
         'transition-[transform,box-shadow] duration-300 ease-out',
         'hover:scale-[1.08] hover:z-10 focus-visible:scale-[1.08] focus-visible:z-10',
         'shadow-md hover:shadow-2xl hover:shadow-black/60',
-        // White selection contour on hover/focus
-        'ring-0 ring-white hover:ring-[3px] focus-visible:ring-[3px] focus-visible:shadow-2xl',
+        // White selection contour on hover/focus — inset so it's never clipped by the row
+        'ring-inset ring-0 ring-white hover:ring-[3px] focus-visible:ring-[3px] focus-visible:shadow-2xl',
         className
       )}
       aria-label={`Abrir detalhes de ${item.title}`}

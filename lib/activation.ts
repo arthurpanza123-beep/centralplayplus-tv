@@ -1,5 +1,31 @@
 const ACTIVATION_KEY = 'cpp_device_activated'
 const DEVICE_KEY = 'cpp_device_key'
+const TRIAL_END_KEY = 'cpp_trial_ends_at'
+
+/** Default trial length: 90 minutes from first launch. */
+const TRIAL_DURATION_MS = 90 * 60 * 1000
+
+/**
+ * Timestamp (ms) when the free trial ends. Set once on first use and persisted,
+ * so the countdown is stable across reloads.
+ */
+export function getTrialEndsAt(): number {
+  if (typeof window === 'undefined') return Date.now() + TRIAL_DURATION_MS
+  try {
+    const stored = window.localStorage.getItem(TRIAL_END_KEY)
+    if (stored) return Number(stored)
+    const end = Date.now() + TRIAL_DURATION_MS
+    window.localStorage.setItem(TRIAL_END_KEY, String(end))
+    return end
+  } catch {
+    return Date.now() + TRIAL_DURATION_MS
+  }
+}
+
+/** Milliseconds left in the trial (never negative). */
+export function getTrialRemainingMs(): number {
+  return Math.max(getTrialEndsAt() - Date.now(), 0)
+}
 
 /** Characters used for the device key (no ambiguous 0/O/1/I). */
 const KEY_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'

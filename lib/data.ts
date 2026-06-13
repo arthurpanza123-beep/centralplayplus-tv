@@ -837,6 +837,21 @@ export const KIDS_ITEMS: KidsItem[] = [
   },
 ]
 
+/** Whether a plan label represents a free trial / test (vs a paid plan). */
+export function isTrialPlan(plan: string): boolean {
+  return /teste|trial|gr[áa]tis|demo/i.test(plan)
+}
+
+/** Format a trial countdown as "1 hora e 15 restantes" or "30 minutos restantes". */
+export function formatTrialRemaining(ms: number): string {
+  if (ms <= 0) return 'Teste expirado'
+  const totalMin = Math.floor(ms / 60000)
+  const h = Math.floor(totalMin / 60)
+  const min = totalMin % 60
+  if (h > 0) return `${h} ${h === 1 ? 'hora' : 'horas'} e ${min} restantes`
+  return `${min} ${min === 1 ? 'minuto' : 'minutos'} restantes`
+}
+
 /** Days left until a DD/MM/YYYY validity date (never negative). */
 export function daysRemaining(validity: string): number {
   const [d, m, y] = validity.split('/').map(Number)

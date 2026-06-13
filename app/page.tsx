@@ -18,10 +18,11 @@ import { IntroVideo } from '@/components/tv/intro-video'
 import { LoadingScreen } from '@/components/tv/loading-screen'
 import { useTvNavigation } from '@/hooks/use-tv-navigation'
 import { playCue } from '@/lib/sounds'
-import { isDeviceActivated, getDeviceKey, regenerateDeviceKey } from '@/lib/activation'
+import { isDeviceActivated, getDeviceKey, regenerateDeviceKey, getTrialRemainingMs } from '@/lib/activation'
 import { cn } from '@/lib/utils'
 import {
   MOVIES, SERIES, CHANNELS, KIDS_ITEMS, USER, daysRemaining,
+  isTrialPlan, formatTrialRemaining,
   MOVIE_CATEGORIES, SERIES_CATEGORIES, CHANNEL_CATEGORIES,
 } from '@/lib/data'
 import type { Movie, Series, Channel } from '@/lib/types'
@@ -43,7 +44,20 @@ const NAV_ITEMS: { id: TabId; label: string; icon: React.ElementType }[] = [
 
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
 const Sidebar = memo(function Sidebar({ active, onNav, collapsed }: { active: TabId; onNav: (id: TabId) => void; collapsed: boolean }) {
+  const trial = isTrialPlan(USER.plan)
   const planDays = daysRemaining(USER.validity)
+  // Live trial countdown — refreshes every 30s so the remaining time stays current.
+  const [trialMs, setTrialMs] = useState(0)
+  useEffect(() => {
+    if (!trial) return
+    setTrialMs(getTrialRemainingMs())
+    const id = setInterval(() => setTrialMs(getTrialRemainingMs()), 30_000)
+    return () => clearInterval(id)
+  }, [trial])
+
+  const planTitle = trial ? 'Teste ativado' : USER.plan
+  const planSubtitle = trial ? formatTrialRemaining(trialMs) : `${planDays} dias restantes`
+
   return (
     <aside
       className="flex flex-col bg-sidebar border-r border-white/5 shrink-0 overflow-hidden transition-[width] duration-300 ease-out"
@@ -97,8 +111,8 @@ const Sidebar = memo(function Sidebar({ active, onNav, collapsed }: { active: Ta
       {/* Plan badge — plan type + days left. Full card when expanded, icon only when collapsed */}
       <div className={cn('pb-5', collapsed ? 'px-2.5' : 'px-3')}>
         <button
-          title={collapsed ? `${USER.plan} · ${planDays} dias restantes` : undefined}
-          aria-label={`${USER.plan}, ${planDays} dias restantes`}
+          title={collapsed ? `${planTitle} · ${planSubtitle}` : undefined}
+          aria-label={`${planTitle}, ${planSubtitle}`}
           className={cn(
             'group/plan w-full flex items-center rounded-xl border border-primary/30 bg-gradient-to-br from-primary/20 to-primary/5 hover:from-primary/30 hover:to-primary/10 transition-all text-left shadow-sm hover:shadow-md outline-none focus-visible:ring-4 focus-visible:ring-primary/40',
             collapsed ? 'justify-center px-0 py-3' : 'gap-3 px-4 py-3'
@@ -110,8 +124,8 @@ const Sidebar = memo(function Sidebar({ active, onNav, collapsed }: { active: Ta
           {!collapsed && (
             <>
               <div className="flex flex-col leading-tight min-w-0 flex-1">
-                <span className="text-sm font-bold text-primary truncate capitalize">{USER.plan}</span>
-                <span className="text-xs text-primary/75 truncate font-medium">{planDays} dias restantes</span>
+                <span className="text-sm font-bold text-primary truncate capitalize">{planTitle}</span>
+                <span className="text-xs text-primary/75 truncate font-medium">{planSubtitle}</span>
               </div>
               <ChevronRight className="w-4 h-4 text-primary/60 shrink-0 group-hover/plan:translate-x-0.5 transition-transform" />
             </>
@@ -162,7 +176,7 @@ const PosterRow = memo(function PosterRow({
   return (
     <section className="flex flex-col gap-3.5">
       <h2 className="text-lg font-bold text-foreground px-8 tracking-tight">{title}</h2>
-      <div className="flex items-start gap-4 overflow-x-auto overflow-y-visible px-8 py-2 scrollbar-none">
+      <div className="flex items-start gap-4 overflow-x-auto px-8 py-4 scrollbar-none">
         {items.map((item) => (
           <div key={item.id} className="shrink-0 w-[150px]">
             <ContentCard item={item} onClick={onSelect} />
