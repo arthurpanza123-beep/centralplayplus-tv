@@ -329,13 +329,21 @@ function CanaisTab() {
               onMouseEnter={() => setSelectedChannel(ch)}
               onFocus={() => setSelectedChannel(ch)}
               onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); openChannel(ch) } }}
-              className={cn('flex items-center gap-3 px-4 py-3.5 border-b border-border/60 text-left transition-colors cursor-pointer outline-none',
+              className={cn('flex items-center gap-3 px-4 py-3 border-b border-border/60 text-left transition-colors cursor-pointer outline-none',
                 selectedChannel.id === ch.id ? 'bg-primary/10 border-l-2 border-l-primary' : 'hover:bg-accent')}>
-              <span className="text-xs text-muted-foreground w-8 shrink-0">{ch.number}</span>
+              <span className="text-xs text-muted-foreground w-8 shrink-0 tabular-nums">{ch.number}</span>
               <div className="w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold text-white shrink-0 shadow-sm" style={{ background: ch.logoColor }}>
                 {ch.logoText}
               </div>
-              <span className="text-sm text-foreground font-medium truncate">{ch.name}</span>
+              <div className="flex flex-col min-w-0 flex-1">
+                <span className="text-sm text-foreground font-medium truncate">{ch.name}</span>
+                <span className="text-[11px] text-muted-foreground truncate">{ch.currentProgram}</span>
+              </div>
+              {selectedChannel.id === ch.id && (
+                <span className="flex items-center gap-1 text-[9px] font-bold text-red-500 shrink-0" aria-label="Ao vivo">
+                  <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                </span>
+              )}
             </div>
           ))}
         </div>
@@ -347,24 +355,45 @@ function CanaisTab() {
             <span className="text-border/80">|</span>
             <span className="text-primary font-semibold">{category}</span>
           </div>
-          {/* Clean preview — press OK / click to open fullscreen */}
+          {/* Immersive TV-style preview — press OK / click to open fullscreen */}
           <button
             onClick={() => openChannel(selectedChannel)}
             aria-label={`Abrir ${selectedChannel.name} em tela cheia`}
-            className="group/prev relative rounded-2xl overflow-hidden border border-border shadow-lg flex-1 max-h-64 w-full text-left outline-none focus-visible:ring-4 focus-visible:ring-primary/60 transition-transform duration-300 hover:scale-[1.01]"
+            className="group/prev relative rounded-2xl overflow-hidden border border-border shadow-xl flex-1 max-h-72 w-full text-left outline-none focus-visible:ring-4 focus-visible:ring-primary/60 transition-transform duration-300 hover:scale-[1.01]"
           >
-            <div className="absolute inset-0 flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#0f1830 0%,#1a2950 100%)' }}>
-              <div className="text-center">
-                <div className="w-20 h-20 rounded-2xl flex items-center justify-center text-2xl font-bold text-white mx-auto mb-3 shadow-lg" style={{ background: selectedChannel.logoColor }}>
-                  {selectedChannel.logoText}
-                </div>
-                <p className="text-base text-white font-semibold">{selectedChannel.name}</p>
-                <p className="text-xs text-white/60 mt-1">{selectedChannel.currentProgram}</p>
+            {/* Cinematic channel-tinted backdrop */}
+            <div
+              className="absolute inset-0"
+              style={{ background: `radial-gradient(circle at 50% 38%, ${selectedChannel.logoColor}55 0%, #05070d 78%)` }}
+            />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div
+                className="w-24 h-24 rounded-3xl flex items-center justify-center text-3xl font-black text-white shadow-2xl ring-1 ring-white/10"
+                style={{ background: selectedChannel.logoColor }}
+              >
+                {selectedChannel.logoText}
               </div>
             </div>
-            <div className="absolute top-3 left-3 flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-red-500/90 text-white text-[10px] font-bold">
-              <span className="w-1 h-1 rounded-full bg-white animate-pulse" />AO VIVO
+
+            {/* Top-left live badge + channel number */}
+            <div className="absolute top-3 left-3 flex items-center gap-2">
+              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-red-600 text-white text-[11px] font-bold shadow-lg">
+                <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />AO VIVO
+              </span>
+              <span className="px-2 py-1 rounded-md bg-black/50 backdrop-blur-sm text-white/90 text-[11px] font-bold tabular-nums">
+                {selectedChannel.number}
+              </span>
             </div>
+
+            {/* Bottom info bar — channel name, current program, live progress */}
+            <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/85 via-black/45 to-transparent">
+              <p className="text-lg font-bold text-white leading-tight drop-shadow">{selectedChannel.name}</p>
+              <p className="text-sm text-white/75 mt-0.5 truncate">Agora: {selectedChannel.currentProgram}</p>
+              <div className="mt-2 h-1 w-full max-w-sm bg-white/20 rounded-full overflow-hidden">
+                <div className="h-full w-1/2 bg-primary rounded-full" />
+              </div>
+            </div>
+
             {/* Expand hint */}
             <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover/prev:opacity-100 group-focus-visible/prev:opacity-100 transition-opacity">
               <span className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary text-primary-foreground text-sm font-bold shadow-lg">
