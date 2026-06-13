@@ -63,17 +63,11 @@ const Sidebar = memo(function Sidebar({ active, onNav, collapsed }: { active: Ta
       className="flex flex-col bg-sidebar border-r border-white/5 shrink-0 overflow-hidden transition-[width] duration-300 ease-out"
       style={{ width: collapsed ? 84 : 240 }}
     >
-      {/* Logo — full wordmark when expanded, mascot only when collapsed */}
-      <div className={cn('flex items-center py-6 transition-all', collapsed ? 'justify-center px-0' : 'justify-center px-5')}>
-        {collapsed ? (
-          <div className="relative w-11 h-11 drop-shadow-[0_2px_12px_rgba(37,99,235,0.4)]">
-            <Image src="/mascot-icon.png" alt="Central Play Plus" fill className="object-contain" priority />
-          </div>
-        ) : (
-          <div className="relative w-full h-12 drop-shadow-[0_2px_12px_rgba(37,99,235,0.35)]">
-            <Image src="/logo-full.webp" alt="Central Play Plus" fill className="object-contain object-left" priority />
-          </div>
-        )}
+      {/* Logo — short mascot only, larger when expanded */}
+      <div className="flex items-center justify-center py-6 transition-all">
+        <div className={cn('relative drop-shadow-[0_2px_12px_rgba(37,99,235,0.4)] transition-all duration-300', collapsed ? 'w-11 h-11' : 'w-16 h-16')}>
+          <Image src="/mascot-icon.png" alt="Central Play Plus" fill className="object-contain" priority />
+        </div>
       </div>
 
       {/* Nav */}
