@@ -51,33 +51,33 @@ export function ChannelPlayer({ channel, onClose }: ChannelPlayerProps) {
       onClick={onClose}
       className="fixed inset-0 z-50 bg-black animate-cp-zoom-in cursor-none"
     >
-      {/* Video surface (simulated) — fills the entire screen */}
+      {/* Video surface (simulated) — clean dark feed, focus on the channel */}
       <div
-        className="absolute inset-0 flex items-center justify-center"
-        style={{ background: `radial-gradient(circle at 50% 42%, ${channel.logoColor}26 0%, #04060b 72%)` }}
-      >
-        <div className="text-center">
-          <div
-            className="w-32 h-32 rounded-3xl flex items-center justify-center text-4xl font-black text-white mx-auto mb-6 shadow-2xl"
-            style={{ background: channel.logoColor }}
-          >
-            {channel.logoText}
-          </div>
-          <p className="text-3xl font-bold text-white/90">{channel.name}</p>
+        className="absolute inset-0"
+        style={{ background: `radial-gradient(circle at 50% 45%, ${channel.logoColor}14 0%, #04060b 75%)` }}
+      />
+
+      {/* Small, discreet channel bug (top-right watermark) */}
+      <div className="absolute top-6 right-6 flex items-center gap-2 opacity-70">
+        <div
+          className="w-8 h-8 rounded-lg flex items-center justify-center text-[11px] font-black text-white shadow"
+          style={{ background: channel.logoColor }}
+        >
+          {channel.logoText}
         </div>
       </div>
 
-      {/* Brief auto-hiding channel hint (top-left) */}
+      {/* Brief auto-hiding channel hint (bottom-left) */}
       <div
         className={cn(
-          'absolute top-8 left-8 flex items-center gap-3 transition-opacity duration-700',
+          'absolute bottom-8 left-8 flex items-center gap-2.5 transition-opacity duration-700',
           showHint ? 'opacity-100' : 'opacity-0',
         )}
       >
-        <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-red-600 text-white text-xs font-bold">
+        <span className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-red-600 text-white text-[10px] font-bold">
           <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />AO VIVO
         </span>
-        <span className="text-white text-lg font-semibold drop-shadow">{channel.number} · {channel.name}</span>
+        <span className="text-white text-sm font-semibold drop-shadow">{channel.name}</span>
       </div>
     </div>,
     document.body,

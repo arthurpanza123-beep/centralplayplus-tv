@@ -437,6 +437,13 @@ function CanaisTab() {
               </span>
             </div>
 
+            {/* Discreet channel bug (top-right watermark) */}
+            <div className="absolute top-3 right-3 opacity-70">
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-black text-white shadow" style={{ background: selectedChannel.logoColor }}>
+                {selectedChannel.logoText}
+              </div>
+            </div>
+
             {/* Discreet channel-name flash — small chip, bottom-left, fades quickly */}
             {showNameFlash && (
               <div key={selectedChannel.id} className="absolute bottom-3 left-3 animate-cp-name-flash">
