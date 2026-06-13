@@ -12,6 +12,8 @@ import {
 import { Topbar } from '@/components/tv/topbar'
 import { ContentCard } from '@/components/tv/content-card'
 import { ContentModal } from '@/components/tv/content-modal'
+import { SplashScreen } from '@/components/tv/splash-screen'
+import { LoginScreen } from '@/components/tv/login-screen'
 import { cn } from '@/lib/utils'
 import {
   MOVIES, SERIES, CHANNELS, WATCHING_ITEMS, KIDS_ITEMS, USER,
@@ -43,12 +45,15 @@ const Sidebar = memo(function Sidebar({ active, onNav }: { active: TabId; onNav:
     >
       {/* Logo */}
       <div className="flex items-center gap-3 px-6 py-5">
-        <div className="relative w-11 h-11 shrink-0 drop-shadow-sm">
-          <Image src="/mascot.png" alt="Central Play mascote" fill className="object-contain" />
+        <div className="relative w-12 h-12 shrink-0 drop-shadow-[0_2px_8px_rgba(37,99,235,0.3)]">
+          <Image src="/mascot-icon.png" alt="Central Play Plus mascote" fill className="object-contain" />
         </div>
         <div className="flex flex-col leading-none">
-          <span className="text-[11px] text-muted-foreground font-bold tracking-[0.2em] uppercase">Central</span>
-          <span className="text-xl font-black text-primary tracking-tight">PLAY</span>
+          <span className="text-[11px] text-muted-foreground font-bold tracking-[0.18em] uppercase">Central</span>
+          <span className="text-xl font-black tracking-tight leading-none">
+            <span className="text-foreground">PLAY</span>{' '}
+            <span className="text-primary">PLUS</span>
+          </span>
         </div>
       </div>
 
@@ -597,11 +602,17 @@ function StubTab({ title }: { title: string }) {
 // ─── ROOT SHELL ───────────────────────────────────────────────────────────────
 const TABS: TabId[] = ['home', 'canais', 'filmes', 'series', 'kids', 'buscar', 'favoritos', 'configuracoes']
 
+type AppStage = 'splash' | 'login' | 'app'
+
 export default function AppShell() {
   const [active, setActive] = useState<TabId>('home')
+  const [stage, setStage] = useState<AppStage>('splash')
+
+  if (stage === 'splash') return <SplashScreen onDone={() => setStage('login')} />
+  if (stage === 'login') return <LoginScreen onLogin={() => setStage('app')} />
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden p-4 gap-4">
+    <div className="flex h-screen w-screen overflow-hidden p-4 gap-4 animate-cp-fade-in">
       {/* Wallpaper — fixed layer behind everything */}
       <img
         src="/bg-wall.png"
