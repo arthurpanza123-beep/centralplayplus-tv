@@ -96,7 +96,7 @@ const Sidebar = memo(function Sidebar({ active, onNav }: { active: TabId; onNav:
 // ─── Shell header ─────────────────────────────────────────────────────────────
 const ShellHeader = memo(function ShellHeader({ title, right }: { title?: string; right?: React.ReactNode }) {
   return (
-    <header className="flex items-center justify-between px-8 py-4 border-b border-border/40 shrink-0 bg-white/60 backdrop-blur-sm">
+    <header className="flex items-center justify-between px-8 py-4 shrink-0">
       <div className="flex items-center gap-4">
         {title && <h1 className="text-2xl font-bold text-foreground">{title}</h1>}
         {right}
@@ -154,6 +154,11 @@ function HomeTab({ onNav }: { onNav: (id: TabId) => void }) {
   return (
     <div className="h-full overflow-y-auto">
       <div className="flex flex-col gap-5 p-6 pb-8">
+
+        {/* Top clock row */}
+        <div className="flex items-center justify-end -mb-1">
+          <Topbar />
+        </div>
 
         {/* Hero banner */}
         <section className="relative rounded-2xl overflow-hidden shadow-md" style={{ minHeight: 230 }}>
@@ -600,31 +605,29 @@ export default function AppShell() {
       {/* Sidebar */}
       <Sidebar active={active} onNav={setActive} />
 
-      {/* Main content area — rounded card sitting on top of the wallpaper */}
-      <div className="flex flex-1 min-w-0 p-3 pl-0">
-        <div className="flex flex-col flex-1 rounded-2xl overflow-hidden border border-black/8 bg-white/75 backdrop-blur-xl shadow-xl relative">
-          {TABS.map((tab) => (
-            <Activity key={tab} mode={active === tab ? 'visible' : 'hidden'}>
-              <div
-                className="absolute inset-0 flex flex-col transition-[opacity,transform] duration-250 ease-out will-change-[opacity,transform]"
-                style={{
-                  opacity: active === tab ? 1 : 0,
-                  transform: active === tab ? 'translateX(0)' : 'translateX(14px)',
-                  pointerEvents: active === tab ? 'auto' : 'none',
-                }}
-              >
-                {tab === 'home' && <HomeTab onNav={setActive} />}
-                {tab === 'filmes' && <FilmesTab />}
-                {tab === 'series' && <SeriesTab />}
-                {tab === 'canais' && <CanaisTab />}
-                {tab === 'configuracoes' && <ConfiguracoesTab />}
-                {tab === 'kids' && <StubTab title="Kids" />}
-                {tab === 'buscar' && <StubTab title="Buscar" />}
-                {tab === 'favoritos' && <StubTab title="Favoritos" />}
-              </div>
-            </Activity>
-          ))}
-        </div>
+      {/* Main content area — content sits directly over the wallpaper */}
+      <div className="flex flex-col flex-1 min-w-0 relative">
+        {TABS.map((tab) => (
+          <Activity key={tab} mode={active === tab ? 'visible' : 'hidden'}>
+            <div
+              className="absolute inset-0 flex flex-col transition-[opacity,transform] duration-250 ease-out will-change-[opacity,transform]"
+              style={{
+                opacity: active === tab ? 1 : 0,
+                transform: active === tab ? 'translateX(0)' : 'translateX(14px)',
+                pointerEvents: active === tab ? 'auto' : 'none',
+              }}
+            >
+              {tab === 'home' && <HomeTab onNav={setActive} />}
+              {tab === 'filmes' && <FilmesTab />}
+              {tab === 'series' && <SeriesTab />}
+              {tab === 'canais' && <CanaisTab />}
+              {tab === 'configuracoes' && <ConfiguracoesTab />}
+              {tab === 'kids' && <StubTab title="Kids" />}
+              {tab === 'buscar' && <StubTab title="Buscar" />}
+              {tab === 'favoritos' && <StubTab title="Favoritos" />}
+            </div>
+          </Activity>
+        ))}
       </div>
     </div>
   )
