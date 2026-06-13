@@ -584,7 +584,7 @@ type AppStage = 'splash' | 'login' | 'intro' | 'app'
 
 export default function AppShell() {
   const [active, setActive] = useState<TabId>('home')
-  const [stage, setStage] = useState<AppStage>('splash')
+  const [stage, setStage] = useState<AppStage>('intro')
 
   // TV-remote-style spatial navigation. Re-focuses when the active tab changes.
   // "Back" returns to Home (the modal handles its own Escape via capture phase).
@@ -598,9 +598,9 @@ export default function AppShell() {
     if (stage === 'app') playCue('open')
   }, [stage])
 
+  if (stage === 'intro') return <IntroVideo onDone={() => setStage('splash')} />
   if (stage === 'splash') return <SplashScreen onDone={() => setStage('login')} />
-  if (stage === 'login') return <LoginScreen onLogin={() => setStage('intro')} />
-  if (stage === 'intro') return <IntroVideo onDone={() => setStage('app')} />
+  if (stage === 'login') return <LoginScreen onLogin={() => setStage('app')} />
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-background animate-cp-power-on">
