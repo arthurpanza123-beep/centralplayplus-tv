@@ -11,7 +11,7 @@ import {
 } from 'lucide-react'
 import { Topbar } from '@/components/tv/topbar'
 import { ContentCard } from '@/components/tv/content-card'
-import { ContentModal } from '@/components/tv/content-modal'
+import { ContentDetail } from '@/components/tv/content-detail'
 import { ChannelPlayer } from '@/components/tv/channel-player'
 import { LoginScreen } from '@/components/tv/login-screen'
 import { IntroVideo } from '@/components/tv/intro-video'
@@ -207,7 +207,7 @@ function HomeTab({ onNav }: { onNav: (id: TabId) => void }) {
         <PosterRow title="Filmes para a família" items={SERIES.slice(8, 18)} onSelect={handleSelect} />
       </div>
 
-      <ContentModal item={selected} onClose={handleClose} />
+      <ContentDetail item={selected} onClose={handleClose} />
     </div>
   )
 }
@@ -244,7 +244,7 @@ function FilmesTab() {
           }
         </div>
       </div>
-      <ContentModal item={selected} onClose={handleClose} />
+      <ContentDetail item={selected} onClose={handleClose} />
     </>
   )
 }
@@ -281,7 +281,7 @@ function SeriesTab() {
           }
         </div>
       </div>
-      <ContentModal item={selected} onClose={handleClose} />
+      <ContentDetail item={selected} onClose={handleClose} />
     </>
   )
 }
