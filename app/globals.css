@@ -272,5 +272,26 @@
 }
 .animate-cp-name-flash { animation: cp-name-flash 2.4s ease-in-out forwards; }
 
+/* Kids: gentle floating bob for playful cards */
+@keyframes cp-kid-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+.animate-cp-kid-float { animation: cp-kid-float 3.2s ease-in-out infinite; }
+
+/* Kids: moving sheen sweeping across the banner */
+@keyframes cp-kid-shine {
+  0% { transform: translateX(-120%) skewX(-18deg); }
+  100% { transform: translateX(320%) skewX(-18deg); }
+}
+.animate-cp-kid-shine { animation: cp-kid-shine 3.6s ease-in-out infinite; }
+
+/* Kids: twinkling sparkle */
+@keyframes cp-kid-twinkle {
+  0%, 100% { opacity: 0.25; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+.animate-cp-kid-twinkle { animation: cp-kid-twinkle 2.4s ease-in-out infinite; }
+
 .scrollbar-none { scrollbar-width: none; -ms-overflow-style: none; }
 .scrollbar-none::-webkit-scrollbar { display: none; }

@@ -5,7 +5,7 @@ import { Activity } from 'react'
 import Image from 'next/image'
 import {
   Home, Radio, Film, Tv2, Smile, Search, Heart, Settings, Crown,
-  Play, Info, Star,
+  Play, Info, Star, Sparkles, HeartOff,
   Bell, Shield, MessageSquare, MonitorPlay, Monitor, ChevronRight, LogOut,
   User, Mail, Calendar, Smartphone, RefreshCw, CalendarClock,
 } from 'lucide-react'
@@ -14,6 +14,7 @@ import { ContentCard } from '@/components/tv/content-card'
 import { ContentDetail } from '@/components/tv/content-detail'
 import { ChannelPlayer } from '@/components/tv/channel-player'
 import { MascotVideo } from '@/components/tv/mascot-video'
+import { VirtualKeyboard } from '@/components/tv/virtual-keyboard'
 import { LoginScreen } from '@/components/tv/login-screen'
 import { IntroVideo } from '@/components/tv/intro-video'
 import { LoadingScreen } from '@/components/tv/loading-screen'
@@ -78,7 +79,7 @@ const Sidebar = memo(function Sidebar({ active, onNav, collapsed }: { active: Ta
       </div>
 
       {/* Nav */}
-      <nav className={cn('flex-1 py-2 overflow-y-auto overflow-x-hidden', collapsed ? 'px-2.5' : 'px-3')} aria-label="Navegação principal">
+      <nav className={cn('flex-1 py-2 overflow-y-auto overflow-x-hidden scrollbar-none', collapsed ? 'px-2.5' : 'px-3')} aria-label="Navegação principal">
         <ul className="flex flex-col gap-1">
           {NAV_ITEMS.map((item, idx) => {
             if (!item) return <li key={`div-${idx}`}><hr className="my-2.5 border-border/60" /></li>
@@ -187,7 +188,7 @@ const PosterRow = memo(function PosterRow({
       <h2 className="text-lg font-bold text-foreground px-8 tracking-tight">{title}</h2>
       <div className="flex items-start gap-4 overflow-x-auto px-8 py-4 scrollbar-none">
         {items.map((item) => (
-          <div key={item.id} className="shrink-0 w-[150px]">
+          <div key={item.id} className="shrink-0 w-[184px]">
             <ContentCard item={item} onClick={onSelect} />
           </div>
         ))}
@@ -204,7 +205,7 @@ function HomeTab({ onNav }: { onNav: (id: TabId) => void }) {
   const handleClose = useCallback(() => setSelected(null), [])
 
   return (
-    <div className="h-full overflow-y-auto overflow-x-hidden">
+    <div className="h-full overflow-y-auto overflow-x-hidden scrollbar-none">
       {/* Floating clock */}
       <div className="absolute top-4 right-6 z-30">
         <Topbar />
@@ -245,10 +246,12 @@ function HomeTab({ onNav }: { onNav: (id: TabId) => void }) {
 
       {/* Rows — pulled up to overlap the hero fade */}
       <div className="relative z-10 flex flex-col gap-9 mt-2 pb-10">
-        <PosterRow title="Em alta hoje" items={MOVIES.slice(0, 10)} onSelect={handleSelect} />
-        <PosterRow title="Continue assistindo" items={MOVIES.slice(10, 18)} onSelect={handleSelect} />
-        <PosterRow title="Séries em destaque" items={SERIES.slice(0, 10)} onSelect={handleSelect} />
-        <PosterRow title="Filmes para a família" items={SERIES.slice(8, 18)} onSelect={handleSelect} />
+        <PosterRow title="Em alta hoje" items={MOVIES.slice(0, 12)} onSelect={handleSelect} />
+        <PosterRow title="Continue assistindo" items={MOVIES.slice(10, 20)} onSelect={handleSelect} />
+        <PosterRow title="Séries em destaque" items={SERIES.slice(0, 12)} onSelect={handleSelect} />
+        <PosterRow title="Filmes em destaque" items={MOVIES.slice(4, 16)} onSelect={handleSelect} />
+        <PosterRow title="Lançamentos" items={MOVIES.slice(16).concat(MOVIES.slice(0, 4))} onSelect={handleSelect} />
+        <PosterRow title="Para a família" items={SERIES.slice(6, 18)} onSelect={handleSelect} />
       </div>
 
       <ContentDetail item={selected} onClose={handleClose} />
@@ -280,10 +283,10 @@ function FilmesTab() {
       <ShellHeader title="Filmes" right={<SearchInput placeholder="Buscar filmes" value={search} onChange={setSearch} />} />
       <div className="flex flex-1 overflow-hidden">
         <CategorySidebar categories={MOVIE_CATEGORIES} selected={category} onSelect={setCategory} />
-        <div className="flex-1 overflow-y-auto px-6 py-4">
+        <div className="flex-1 overflow-y-auto px-6 py-4 scrollbar-none">
           <p className="text-sm font-semibold text-primary mb-4">{category}</p>
           {filtered.length > 0
-            ? <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 2xl:grid-cols-6 gap-5">{filtered.map((m) => <ContentCard key={m.id} item={m} onClick={handleSelect} />)}</div>
+            ? <div className="grid grid-cols-5 gap-5">{filtered.map((m) => <ContentCard key={m.id} item={m} onClick={handleSelect} />)}</div>
             : <div className="flex items-center justify-center h-48 text-muted-foreground text-sm">Nenhum filme encontrado.</div>
           }
         </div>
@@ -317,10 +320,10 @@ function SeriesTab() {
       <ShellHeader title="Séries" right={<SearchInput placeholder="Buscar séries" value={search} onChange={setSearch} />} />
       <div className="flex flex-1 overflow-hidden">
         <CategorySidebar categories={SERIES_CATEGORIES} selected={category} onSelect={setCategory} />
-        <div className="flex-1 overflow-y-auto px-6 py-4">
+        <div className="flex-1 overflow-y-auto px-6 py-4 scrollbar-none">
           <p className="text-sm font-semibold text-primary mb-4">{category}</p>
           {filtered.length > 0
-            ? <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 2xl:grid-cols-6 gap-5">{filtered.map((s) => <ContentCard key={s.id} item={s} onClick={handleSelect} />)}</div>
+            ? <div className="grid grid-cols-5 gap-5">{filtered.map((s) => <ContentCard key={s.id} item={s} onClick={handleSelect} />)}</div>
             : <div className="flex items-center justify-center h-48 text-muted-foreground text-sm">Nenhuma série encontrada.</div>
           }
         </div>
@@ -346,13 +349,17 @@ function CanaisTab() {
   // Auto-zoom: only after 30s of true inactivity (no scrolling / channel changes).
   const idleTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // TV behavior: first OK selects the channel (shows preview); a second OK on the
-  // already-selected channel expands it to fullscreen.
+  // TV behavior: first click on a channel just shows the small preview; clicking
+  // the SAME channel a second time expands it to fullscreen. We track the last
+  // clicked id in a ref so the very first click never zooms (even the default one).
+  const lastClickedId = useRef<string | null>(null)
   const handleChannelClick = useCallback((ch: Channel) => {
-    setSelectedChannel((prev) => {
-      if (prev.id === ch.id) setFullscreen(true)
-      return ch
-    })
+    if (lastClickedId.current === ch.id) {
+      setFullscreen(true)
+    } else {
+      lastClickedId.current = ch.id
+      setSelectedChannel(ch)
+    }
   }, [])
   // Clicking the preview itself always expands to fullscreen.
   const openChannel = useCallback((ch: Channel) => {
@@ -410,7 +417,6 @@ function CanaisTab() {
           {filteredChannels.map((ch) => (
             <div key={ch.id} role="button" tabIndex={0}
               onClick={() => handleChannelClick(ch)}
-              onFocus={() => setSelectedChannel(ch)}
               onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleChannelClick(ch) } }}
               className={cn('group/ch relative flex items-center gap-4 px-5 py-4 border-b border-border/60 text-left transition-all duration-300 cursor-pointer outline-none overflow-hidden shrink-0',
                 selectedChannel.id === ch.id
@@ -471,12 +477,6 @@ function CanaisTab() {
               </div>
             )}
 
-            {/* Expand hint */}
-            <div className="absolute inset-0 flex items-center justify-center bg-black/35 opacity-0 group-hover/prev:opacity-100 group-focus-visible/prev:opacity-100 transition-opacity">
-              <span className="flex items-center gap-2.5 px-7 py-3.5 rounded-full bg-primary text-primary-foreground text-lg font-bold shadow-lg">
-                <Play className="w-5 h-5 fill-current" /> Assistir agora
-              </span>
-            </div>
           </button>
           </div>
 
@@ -590,8 +590,8 @@ function ConfiguracoesTab() {
                 </div>
                 {type === 'toggle' ? (
                   <button role="switch" aria-checked={value} onClick={onToggle}
-                    className={cn('relative w-11 h-6 rounded-full transition-colors shrink-0', value ? 'bg-primary' : 'bg-muted')}>
-                    <span className={cn('absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform', value ? 'translate-x-[22px]' : 'translate-x-0.5')} />
+                    className={cn('relative inline-flex items-center h-7 w-12 rounded-full transition-colors duration-300 ease-out shrink-0 outline-none focus-visible:ring-4 focus-visible:ring-primary/40', value ? 'bg-primary' : 'bg-muted')}>
+                    <span className={cn('inline-block h-5 w-5 rounded-full bg-white shadow-md transition-transform duration-300 ease-out', value ? 'translate-x-6' : 'translate-x-1')} />
                     <span className="sr-only">{value ? 'Ativado' : 'Desativado'}</span>
                   </button>
                 ) : (
@@ -653,86 +653,200 @@ function SearchInput({ placeholder, value, onChange }: { placeholder: string; va
 
 // ─── KIDS TAB ────────────────────────────────���────────────────────────────────
 function KidsTab() {
-  const ageChips = ['Todos', '0-3 anos', '4-6 anos', '7-9 anos', '10-12 anos']
-  const [age, setAge] = useState(ageChips[0])
+  const [selected, setSelected] = useState<Movie | Series | null>(null)
+  const handleSelect = useCallback((i: Movie | Series) => setSelected(i), [])
+  const handleClose = useCallback(() => setSelected(null), [])
+
+  const kidsChannels = useMemo(() => CHANNELS.filter((c) => c.category === 'Desenhos'), [])
+  const kidsMovies = useMemo(() => MOVIES.slice(0, 12), [])
+  const kidsSeries = useMemo(() => SERIES.slice(0, 12), [])
 
   return (
     <>
       <ShellHeader title="Kids" />
-      <div className="flex-1 overflow-y-auto px-6 py-5 bg-gradient-to-b from-sky-50/5 to-transparent">
-        {/* Playful, colorful banner */}
-        <div className="relative overflow-hidden rounded-[2rem] p-8 mb-7 shadow-xl shadow-fuchsia-900/20"
-          style={{ background: 'linear-gradient(120deg, #f472b6 0%, #a855f7 38%, #38bdf8 72%, #22d3ee 100%)' }}>
-          <div className="relative z-10 max-w-lg">
-            <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/25 backdrop-blur-sm text-white text-sm font-bold mb-3">
-              <Smile className="w-4 h-4" /> Modo Kids
-            </span>
-            <h2 className="text-4xl font-black text-white text-balance leading-tight mb-2 drop-shadow-md">
-              Diversão segura para os pequenos
-            </h2>
-            <p className="text-base text-white/90 leading-relaxed">
-              Desenhos, aventuras e histórias selecionadas com controle parental ativo.
-            </p>
-          </div>
-          {/* Decorative bubbles */}
-          <div className="absolute -right-8 -top-8 w-48 h-48 rounded-full bg-white/15" aria-hidden />
-          <div className="absolute right-28 bottom-2 w-28 h-28 rounded-full bg-white/15" aria-hidden />
-          <div className="absolute right-6 -bottom-10 w-36 h-36 rounded-full bg-white/10" aria-hidden />
-        </div>
-
-        {/* Age chips */}
-        <div className="flex flex-wrap gap-2.5 mb-7">
-          {ageChips.map((c, i) => {
-            const chipColors = ['bg-pink-500', 'bg-sky-500', 'bg-emerald-500', 'bg-amber-500', 'bg-violet-500']
-            return (
-              <button
-                key={c}
-                onClick={() => setAge(c)}
-                className={cn(
-                  'px-5 py-2.5 rounded-full text-base font-bold transition-all outline-none focus-visible:ring-4 focus-visible:ring-white/40',
-                  age === c ? cn(chipColors[i % chipColors.length], 'text-white shadow-lg scale-105') : 'bg-white/10 text-muted-foreground hover:text-foreground hover:bg-white/20'
-                )}
-              >
-                {c}
-              </button>
-            )
-          })}
-        </div>
-
-        <p className="text-lg font-black text-foreground mb-4">Programas favoritos</p>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-5">
-          {KIDS_ITEMS.map((item) => (
-            <button
-              key={item.id}
-              aria-label={`Assistir ${item.title}`}
-              className="group/kid relative aspect-video rounded-[1.75rem] overflow-hidden outline-none shadow-lg transition-transform duration-300 hover:scale-[1.04] focus-visible:scale-[1.04] focus-visible:ring-4 focus-visible:ring-white/60"
-              style={{ background: `linear-gradient(150deg, ${item.colorFrom} 0%, ${item.colorTo} 100%)` }}
-            >
-              {/* Real colorful cartoon cover */}
-              <Image src={`/kids/${item.id}.png`} alt={item.title} fill sizes="(max-width: 768px) 50vw, 30vw" className="object-cover" />
-              {/* Play affordance */}
-              <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full bg-white/95 flex items-center justify-center shadow-xl scale-75 opacity-0 transition-all duration-300 group-hover/kid:scale-100 group-hover/kid:opacity-100 group-focus-visible/kid:scale-100 group-focus-visible/kid:opacity-100">
-                <Play className="w-7 h-7 text-pink-600 fill-current ml-0.5" />
+      <div className="flex-1 overflow-y-auto scrollbar-none pb-10 bg-gradient-to-b from-sky-500/10 via-fuchsia-500/[0.05] to-transparent">
+        {/* Playful, colorful banner with moving sheen + sparkles */}
+        <div className="px-6 pt-5">
+          <div className="relative overflow-hidden rounded-[2rem] p-8 mb-8 shadow-2xl shadow-fuchsia-900/30"
+            style={{ background: 'linear-gradient(120deg, #f472b6 0%, #a855f7 38%, #38bdf8 72%, #22d3ee 100%)' }}>
+            {/* Moving light sheen */}
+            <span aria-hidden className="pointer-events-none absolute inset-y-0 left-0 w-1/4 bg-white/30 blur-xl animate-cp-kid-shine" />
+            {/* Twinkling sparkles */}
+            <Sparkles aria-hidden className="absolute top-6 right-10 w-7 h-7 text-white/90 animate-cp-kid-twinkle" />
+            <Sparkles aria-hidden className="absolute bottom-8 right-32 w-5 h-5 text-white/80 animate-cp-kid-twinkle" style={{ animationDelay: '0.8s' }} />
+            <Sparkles aria-hidden className="absolute top-16 right-52 w-4 h-4 text-white/70 animate-cp-kid-twinkle" style={{ animationDelay: '1.4s' }} />
+            <div className="relative z-10 max-w-lg">
+              <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/25 backdrop-blur-sm text-white text-sm font-bold mb-3">
+                <Smile className="w-4 h-4" /> Modo Kids
               </span>
-              <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/75 to-transparent">
-                <p className="text-white font-black text-lg leading-tight text-left text-balance drop-shadow-md">
-                  {item.title}
-                </p>
-              </div>
-            </button>
-          ))}
+              <h2 className="text-4xl font-black text-white text-balance leading-tight mb-2 drop-shadow-md">
+                Diversão segura para os pequenos
+              </h2>
+              <p className="text-base text-white/90 leading-relaxed">
+                Desenhos, filmes e séries divertidas, só para as crianças.
+              </p>
+            </div>
+            {/* Decorative bubbles */}
+            <div className="absolute -right-8 -top-8 w-48 h-48 rounded-full bg-white/15" aria-hidden />
+            <div className="absolute right-28 bottom-2 w-28 h-28 rounded-full bg-white/15" aria-hidden />
+            <div className="absolute right-6 -bottom-10 w-36 h-36 rounded-full bg-white/10" aria-hidden />
+          </div>
+        </div>
+
+        {/* Glowing program cards with a gentle float */}
+        <div className="px-6">
+          <p className="text-lg font-black text-foreground mb-4 flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-fuchsia-400" /> Programas favoritos
+          </p>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-5">
+            {KIDS_ITEMS.map((item, i) => (
+              <button
+                key={item.id}
+                aria-label={`Assistir ${item.title}`}
+                className="group/kid animate-cp-kid-float relative aspect-video rounded-[1.75rem] overflow-hidden outline-none transition-transform duration-300 hover:scale-[1.05] focus-visible:scale-[1.05] focus-visible:ring-4 focus-visible:ring-white/70"
+                style={{ animationDelay: `${(i % 3) * 0.5}s`, boxShadow: `0 10px 30px -6px ${item.colorTo}aa` }}
+              >
+                <Image src={`/kids/${item.id}.png`} alt={item.title} fill sizes="(max-width: 768px) 50vw, 30vw" className="object-cover" />
+                {/* Glow ring on hover */}
+                <span className="pointer-events-none absolute inset-0 rounded-[1.75rem] ring-2 ring-white/0 group-hover/kid:ring-white/60 transition-all duration-300" aria-hidden />
+                <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full bg-white/95 flex items-center justify-center shadow-xl scale-75 opacity-0 transition-all duration-300 group-hover/kid:scale-100 group-hover/kid:opacity-100 group-focus-visible/kid:scale-100 group-focus-visible/kid:opacity-100">
+                  <Play className="w-7 h-7 text-pink-600 fill-current ml-0.5" />
+                </span>
+                <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/75 to-transparent">
+                  <p className="text-white font-black text-lg leading-tight text-left text-balance drop-shadow-md">
+                    {item.title}
+                  </p>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Kids channels */}
+        {kidsChannels.length > 0 && (
+          <div className="mt-9 px-6">
+            <p className="text-lg font-black text-foreground mb-4">Canais infantis</p>
+            <div className="flex gap-4 overflow-x-auto scrollbar-none py-1">
+              {kidsChannels.map((ch) => (
+                <div key={ch.id}
+                  className="shrink-0 w-52 rounded-2xl p-4 flex flex-col gap-3 shadow-lg transition-transform duration-300 hover:scale-[1.04]"
+                  style={{ background: `linear-gradient(150deg, ${ch.logoColor} 0%, ${ch.logoColor}99 100%)` }}>
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-base font-black text-white shrink-0">
+                      {ch.logoText}
+                    </div>
+                    <span className="text-white font-bold text-base leading-tight">{ch.name}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-white/90 text-sm">
+                    <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-red-600 text-white text-[9px] font-bold shrink-0">
+                      <span className="w-1 h-1 rounded-full bg-white animate-pulse" />AO VIVO
+                    </span>
+                    <span className="truncate">{ch.currentProgram}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Kid-friendly movies & series */}
+        <div className="flex flex-col gap-8 mt-9">
+          <PosterRow title="Filmes para crianças" items={kidsMovies} onSelect={handleSelect} />
+          <PosterRow title="Séries para crianças" items={kidsSeries} onSelect={handleSelect} />
         </div>
       </div>
+      <ContentDetail item={selected} onClose={handleClose} />
     </>
   )
 }
 
-// ─── STUB TABS ────────────────────────────────────────────────────────────────
-function StubTab({ title }: { title: string }) {
+// ─── BUSCAR TAB ───────────────────────────────────────────────────────────────
+function BuscarTab() {
+  const [query, setQuery] = useState('')
+  const [selected, setSelected] = useState<Movie | Series | null>(null)
+  const handleSelect = useCallback((i: Movie | Series) => setSelected(i), [])
+  const handleClose = useCallback(() => setSelected(null), [])
+
+  const results = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    if (!q) return []
+    return [...MOVIES, ...SERIES]
+      .filter((i) => i.title.toLowerCase().includes(q) || i.genre.toLowerCase().includes(q))
+      .slice(0, 30)
+  }, [query])
+
+  const trending = useMemo(() => MOVIES.slice(0, 12), [])
+
   return (
     <>
-      <ShellHeader title={title} />
-      <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">{title} em breve.</div>
+      <ShellHeader title="Buscar" />
+      <div className="flex flex-1 overflow-hidden gap-6 px-6 pb-6">
+        {/* Keyboard card */}
+        <div className="shrink-0 w-[520px] flex flex-col gap-4">
+          {/* Query display */}
+          <div className="flex items-center gap-3 rounded-2xl border border-border bg-card px-5 py-4 shadow-sm">
+            <Search className="w-5 h-5 text-primary shrink-0" />
+            <span className={cn('text-xl font-semibold truncate', query ? 'text-foreground' : 'text-muted-foreground')}>
+              {query || 'Digite para buscar…'}
+            </span>
+            {query && <span className="ml-auto w-0.5 h-6 bg-primary animate-pulse shrink-0" aria-hidden />}
+          </div>
+          {/* On-screen keyboard */}
+          <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+            <VirtualKeyboard value={query} onChange={setQuery} />
+          </div>
+        </div>
+
+        {/* Results */}
+        <div className="flex-1 overflow-y-auto scrollbar-none min-w-0">
+          <p className="text-sm font-semibold text-primary mb-4">
+            {query ? `${results.length} resultado${results.length === 1 ? '' : 's'} para “${query}”` : 'Em alta agora'}
+          </p>
+          {query && results.length === 0 ? (
+            <div className="flex items-center justify-center h-48 text-muted-foreground text-sm">Nenhum título encontrado.</div>
+          ) : (
+            <div className="grid grid-cols-4 gap-5">
+              {(query ? results : trending).map((i) => (
+                <ContentCard key={i.id} item={i} onClick={handleSelect} />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+      <ContentDetail item={selected} onClose={handleClose} />
+    </>
+  )
+}
+
+// ─── FAVORITOS TAB ────────────────────────────────────────────────────────────
+function FavoritosTab() {
+  const [selected, setSelected] = useState<Movie | Series | null>(null)
+  const handleSelect = useCallback((i: Movie | Series) => setSelected(i), [])
+  const handleClose = useCallback(() => setSelected(null), [])
+
+  // Everything the user has marked as favorite (curated demo selection).
+  const favorites = useMemo(() => [...MOVIES.slice(0, 7), ...SERIES.slice(0, 7)], [])
+
+  return (
+    <>
+      <ShellHeader title="Favoritos" />
+      <div className="flex-1 overflow-y-auto scrollbar-none px-6 py-4">
+        {favorites.length > 0 ? (
+          <>
+            <p className="text-sm font-semibold text-primary mb-4">{favorites.length} títulos salvos</p>
+            <div className="grid grid-cols-5 gap-5">
+              {favorites.map((i) => <ContentCard key={i.id} item={i} onClick={handleSelect} />)}
+            </div>
+          </>
+        ) : (
+          <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
+            <HeartOff className="w-12 h-12 text-muted-foreground" />
+            <p className="text-lg font-semibold text-foreground">Nenhum favorito ainda</p>
+            <p className="text-sm text-muted-foreground max-w-xs">Toque no coração de um título para salvá-lo aqui.</p>
+          </div>
+        )}
+      </div>
+      <ContentDetail item={selected} onClose={handleClose} />
     </>
   )
 }
@@ -785,8 +899,8 @@ export default function AppShell() {
               {tab === 'canais' && <CanaisTab />}
               {tab === 'configuracoes' && <ConfiguracoesTab />}
               {tab === 'kids' && <KidsTab />}
-              {tab === 'buscar' && <StubTab title="Buscar" />}
-              {tab === 'favoritos' && <StubTab title="Favoritos" />}
+              {tab === 'buscar' && <BuscarTab />}
+              {tab === 'favoritos' && <FavoritosTab />}
             </div>
           </Activity>
         ))}

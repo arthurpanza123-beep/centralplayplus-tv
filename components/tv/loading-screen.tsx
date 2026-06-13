@@ -18,7 +18,7 @@ export function LoadingScreen({ onDone }: { onDone: () => void }) {
 
   return (
     <div className="fixed inset-0 z-40 flex flex-col items-center justify-center bg-background animate-cp-fade-in">
-      <div className="relative w-72 h-20 animate-cp-logo-pulse">
+      <div className="relative w-96 h-28 animate-cp-logo-pulse">
         <Image src="/logo-full.webp" alt="Central Play Plus" fill className="object-contain object-center" priority />
       </div>
 

@@ -131,12 +131,6 @@ export function ContentDetail({ item, onClose }: ContentDetailProps) {
               </button>
               <button
                 className="flex items-center justify-center w-12 h-12 rounded-xl border border-white/25 bg-white/10 text-white backdrop-blur-sm transition-colors hover:bg-white/20 outline-none focus-visible:ring-2 focus-visible:ring-white"
-                aria-label="Avaliar"
-              >
-                <Star className="w-5 h-5" />
-              </button>
-              <button
-                className="flex items-center justify-center w-12 h-12 rounded-xl border border-white/25 bg-white/10 text-white backdrop-blur-sm transition-colors hover:bg-white/20 outline-none focus-visible:ring-2 focus-visible:ring-white"
                 aria-label="Compartilhar"
               >
                 <Share2 className="w-5 h-5" />
@@ -146,68 +140,38 @@ export function ContentDetail({ item, onClose }: ContentDetailProps) {
         </div>
 
         {/* ── Body ── */}
-        <div className="px-10 lg:px-16 pb-16 -mt-2">
-          <p className="text-base text-foreground/90 leading-relaxed max-w-3xl">
+        <div className="pb-16 -mt-2">
+          <p className="px-10 lg:px-16 text-base text-foreground/90 leading-relaxed max-w-3xl">
             {current.description}
           </p>
 
-          {/* Cast + crew */}
-          <div className="mt-8 grid gap-8 sm:grid-cols-[1fr_auto]">
-            <div>
-              <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Elenco</h2>
-              <div className="flex flex-wrap gap-5">
-                {current.cast.map((member) => (
-                  <div key={member.name} className="flex flex-col items-center gap-1.5 text-center">
-                    <div
-                      className="w-16 h-16 rounded-full flex items-center justify-center text-lg font-bold text-white shadow-md"
-                      style={{
-                        background: `linear-gradient(135deg, ${current.colorFrom}, ${current.colorTo})`,
-                        border: '2px solid rgba(255,255,255,0.12)',
-                      }}
-                    >
-                      {member.name.split(' ').map((n) => n[0]).slice(0, 2).join('')}
-                    </div>
-                    <p className="text-xs text-foreground font-medium leading-tight max-w-[88px]">{member.name}</p>
-                    <p className="text-[10px] text-muted-foreground leading-tight max-w-[88px]">{member.role}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="sm:text-right">
-              <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
-                {isMovie ? 'Direção' : 'Criação'}
-              </h2>
-              <p className="text-sm text-foreground font-medium">
-                {isMovie ? (current as Movie).director : (current as Series).creator}
-              </p>
-            </div>
-          </div>
-
-          {/* Recommendations */}
+          {/* Recommendations — single 16:9 row that scrolls sideways infinitely */}
           <div className="mt-12">
-            <h2 className="text-xl font-bold text-foreground mb-4">Você também pode gostar</h2>
-            <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-4">
+            <h2 className="px-10 lg:px-16 text-xl font-bold text-foreground mb-4">Você também pode gostar</h2>
+            <div className="flex gap-4 overflow-x-auto px-10 lg:px-16 py-3 scrollbar-none">
               {recommendations.map((rec) => (
                 <button
                   key={rec.id}
                   onClick={() => setCurrent(rec)}
-                  className="group/rec relative flex flex-col rounded-lg overflow-hidden bg-card outline-none transition-transform duration-300 hover:scale-[1.06] focus-visible:scale-[1.06] focus-visible:ring-2 focus-visible:ring-white"
+                  className="group/rec relative shrink-0 w-[300px] aspect-video rounded-xl overflow-hidden bg-card outline-none transition-transform duration-300 hover:scale-[1.04] focus-visible:scale-[1.04] focus-visible:ring-2 focus-visible:ring-white shadow-lg"
                   aria-label={`Ver ${rec.title}`}
                 >
-                  <div className="relative w-full aspect-[2/3]">
-                    <Image
-                      src={`/posters/${rec.id}.png`}
-                      alt={rec.title}
-                      fill
-                      sizes="(max-width: 1024px) 25vw, 180px"
-                      className="object-cover"
-                    />
-                    <span className="absolute top-2 right-2 text-[9px] font-bold px-1.5 py-0.5 rounded bg-black/60 text-white/90 backdrop-blur-sm tracking-wide">
-                      {rec.quality}
-                    </span>
-                    <div className="absolute inset-0 flex items-end p-2.5 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 transition-opacity duration-300 group-hover/rec:opacity-100 group-focus-visible/rec:opacity-100">
-                      <p className="text-left text-white font-semibold text-xs leading-tight text-balance">{rec.title}</p>
+                  <Image
+                    src={`/posters/${rec.id}.png`}
+                    alt={rec.title}
+                    fill
+                    sizes="300px"
+                    className="object-cover object-top"
+                  />
+                  <span className="absolute top-2 right-2 text-[9px] font-bold px-1.5 py-0.5 rounded bg-black/60 text-white/90 backdrop-blur-sm tracking-wide">
+                    {rec.quality}
+                  </span>
+                  <div className="absolute inset-0 flex items-end p-3 bg-gradient-to-t from-black/90 via-black/25 to-transparent">
+                    <div className="flex items-center gap-2 text-white">
+                      <span className="flex items-center justify-center w-9 h-9 rounded-full bg-white/15 backdrop-blur-sm opacity-0 transition-opacity duration-300 group-hover/rec:opacity-100 group-focus-visible/rec:opacity-100 shrink-0">
+                        <Play className="w-4 h-4 fill-current" />
+                      </span>
+                      <p className="text-left font-semibold text-sm leading-tight text-balance">{rec.title}</p>
                     </div>
                   </div>
                 </button>
