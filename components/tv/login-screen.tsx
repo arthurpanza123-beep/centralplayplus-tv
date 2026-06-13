@@ -32,9 +32,9 @@ export function LoginScreen({ onLogin }: { onLogin: () => void }) {
 
       {/* ── Moving neon orbs ── */}
       <div aria-hidden className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-20 -left-16 w-[34rem] h-[34rem] rounded-full bg-blue-500/40 blur-[120px] animate-cp-neon-1" />
-        <div className="absolute top-1/3 -right-24 w-[30rem] h-[30rem] rounded-full bg-fuchsia-500/30 blur-[120px] animate-cp-neon-2" />
-        <div className="absolute -bottom-24 left-1/4 w-[28rem] h-[28rem] rounded-full bg-cyan-400/30 blur-[120px] animate-cp-neon-3" />
+        <div className="absolute -top-20 -left-16 w-[30rem] h-[30rem] rounded-full bg-blue-500/22 blur-[140px] animate-cp-neon-1" />
+        <div className="absolute top-1/3 -right-24 w-[26rem] h-[26rem] rounded-full bg-fuchsia-500/15 blur-[140px] animate-cp-neon-2" />
+        <div className="absolute -bottom-24 left-1/4 w-[24rem] h-[24rem] rounded-full bg-cyan-400/15 blur-[140px] animate-cp-neon-3" />
       </div>
 
       {/* Even cinematic darkening + vignette to focus the centered card */}
