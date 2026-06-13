@@ -19,7 +19,7 @@ export function LoginScreen({ onLogin }: { onLogin: () => void }) {
   }
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center overflow-hidden bg-background animate-cp-fade-in">
+    <div className="fixed inset-0 z-40 flex items-center justify-center overflow-hidden bg-background animate-cp-fade-in">
       {/* ── Cozy living-room background ── */}
       <Image
         src="/login-room.png"
@@ -29,43 +29,44 @@ export function LoginScreen({ onLogin }: { onLogin: () => void }) {
         aria-hidden
         className="object-cover object-center select-none pointer-events-none"
       />
-      {/* Left-side cinematic darkening so the panel stays readable */}
-      <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/55 to-transparent" />
-      <div className="absolute inset-0 bg-gradient-to-t from-background/70 via-transparent to-background/30" />
+      {/* Even cinematic darkening + vignette to focus the centered card */}
+      <div className="absolute inset-0 bg-background/55" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_30%,rgba(0,0,0,0.65)_100%)]" />
 
-      {/* ── Activation panel (left) ── */}
-      <div className="relative z-10 flex flex-col w-full max-w-md px-10 lg:px-16 animate-cp-fade-up">
+      {/* ── Centered activation card ── */}
+      <div className="relative z-10 w-full max-w-sm mx-4 flex flex-col items-center text-center rounded-3xl bg-black/50 backdrop-blur-2xl border border-white/10 shadow-2xl shadow-black/70 px-8 py-10 animate-cp-fade-up">
         {/* Brand logo */}
-        <div className="relative w-52 h-16 mb-7 drop-shadow-[0_4px_24px_rgba(37,99,235,0.5)]">
-          <Image src="/logo-full.png" alt="Central Play Plus" fill className="object-contain object-left" priority />
+        <div className="relative w-48 h-14 mb-6 drop-shadow-[0_4px_24px_rgba(37,99,235,0.5)]">
+          <Image src="/logo-full.png" alt="Central Play Plus" fill className="object-contain" priority />
         </div>
 
-        <h1 className="text-4xl lg:text-5xl font-black tracking-tight text-white text-balance leading-[1.05] drop-shadow-lg">
+        <h1 className="text-3xl font-black tracking-tight text-white text-balance leading-tight drop-shadow-lg">
           Ative sua TV
         </h1>
-        <p className="mt-3 text-base text-white/70 max-w-xs leading-relaxed">
+        <p className="mt-2.5 text-sm text-white/65 leading-relaxed max-w-[16rem]">
           Use o código abaixo no painel de ativação para liberar todo o catálogo.
         </p>
 
-        {/* Device key card */}
-        <div className="mt-7 rounded-2xl bg-black/45 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/60 px-7 py-6">
-          <p className="text-[11px] font-bold tracking-[0.35em] text-white/50">DEVICE KEY</p>
-          <p className="mt-2 text-4xl lg:text-5xl font-black tracking-[0.04em] text-white tabular-nums whitespace-nowrap drop-shadow-[0_0_18px_rgba(96,165,250,0.3)]">
+        {/* Device key */}
+        <div className="mt-7 w-full rounded-2xl bg-white/[0.04] border border-white/10 px-6 py-5">
+          <p className="text-[10px] font-bold tracking-[0.4em] text-white/45">DEVICE KEY</p>
+          <p className="mt-2 text-4xl font-black tracking-[0.05em] text-white tabular-nums whitespace-nowrap drop-shadow-[0_0_18px_rgba(96,165,250,0.35)]">
             {DEVICE_KEY}
           </p>
-          <div className="my-5 h-px w-full bg-white/10" />
-          <div className="flex items-center gap-3">
-            {loading ? (
-              <Loader2 className="w-4 h-4 text-primary animate-spin" />
-            ) : (
-              <span className="relative flex h-4 w-4 items-center justify-center">
-                <span className="absolute inline-flex h-4 w-4 rounded-full border-2 border-primary/30 border-t-primary animate-cp-ring-spin" />
-              </span>
-            )}
-            <span className="text-sm text-white/70 font-medium">
-              {loading ? 'Liberando acesso…' : 'Aguardando ativação…'}
+        </div>
+
+        {/* Status */}
+        <div className="mt-5 flex items-center justify-center gap-2.5">
+          {loading ? (
+            <Loader2 className="w-4 h-4 text-primary animate-spin" />
+          ) : (
+            <span className="relative flex h-4 w-4 items-center justify-center">
+              <span className="absolute inline-flex h-4 w-4 rounded-full border-2 border-primary/30 border-t-primary animate-cp-ring-spin" />
             </span>
-          </div>
+          )}
+          <span className="text-sm text-white/65 font-medium">
+            {loading ? 'Liberando acesso…' : 'Aguardando ativação…'}
+          </span>
         </div>
 
         {/* Reload button */}
@@ -73,7 +74,7 @@ export function LoginScreen({ onLogin }: { onLogin: () => void }) {
           onClick={reload}
           disabled={loading}
           autoFocus
-          className="group mt-5 flex items-center justify-center gap-3 py-4 rounded-xl bg-primary text-primary-foreground text-lg font-bold tracking-wide shadow-xl shadow-primary/40 transition-all hover:bg-primary/90 hover:scale-[1.01] outline-none focus-visible:ring-4 focus-visible:ring-primary/60 disabled:opacity-80"
+          className="group mt-7 w-full flex items-center justify-center gap-3 py-4 rounded-2xl bg-primary text-primary-foreground text-base font-bold tracking-wide shadow-xl shadow-primary/40 transition-all hover:bg-primary/90 hover:scale-[1.02] outline-none focus-visible:ring-4 focus-visible:ring-primary/60 disabled:opacity-80"
         >
           <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : 'group-hover:rotate-180 transition-transform duration-500'}`} />
           {loading ? 'Recarregando…' : 'Já ativei — entrar'}
