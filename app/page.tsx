@@ -64,8 +64,8 @@ const Sidebar = memo(function Sidebar({ active, onNav, collapsed }: { active: Ta
       style={{ width: collapsed ? 84 : 240 }}
     >
       {/* Logo — short mascot only, larger when expanded */}
-      <div className="flex items-center justify-center py-6 transition-all">
-        <div className={cn('relative drop-shadow-[0_2px_12px_rgba(37,99,235,0.4)] transition-all duration-300', collapsed ? 'w-11 h-11' : 'w-16 h-16')}>
+      <div className="flex items-center justify-center pt-7 pb-5 mb-2 border-b border-white/5">
+        <div className={cn('relative drop-shadow-[0_2px_12px_rgba(37,99,235,0.4)] transition-all duration-300 ease-out', collapsed ? 'w-10 h-10' : 'w-14 h-14')}>
           <Image src="/mascot-icon.png" alt="Central Play Plus" fill className="object-contain" priority />
         </div>
       </div>
