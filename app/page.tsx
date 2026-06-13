@@ -16,6 +16,7 @@ import { ChannelPlayer } from '@/components/tv/channel-player'
 import { SplashScreen } from '@/components/tv/splash-screen'
 import { LoginScreen } from '@/components/tv/login-screen'
 import { useTvNavigation } from '@/hooks/use-tv-navigation'
+import { playCue } from '@/lib/sounds'
 import { cn } from '@/lib/utils'
 import {
   MOVIES, SERIES, CHANNELS, KIDS_ITEMS, USER,
@@ -591,11 +592,16 @@ export default function AppShell() {
     onBack: () => setActive((cur) => (cur === 'home' ? cur : 'home')),
   })
 
+  // Fire the "whoosh" transition cue the moment the catalog turns on.
+  useEffect(() => {
+    if (stage === 'app') playCue('open')
+  }, [stage])
+
   if (stage === 'splash') return <SplashScreen onDone={() => setStage('login')} />
   if (stage === 'login') return <LoginScreen onLogin={() => setStage('app')} />
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-background animate-cp-fade-in">
+    <div className="flex h-screen w-screen overflow-hidden bg-background animate-cp-power-on">
       {/* Sidebar */}
       <Sidebar active={active} onNav={setActive} />
 

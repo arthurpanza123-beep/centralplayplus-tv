@@ -141,6 +141,12 @@
   from { opacity: 0; transform: scale(0.88); }
   to { opacity: 1; transform: scale(1); }
 }
+/* "TV turned on" — content starts zoomed-in and blurred, settles to crisp. */
+@keyframes cp-power-on {
+  0%   { opacity: 0; transform: scale(1.08); filter: blur(18px) brightness(1.4); }
+  55%  { opacity: 1; }
+  100% { opacity: 1; transform: scale(1); filter: blur(0) brightness(1); }
+}
 @keyframes cp-neon-1 {
   0%   { transform: translate(0, 0) scale(1); }
   33%  { transform: translate(8vw, 6vh) scale(1.25); }
@@ -181,6 +187,7 @@
 .animate-cp-fade-up { animation: cp-fade-up 0.7s cubic-bezier(0.16,1,0.3,1) both; }
 .animate-cp-fade-in { animation: cp-fade-in 0.9s ease-out both; }
 .animate-cp-zoom-in { animation: cp-zoom-in 0.32s cubic-bezier(0.16,1,0.3,1) both; }
+.animate-cp-power-on { animation: cp-power-on 0.9s cubic-bezier(0.22,1,0.36,1) both; }
 .animate-cp-neon-1 { animation: cp-neon-1 18s ease-in-out infinite; }
 .animate-cp-neon-2 { animation: cp-neon-2 22s ease-in-out infinite; }
 .animate-cp-neon-3 { animation: cp-neon-3 26s ease-in-out infinite; }
