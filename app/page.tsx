@@ -42,12 +42,12 @@ const NAV_ITEMS: { id: TabId; label: string; icon: React.ElementType }[] = [
 const Sidebar = memo(function Sidebar({ active, onNav }: { active: TabId; onNav: (id: TabId) => void }) {
   return (
     <aside
-      className="flex flex-col rounded-2xl bg-card/60 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/40 shrink-0 overflow-hidden"
+      className="flex flex-col bg-sidebar border-r border-white/5 shrink-0 overflow-hidden"
       style={{ width: 'var(--tv-sidebar-width)' }}
     >
       {/* Logo */}
-      <div className="flex items-center justify-center px-5 py-5">
-        <div className="relative w-full h-14 drop-shadow-[0_2px_12px_rgba(37,99,235,0.35)]">
+      <div className="flex items-center justify-center px-5 py-6">
+        <div className="relative w-full h-12 drop-shadow-[0_2px_12px_rgba(37,99,235,0.35)]">
           <Image src="/logo-full.png" alt="Central Play Plus" fill className="object-contain object-left" priority />
         </div>
       </div>
@@ -131,162 +131,78 @@ const CategorySidebar = memo(function CategorySidebar({
 })
 
 // ─── HOME TAB ────────────────────────────────────────────────────────────────
-const HERO_SLIDES = [
-  { id: 1, title: 'Seu próximo momento incrível', highlight: 'começa aqui.', subtitle: 'Canais, filmes, séries e kids.\nTudo em um só lugar.', cta: 'Abrir canais', ctaTab: 'canais' as TabId },
-  { id: 2, title: 'Novos filmes toda semana', highlight: 'assista agora.', subtitle: 'Os lançamentos mais esperados\nem HD e 4K.', cta: 'Ver filmes', ctaTab: 'filmes' as TabId },
-  { id: 3, title: 'Séries que vão te prender', highlight: 'maratone hoje.', subtitle: 'Temporadas completas para\nnão perder nenhum episódio.', cta: 'Ver séries', ctaTab: 'series' as TabId },
-]
-
-const QUICK_CATS = [
-  { label: 'Canais', subtitle: '2.312 ao vivo', icon: Radio, tab: 'canais' as TabId, bg: 'bg-gradient-to-br from-blue-500 to-blue-700' },
-  { label: 'Filmes', subtitle: '23.894 títulos', icon: Film, tab: 'filmes' as TabId, bg: 'bg-gradient-to-br from-violet-500 to-purple-700' },
-  { label: 'Séries', subtitle: '6.128 episódios', icon: Tv2, tab: 'series' as TabId, bg: 'bg-gradient-to-br from-amber-400 to-orange-600' },
-  { label: 'Kids', subtitle: '2.015 itens', icon: Smile, tab: 'kids' as TabId, bg: 'bg-gradient-to-br from-teal-400 to-cyan-600' },
-]
-
-// Watching items use real-world-ish thumbnail bg colors matching the mockup
-const WATCHING_BG: Record<string, string> = {
-  'Jornal Central': 'linear-gradient(135deg,#1a1f2e 0%,#2d3a52 100%)',
-  'Futebol Total': 'linear-gradient(135deg,#0f2010 0%,#1e4020 100%)',
-  'A Herança': 'linear-gradient(135deg,#1a1008 0%,#3a2510 100%)',
-  'Além do Horizonte': 'linear-gradient(135deg,#0a1528 0%,#1a3555 100%)',
-}
+// Horizontal poster row, Netflix-style.
+const PosterRow = memo(function PosterRow({
+  title, items, onSelect,
+}: { title: string; items: (Movie | Series)[]; onSelect: (i: Movie | Series) => void }) {
+  return (
+    <section className="flex flex-col gap-2">
+      <h2 className="text-lg font-bold text-foreground px-8 tracking-tight">{title}</h2>
+      <div className="flex gap-2.5 overflow-x-auto overflow-y-visible px-8 py-2 scrollbar-none">
+        {items.map((item) => (
+          <div key={item.id} className="shrink-0 w-[140px]">
+            <ContentCard item={item} onClick={onSelect} />
+          </div>
+        ))}
+      </div>
+    </section>
+  )
+})
 
 function HomeTab({ onNav }: { onNav: (id: TabId) => void }) {
-  const [slide, setSlide] = useState(0)
   const [selected, setSelected] = useState<Movie | Series | null>(null)
-  const cur = HERO_SLIDES[slide]
+  const featured = MOVIES[0]
 
-  // Auto-rotate the hero banner — no manual controls needed on a TV.
-  useEffect(() => {
-    const id = setInterval(() => setSlide((s) => (s + 1) % HERO_SLIDES.length), 6000)
-    return () => clearInterval(id)
-  }, [])
   const handleSelect = useCallback((item: Movie | Series) => setSelected(item), [])
   const handleClose = useCallback(() => setSelected(null), [])
 
   return (
-    <div className="h-full flex flex-col overflow-hidden px-6 py-3 gap-3.5">
-
-      {/* Top clock row */}
-      <div className="flex items-center justify-end shrink-0">
+    <div className="h-full overflow-y-auto overflow-x-hidden">
+      {/* Floating clock */}
+      <div className="absolute top-4 right-6 z-30">
         <Topbar />
       </div>
 
-      {/* Hero banner */}
-      <section className="relative rounded-3xl overflow-hidden shadow-xl shadow-black/10 shrink-0 ring-1 ring-black/5" style={{ height: 212 }}>
-        <div className="absolute inset-0">
-          <Image src="/hero-robot.png" alt="" fill className="object-cover object-center scale-105" priority sizes="(max-width: 1920px) 100vw" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#1d4ed8]/90 via-[#2563eb]/45 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#1e3a8a]/40 to-transparent" />
-        </div>
-        <div className="relative z-10 flex items-center h-full px-8">
-          <div className="flex flex-col gap-2.5 max-w-md">
-            <span className="inline-flex items-center gap-1.5 w-fit px-2.5 py-1 rounded-full bg-white/15 backdrop-blur-sm border border-white/20 text-[10px] font-semibold text-white/90 uppercase tracking-widest">
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" /> Em destaque
+      {/* Full-bleed cinematic hero */}
+      <section className="relative w-full" style={{ height: '58vh' }}>
+        <Image src="/posters/hero-backdrop.png" alt="" fill priority sizes="100vw" className="object-cover object-center" />
+        {/* Fades into the page */}
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/30 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-background/90 via-background/30 to-transparent" />
+
+        <div className="absolute inset-0 flex flex-col justify-end pb-10 px-8 max-w-2xl gap-3">
+          <h1 className="text-5xl font-black text-white leading-[1.02] text-balance tracking-tight drop-shadow-lg">
+            {featured.title}
+          </h1>
+          <div className="flex items-center gap-3 text-sm text-white/85">
+            <span className="flex items-center gap-1 text-amber-400 font-bold">
+              <Star className="w-4 h-4 fill-current" />{featured.rating}
             </span>
-            <h2 className="text-3xl font-black text-white leading-[1.05] text-balance tracking-tight">
-              {cur.title}{' '}<span className="text-blue-300">{cur.highlight}</span>
-            </h2>
-            <p className="text-xs text-white/75 leading-relaxed whitespace-pre-line">{cur.subtitle}</p>
-            <button onClick={() => onNav(cur.ctaTab)}
-              className="inline-flex items-center gap-2 mt-1 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-bold hover:bg-primary/90 hover:scale-[1.03] transition-all w-fit shadow-lg shadow-primary/40 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/60">
-              <Play className="w-4 h-4 fill-current" />{cur.cta}
+            <span>{featured.year}</span>
+            <span className="px-1.5 py-0.5 rounded border border-white/40 text-xs">{featured.quality}</span>
+            <span>{featured.genre}</span>
+          </div>
+          <p className="text-sm text-white/75 leading-relaxed max-w-lg line-clamp-2">{featured.description}</p>
+          <div className="flex items-center gap-3 mt-2">
+            <button onClick={() => handleSelect(featured)}
+              className="inline-flex items-center gap-2 px-7 py-3 rounded-md bg-white text-black text-base font-bold hover:bg-white/85 hover:scale-[1.03] transition-all outline-none focus-visible:ring-2 focus-visible:ring-white">
+              <Play className="w-5 h-5 fill-current" />Assistir
+            </button>
+            <button onClick={() => handleSelect(featured)}
+              className="inline-flex items-center gap-2 px-7 py-3 rounded-md bg-white/15 text-white text-base font-bold backdrop-blur-sm hover:bg-white/25 transition-all outline-none focus-visible:ring-2 focus-visible:ring-white">
+              <Info className="w-5 h-5" />Mais informações
             </button>
           </div>
         </div>
-        {/* Auto-rotating indicators (non-interactive) */}
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 z-10" aria-hidden>
-          {HERO_SLIDES.map((s, i) => (
-            <span key={s.id}
-              className={`h-1.5 rounded-full transition-all duration-300 ${i === slide ? 'w-6 bg-white' : 'w-1.5 bg-white/40'}`} />
-          ))}
-        </div>
       </section>
 
-      {/* Quick category cards */}
-      <div className="grid grid-cols-4 gap-3 shrink-0">
-        {QUICK_CATS.map(({ label, subtitle, icon: Icon, tab, bg }) => (
-          <button key={label} onClick={() => onNav(tab)}
-            className={cn('group/qc relative flex items-center gap-3.5 px-4 py-3.5 rounded-2xl text-left overflow-hidden transition-all duration-300 hover:scale-[1.03] shadow-lg shadow-black/10 hover:shadow-xl focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/50', bg)}>
-            <div className="absolute -right-4 -top-6 w-24 h-24 rounded-full bg-white/10 blur-xl transition-opacity group-hover/qc:opacity-100 opacity-60" />
-            <div className="relative w-11 h-11 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center shrink-0 shadow-inner">
-              <Icon className="w-5 h-5 text-white" />
-            </div>
-            <div className="relative">
-              <p className="font-bold text-white text-base leading-tight">{label}</p>
-              <p className="text-[11px] text-white/80 mt-0.5">{subtitle}</p>
-            </div>
-            <ChevronRight className="relative ml-auto w-4 h-4 text-white/60 group-hover/qc:text-white group-hover/qc:translate-x-0.5 transition-all shrink-0" />
-          </button>
-        ))}
+      {/* Rows — pulled up to overlap the hero fade */}
+      <div className="relative z-10 flex flex-col gap-6 -mt-12 pb-10">
+        <PosterRow title="Em alta hoje" items={MOVIES.slice(0, 10)} onSelect={handleSelect} />
+        <PosterRow title="Continue assistindo" items={MOVIES.slice(10, 18)} onSelect={handleSelect} />
+        <PosterRow title="Séries em destaque" items={SERIES.slice(0, 10)} onSelect={handleSelect} />
+        <PosterRow title="Filmes para a família" items={SERIES.slice(8, 18)} onSelect={handleSelect} />
       </div>
-
-      {/* Continuar assistindo */}
-      <section className="shrink-0">
-        <h2 className="text-base font-bold text-foreground mb-2.5 tracking-tight">Continuar assistindo</h2>
-        <div className="grid grid-cols-4 gap-3">
-          {WATCHING_ITEMS.map((item) => (
-            <button key={item.id}
-              className="group/w relative rounded-2xl overflow-hidden shadow-md hover:shadow-xl hover:shadow-black/20 hover:scale-[1.03] transition-all duration-300 cursor-pointer outline-none focus-visible:ring-4 focus-visible:ring-primary/60 text-left">
-              <div className="relative flex flex-col justify-end p-3" style={{ height: 96,
-                background: WATCHING_BG[item.title] ?? `linear-gradient(160deg,${item.colorFrom} 0%,${item.colorTo} 100%)` }}>
-                {item.isNew && (
-                  <span className="absolute top-2 left-2 flex items-center gap-1 text-[8px] font-bold px-1.5 py-0.5 rounded-md bg-red-500 text-white shadow-sm">
-                    <span className="w-1 h-1 rounded-full bg-white animate-pulse" />AO VIVO
-                  </span>
-                )}
-                {/* Play overlay */}
-                <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover/w:opacity-100 transition-opacity duration-300">
-                  <div className="w-10 h-10 rounded-full bg-primary/95 flex items-center justify-center shadow-lg shadow-primary/40">
-                    <Play className="w-4 h-4 text-primary-foreground fill-current ml-0.5" />
-                  </div>
-                </div>
-                <p className="relative text-[11px] text-white font-bold uppercase leading-tight drop-shadow">{item.title}</p>
-                <p className="relative text-[10px] text-white/70">{item.episode}</p>
-              </div>
-              <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/20">
-                <div className="h-full bg-primary rounded-full" style={{ width: `${item.progress}%` }} />
-              </div>
-            </button>
-          ))}
-        </div>
-      </section>
-
-      {/* Em destaque */}
-      <section className="flex-1 min-h-0 flex flex-col">
-        <h2 className="text-base font-bold text-foreground mb-2.5 shrink-0 tracking-tight">Em destaque</h2>
-        <div className="flex gap-3 flex-1 min-h-0">
-          <div className="grid grid-cols-6 gap-2.5 flex-1 content-start">
-            {MOVIES.slice(0, 6).map((m) => <ContentCard key={m.id} item={m} onClick={handleSelect} />)}
-          </div>
-          {/* Device info card */}
-          <div className="shrink-0 rounded-2xl border border-border/60 bg-card/95 backdrop-blur-sm shadow-md p-4 flex flex-col gap-3" style={{ width: 178 }}>
-            <div className="flex items-start gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center shrink-0">
-                <Monitor className="w-4 h-4 text-muted-foreground" />
-              </div>
-              <div>
-                <p className="text-[10px] text-muted-foreground">Seu dispositivo</p>
-                <p className="text-base font-black text-foreground tracking-wider">{USER.deviceCode}</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                <Calendar className="w-4 h-4 text-primary" />
-              </div>
-              <div>
-                <p className="text-[10px] text-muted-foreground">Expira em</p>
-                <p className="text-xs font-bold text-primary">{USER.validity}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 pt-2.5 mt-auto border-t border-border">
-              <Shield className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-              <p className="text-[10px] text-muted-foreground">Versão {USER.appVersion}</p>
-            </div>
-          </div>
-        </div>
-      </section>
 
       <ContentModal item={selected} onClose={handleClose} />
     </div>
@@ -679,20 +595,11 @@ export default function AppShell() {
   if (stage === 'login') return <LoginScreen onLogin={() => setStage('app')} />
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden p-4 gap-4 animate-cp-fade-in">
-      {/* Wallpaper — fixed soft graphite layer behind everything */}
-      <img
-        src="/bg-graphite.png"
-        alt=""
-        aria-hidden="true"
-        className="fixed inset-0 w-full h-full object-cover -z-10 select-none pointer-events-none"
-      />
-      <div className="fixed inset-0 -z-10 bg-background/30 pointer-events-none" />
-
+    <div className="flex h-screen w-screen overflow-hidden bg-background animate-cp-fade-in">
       {/* Sidebar */}
       <Sidebar active={active} onNav={setActive} />
 
-      <div className="flex flex-col flex-1 min-w-0 relative rounded-2xl bg-card/70 backdrop-blur-xl overflow-hidden border border-white/10 shadow-2xl shadow-black/40">
+      <div className="flex flex-col flex-1 min-w-0 relative bg-background overflow-hidden">
         {TABS.map((tab) => (
           <Activity key={tab} mode={active === tab ? 'visible' : 'hidden'}>
             <div
