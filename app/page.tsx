@@ -7,7 +7,7 @@ import {
   Home, Radio, Film, Tv2, Smile, Search, Heart, Settings, Crown,
   Play, Info, Star,
   Bell, Shield, MessageSquare, MonitorPlay, Monitor, ChevronRight, LogOut,
-  User, Mail, Calendar, Smartphone, RefreshCw,
+  User, Mail, Calendar, Smartphone, RefreshCw, CalendarClock,
 } from 'lucide-react'
 import { Topbar } from '@/components/tv/topbar'
 import { ContentCard } from '@/components/tv/content-card'
@@ -23,7 +23,7 @@ import { cn } from '@/lib/utils'
 import {
   MOVIES, SERIES, CHANNELS, KIDS_ITEMS, USER, daysRemaining,
   isTrialPlan, formatTrialRemaining,
-  MOVIE_CATEGORIES, SERIES_CATEGORIES, CHANNEL_CATEGORIES,
+  MOVIE_CATEGORIES, SERIES_CATEGORIES,
 } from '@/lib/data'
 import type { Movie, Series, Channel } from '@/lib/types'
 
@@ -317,14 +317,12 @@ function SeriesTab() {
 
 // ─── CANAIS TAB ───────────────────────────────────────────────────────────────
 function CanaisTab() {
-  const [category, setCategory] = useState(CHANNEL_CATEGORIES[0])
   const [selectedChannel, setSelectedChannel] = useState<Channel>(CHANNELS[1])
   const [fullscreen, setFullscreen] = useState(false)
+  // EPG (program guide) is hidden by default — shown only when the user opens it.
+  const [showEpg, setShowEpg] = useState(false)
 
-  const filteredChannels = useMemo(
-    () => CHANNELS.filter((c) => category === 'Esportes' ? c.category === 'Esportes' : true),
-    [category]
-  )
+  const filteredChannels = CHANNELS
 
   // Channel-name flash overlay shown briefly whenever the channel changes.
   const [showNameFlash, setShowNameFlash] = useState(false)
@@ -376,21 +374,10 @@ function CanaisTab() {
     <>
       <ShellHeader />
       <div className="flex flex-1 overflow-hidden">
-        {/* Category */}
-    <aside className="flex flex-col shrink-0 py-3 gap-0.5 border-r border-border/40 overflow-y-auto bg-white/[0.03]" style={{ width: 180 }}>
-          {CHANNEL_CATEGORIES.map((cat) => (
-            <button key={cat} onClick={() => setCategory(cat)}
-              className={cn('flex items-center px-5 py-2.5 mx-2 rounded-lg text-sm font-medium transition-colors text-left',
-                category === cat ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-accent')}>
-              {cat}
-            </button>
-          ))}
-        </aside>
-
-        {/* Channel list */}
-          <div className="flex flex-col shrink-0 border-r border-border/40 overflow-y-auto bg-white/[0.03]" style={{ width: 240 }}>
-          <div className="px-3 py-3 border-b border-border">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Canais &bull; {category}</p>
+        {/* Channel list — the only navigable column */}
+          <div className="flex flex-col shrink-0 border-r border-border/40 overflow-y-auto bg-white/[0.03]" style={{ width: 280 }}>
+          <div className="px-4 py-3.5 border-b border-border">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Canais</p>
           </div>
           {filteredChannels.map((ch) => (
             <div key={ch.id} role="button" tabIndex={0}
@@ -429,10 +416,21 @@ function CanaisTab() {
 
         {/* Player + EPG */}
         <div className="flex-1 flex flex-col overflow-hidden p-4 gap-4">
-          <div className="flex items-center gap-2 text-sm">
-            <span className="text-muted-foreground">Canais</span>
-            <span className="text-border/80">|</span>
-            <span className="text-primary font-semibold">{category}</span>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <span className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-red-600 text-white text-[10px] font-bold shrink-0">
+                <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />AO VIVO
+              </span>
+              <span className="text-base font-bold text-foreground truncate">{selectedChannel.name}</span>
+            </div>
+            <button
+              onClick={() => setShowEpg((v) => !v)}
+              aria-pressed={showEpg}
+              className={cn('flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-colors outline-none focus-visible:ring-2 focus-visible:ring-primary/60 shrink-0',
+                showEpg ? 'bg-primary text-primary-foreground' : 'bg-white/5 text-muted-foreground hover:text-foreground hover:bg-white/10')}
+            >
+              <CalendarClock className="w-4 h-4" /> EPG
+            </button>
           </div>
           {/* Reduced 16:9 preview, centered — click (or 20s idle) zooms to fullscreen */}
           <div className="flex items-center justify-center pt-2 pb-1" onMouseMove={resetIdle}>
@@ -519,7 +517,8 @@ function CanaisTab() {
           </button>
           </div>
 
-          {/* Today's schedule (read-only) */}
+          {/* Today's schedule (read-only) — toggled by the EPG button */}
+          {showEpg && (
           <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
             <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border/60 bg-white/[0.03]">
               <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Programação de hoje</span>
@@ -534,6 +533,7 @@ function CanaisTab() {
               </div>
             ))}
           </div>
+          )}
         </div>
       </div>
 
