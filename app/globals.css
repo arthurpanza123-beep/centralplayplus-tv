@@ -141,6 +141,23 @@
   from { opacity: 0; transform: scale(0.88); }
   to { opacity: 1; transform: scale(1); }
 }
+@keyframes cp-neon-1 {
+  0%   { transform: translate(0, 0) scale(1); }
+  33%  { transform: translate(8vw, 6vh) scale(1.25); }
+  66%  { transform: translate(-5vw, 10vh) scale(0.9); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+@keyframes cp-neon-2 {
+  0%   { transform: translate(0, 0) scale(1.1); }
+  40%  { transform: translate(-10vw, -7vh) scale(0.85); }
+  75%  { transform: translate(7vw, 5vh) scale(1.3); }
+  100% { transform: translate(0, 0) scale(1.1); }
+}
+@keyframes cp-neon-3 {
+  0%   { transform: translate(0, 0) scale(0.95); }
+  50%  { transform: translate(9vw, -9vh) scale(1.2); }
+  100% { transform: translate(0, 0) scale(0.95); }
+}
 
 /* ─── TV focus safety net ─────────────────────────────────────────────────── */
 /* Guarantees the selected element is always unmistakable from across the room,
@@ -164,6 +181,9 @@
 .animate-cp-fade-up { animation: cp-fade-up 0.7s cubic-bezier(0.16,1,0.3,1) both; }
 .animate-cp-fade-in { animation: cp-fade-in 0.9s ease-out both; }
 .animate-cp-zoom-in { animation: cp-zoom-in 0.32s cubic-bezier(0.16,1,0.3,1) both; }
+.animate-cp-neon-1 { animation: cp-neon-1 18s ease-in-out infinite; }
+.animate-cp-neon-2 { animation: cp-neon-2 22s ease-in-out infinite; }
+.animate-cp-neon-3 { animation: cp-neon-3 26s ease-in-out infinite; }
 
 .scrollbar-none { scrollbar-width: none; -ms-overflow-style: none; }
 .scrollbar-none::-webkit-scrollbar { display: none; }

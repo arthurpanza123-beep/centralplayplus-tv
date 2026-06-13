@@ -20,23 +20,31 @@ export function LoginScreen({ onLogin }: { onLogin: () => void }) {
 
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center overflow-hidden bg-background animate-cp-fade-in">
-      {/* ── Cozy living-room background ── */}
+      {/* ── Cozy living-room background (heavily blurred) ── */}
       <Image
         src="/login-room.png"
         alt=""
         fill
         priority
         aria-hidden
-        className="object-cover object-center select-none pointer-events-none"
+        className="object-cover object-center select-none pointer-events-none scale-110 blur-2xl"
       />
+
+      {/* ── Moving neon orbs ── */}
+      <div aria-hidden className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-20 -left-16 w-[34rem] h-[34rem] rounded-full bg-blue-500/40 blur-[120px] animate-cp-neon-1" />
+        <div className="absolute top-1/3 -right-24 w-[30rem] h-[30rem] rounded-full bg-fuchsia-500/30 blur-[120px] animate-cp-neon-2" />
+        <div className="absolute -bottom-24 left-1/4 w-[28rem] h-[28rem] rounded-full bg-cyan-400/30 blur-[120px] animate-cp-neon-3" />
+      </div>
+
       {/* Even cinematic darkening + vignette to focus the centered card */}
       <div className="absolute inset-0 bg-background/55" />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_30%,rgba(0,0,0,0.65)_100%)]" />
 
       {/* ── Centered activation card ── */}
-      <div className="relative z-10 w-full max-w-sm mx-4 flex flex-col items-center text-center rounded-3xl bg-black/50 backdrop-blur-2xl border border-white/10 shadow-2xl shadow-black/70 px-8 py-10 animate-cp-fade-up">
+      <div className="relative z-10 w-full max-w-md mx-4 flex flex-col items-center text-center rounded-3xl bg-black/50 backdrop-blur-2xl border border-white/10 shadow-2xl shadow-black/70 px-9 py-11 animate-cp-fade-up">
         {/* Brand logo */}
-        <div className="relative w-48 h-14 mb-6 drop-shadow-[0_4px_24px_rgba(37,99,235,0.5)]">
+        <div className="relative w-72 h-24 mb-7 drop-shadow-[0_6px_32px_rgba(37,99,235,0.6)]">
           <Image src="/logo-full.png" alt="Central Play Plus" fill className="object-contain" priority />
         </div>
 
