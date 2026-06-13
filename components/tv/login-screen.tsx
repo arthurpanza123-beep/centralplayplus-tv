@@ -48,7 +48,7 @@ export function LoginScreen({ onLogin }: { onLogin: () => void }) {
         <div aria-hidden className="absolute -top-24 left-1/2 -translate-x-1/2 w-72 h-48 rounded-full bg-primary/15 blur-3xl" />
 
         {/* Brand logo */}
-        <div className="relative w-full max-w-[18rem] h-28 mx-auto mb-8 drop-shadow-[0_6px_32px_rgba(37,99,235,0.6)]">
+        <div className="relative w-full max-w-[16rem] h-16 mx-auto mb-3 drop-shadow-[0_6px_32px_rgba(37,99,235,0.6)]">
           <Image src="/logo-full.png" alt="Central Play Plus" fill className="object-contain object-center" priority />
         </div>
 
