@@ -16,7 +16,10 @@ export function IntroVideo({ onDone }: { onDone: () => void }) {
   const [visible, setVisible] = useState(false)
   const [closing, setClosing] = useState(false)
   const [ready, setReady] = useState(false)
+  // TV-style skip: first OK/Enter reveals the prompt, second one confirms.
+  const [promptVisible, setPromptVisible] = useState(false)
   const done = useRef(false)
+  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   function finish() {
     if (done.current) return
@@ -24,6 +27,20 @@ export function IntroVideo({ onDone }: { onDone: () => void }) {
     setClosing(true)
     // Wait for the fade-out before advancing.
     setTimeout(onDone, 600)
+  }
+
+  // Reveal the skip prompt and auto-hide it after a few idle seconds.
+  function revealPrompt() {
+    setPromptVisible(true)
+    if (hideTimer.current) clearTimeout(hideTimer.current)
+    hideTimer.current = setTimeout(() => setPromptVisible(false), 4000)
+  }
+
+  // OK/Enter (or click): first press reveals, second press skips.
+  function onSelect() {
+    if (done.current) return
+    if (promptVisible) finish()
+    else revealPrompt()
   }
 
   useEffect(() => {
@@ -56,17 +73,29 @@ export function IntroVideo({ onDone }: { onDone: () => void }) {
     const events: (keyof WindowEventMap)[] = ['pointerdown', 'click', 'keydown', 'touchstart', 'mousemove', 'wheel']
     events.forEach((e) => window.addEventListener(e, unmute, { once: true, passive: true }))
 
+    // Remote OK / keyboard Enter (and Space) drive the skip prompt.
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
+        e.preventDefault()
+        onSelect()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+
     const onError = () => finish()
     v.addEventListener('error', onError)
     return () => {
       cancelAnimationFrame(raf)
       v.removeEventListener('error', onError)
       events.forEach((e) => window.removeEventListener(e, unmute))
+      window.removeEventListener('keydown', onKey)
+      if (hideTimer.current) clearTimeout(hideTimer.current)
     }
   }, [])
 
   return (
     <div
+      onClick={onSelect}
       className={`fixed inset-0 z-50 flex items-center justify-center bg-black transition-opacity duration-500 ${
         visible && !closing ? 'opacity-100' : 'opacity-0'
       }`}
@@ -83,16 +112,20 @@ export function IntroVideo({ onDone }: { onDone: () => void }) {
         onEnded={finish}
       />
 
-      {/* Compact, branded skip pill — bottom-right. */}
+      {/* Skip prompt — hidden until OK/Enter (or a click) reveals it.
+          Press OK/Enter again (or click it) to skip. */}
       <button
-        onClick={finish}
-        className={`group absolute bottom-6 right-6 z-10 flex items-center gap-1.5 rounded-full border border-white/15 bg-black/45 px-3.5 py-1.5 text-xs font-semibold tracking-wide text-white/75 backdrop-blur-md transition-all duration-300 hover:border-primary/60 hover:bg-black/70 hover:text-white outline-none focus-visible:ring-2 focus-visible:ring-primary/60 ${
-          ready && !closing ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        onClick={(e) => {
+          e.stopPropagation()
+          finish()
+        }}
+        className={`group absolute bottom-6 right-6 z-10 flex items-center gap-2 rounded-full border border-white/20 bg-black/55 px-4 py-2 text-sm font-semibold tracking-wide text-white backdrop-blur-md transition-all duration-300 hover:border-primary/60 hover:bg-black/75 outline-none focus-visible:ring-2 focus-visible:ring-primary/60 ${
+          promptVisible && ready && !closing ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'
         }`}
         aria-label="Pular abertura"
       >
-        Pular
-        <SkipForward className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+        Pular abertura
+        <SkipForward className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
       </button>
     </div>
   )
