@@ -43,33 +43,36 @@ const Sidebar = memo(function Sidebar({ active, onNav }: { active: TabId; onNav:
     >
       {/* Logo */}
       <div className="flex items-center gap-3 px-6 py-5">
-        <div className="relative w-11 h-11 shrink-0">
+        <div className="relative w-11 h-11 shrink-0 drop-shadow-sm">
           <Image src="/mascot.png" alt="Central Play mascote" fill className="object-contain" />
         </div>
         <div className="flex flex-col leading-none">
-          <span className="text-[11px] text-muted-foreground font-semibold tracking-widest uppercase">Central</span>
-          <span className="text-xl font-black text-foreground tracking-tight">PLAY</span>
+          <span className="text-[11px] text-muted-foreground font-bold tracking-[0.2em] uppercase">Central</span>
+          <span className="text-xl font-black text-primary tracking-tight">PLAY</span>
         </div>
       </div>
 
       {/* Nav */}
       <nav className="flex-1 py-2 overflow-y-auto px-3" aria-label="Navegação principal">
-        <ul className="flex flex-col gap-0.5">
+        <ul className="flex flex-col gap-1">
           {NAV_ITEMS.map((item, idx) => {
-            if (!item) return <li key={`div-${idx}`}><hr className="my-2 border-border" /></li>
+            if (!item) return <li key={`div-${idx}`}><hr className="my-2.5 border-border/60" /></li>
             const { id, label, icon: Icon } = item
+            const isActive = active === id
             return (
               <li key={id}>
                 <button
                   onClick={() => onNav(id)}
                   className={cn(
-                    'w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all',
-                    active === id
-                      ? 'bg-primary text-primary-foreground shadow-sm'
+                    'group/nav relative w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 outline-none',
+                    'focus-visible:ring-4 focus-visible:ring-primary/40',
+                    isActive
+                      ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/30'
                       : 'text-muted-foreground hover:text-foreground hover:bg-accent'
                   )}
                 >
-                  <Icon className="w-5 h-5 shrink-0" />
+                  {isActive && <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-full bg-primary-foreground/80" />}
+                  <Icon className={cn('w-5 h-5 shrink-0 transition-transform', !isActive && 'group-hover/nav:scale-110')} />
                   <span>{label}</span>
                 </button>
               </li>
@@ -80,13 +83,15 @@ const Sidebar = memo(function Sidebar({ active, onNav }: { active: TabId; onNav:
 
       {/* Plan badge */}
       <div className="px-3 pb-5">
-        <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-yellow-300/60 bg-yellow-50 hover:bg-yellow-100 transition-colors text-left">
-          <Crown className="w-5 h-5 text-yellow-500 shrink-0" />
-          <div className="flex flex-col leading-tight min-w-0 flex-1">
-            <span className="text-sm font-semibold text-yellow-700 truncate">Plano Ativado</span>
-            <span className="text-xs text-yellow-600/80 truncate">Premium</span>
+        <button className="group/plan w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-amber-300/60 bg-gradient-to-br from-amber-50 to-yellow-100/80 hover:from-amber-100 hover:to-yellow-100 transition-all text-left shadow-sm hover:shadow-md outline-none focus-visible:ring-4 focus-visible:ring-amber-300/50">
+          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-amber-400 to-yellow-500 flex items-center justify-center shrink-0 shadow-sm">
+            <Crown className="w-5 h-5 text-white" />
           </div>
-          <ChevronRight className="w-4 h-4 text-yellow-500/60 shrink-0" />
+          <div className="flex flex-col leading-tight min-w-0 flex-1">
+            <span className="text-sm font-bold text-amber-800 truncate">Plano Ativado</span>
+            <span className="text-xs text-amber-600/90 truncate font-medium">Premium</span>
+          </div>
+          <ChevronRight className="w-4 h-4 text-amber-500/70 shrink-0 group-hover/plan:translate-x-0.5 transition-transform" />
         </button>
       </div>
     </aside>
@@ -133,10 +138,10 @@ const HERO_SLIDES = [
 ]
 
 const QUICK_CATS = [
-  { label: 'Canais', subtitle: '2.312 ao vivo', icon: Radio, tab: 'canais' as TabId, bg: 'bg-blue-500', imgRight: null },
-  { label: 'Filmes', subtitle: '23.894 títulos', icon: Film, tab: 'filmes' as TabId, bg: 'bg-purple-600', imgRight: null },
-  { label: 'Séries', subtitle: '6.128 episódios', icon: Tv2, tab: 'series' as TabId, bg: 'bg-amber-500', imgRight: null },
-  { label: 'Kids', subtitle: '2.015 itens', icon: Smile, tab: 'kids' as TabId, bg: 'bg-teal-500', imgRight: null },
+  { label: 'Canais', subtitle: '2.312 ao vivo', icon: Radio, tab: 'canais' as TabId, bg: 'bg-gradient-to-br from-blue-500 to-blue-700' },
+  { label: 'Filmes', subtitle: '23.894 títulos', icon: Film, tab: 'filmes' as TabId, bg: 'bg-gradient-to-br from-violet-500 to-purple-700' },
+  { label: 'Séries', subtitle: '6.128 episódios', icon: Tv2, tab: 'series' as TabId, bg: 'bg-gradient-to-br from-amber-400 to-orange-600' },
+  { label: 'Kids', subtitle: '2.015 itens', icon: Smile, tab: 'kids' as TabId, bg: 'bg-gradient-to-br from-teal-400 to-cyan-600' },
 ]
 
 // Watching items use real-world-ish thumbnail bg colors matching the mockup
@@ -149,10 +154,13 @@ const WATCHING_BG: Record<string, string> = {
 
 function HomeTab({ onNav }: { onNav: (id: TabId) => void }) {
   const [slide, setSlide] = useState(0)
+  const [selected, setSelected] = useState<Movie | Series | null>(null)
   const cur = HERO_SLIDES[slide]
+  const handleSelect = useCallback((item: Movie | Series) => setSelected(item), [])
+  const handleClose = useCallback(() => setSelected(null), [])
 
   return (
-    <div className="h-full flex flex-col overflow-hidden px-5 py-3 gap-3">
+    <div className="h-full flex flex-col overflow-hidden px-6 py-3 gap-3.5">
 
       {/* Top clock row */}
       <div className="flex items-center justify-end shrink-0">
@@ -160,36 +168,40 @@ function HomeTab({ onNav }: { onNav: (id: TabId) => void }) {
       </div>
 
       {/* Hero banner */}
-      <section className="relative rounded-2xl overflow-hidden shadow-md shrink-0" style={{ height: 210 }}>
+      <section className="relative rounded-3xl overflow-hidden shadow-xl shadow-black/10 shrink-0 ring-1 ring-black/5" style={{ height: 212 }}>
         <div className="absolute inset-0">
-          <Image src="/hero-robot.png" alt="" fill className="object-cover object-center" priority sizes="(max-width: 1920px) 100vw" />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/40 to-transparent" />
+          <Image src="/hero-robot.png" alt="" fill className="object-cover object-center scale-105" priority sizes="(max-width: 1920px) 100vw" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/45 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
         </div>
-        <div className="relative z-10 flex items-center h-full p-7">
-          <div className="flex flex-col gap-2 max-w-md">
-            <h2 className="text-2xl font-bold text-white leading-tight text-balance">
+        <div className="relative z-10 flex items-center h-full px-8">
+          <div className="flex flex-col gap-2.5 max-w-md">
+            <span className="inline-flex items-center gap-1.5 w-fit px-2.5 py-1 rounded-full bg-white/15 backdrop-blur-sm border border-white/20 text-[10px] font-semibold text-white/90 uppercase tracking-widest">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" /> Em destaque
+            </span>
+            <h2 className="text-3xl font-black text-white leading-[1.05] text-balance tracking-tight">
               {cur.title}{' '}<span className="text-blue-300">{cur.highlight}</span>
             </h2>
-            <p className="text-xs text-white/80 leading-relaxed whitespace-pre-line">{cur.subtitle}</p>
+            <p className="text-xs text-white/75 leading-relaxed whitespace-pre-line">{cur.subtitle}</p>
             <button onClick={() => onNav(cur.ctaTab)}
-              className="inline-flex items-center gap-2 mt-1 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors w-fit shadow-sm">
-              <Tv2 className="w-4 h-4" />{cur.cta}
+              className="inline-flex items-center gap-2 mt-1 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-bold hover:bg-primary/90 hover:scale-[1.03] transition-all w-fit shadow-lg shadow-primary/40 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/60">
+              <Play className="w-4 h-4 fill-current" />{cur.cta}
             </button>
           </div>
         </div>
-        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-2 z-10">
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 z-10">
           {HERO_SLIDES.map((s, i) => (
             <button key={s.id} onClick={() => setSlide(i)} aria-label={`Slide ${i + 1}`}
-              className={`h-1.5 rounded-full transition-all ${i === slide ? 'w-5 bg-white' : 'w-1.5 bg-white/40'}`} />
+              className={`h-1.5 rounded-full transition-all duration-300 ${i === slide ? 'w-6 bg-white' : 'w-1.5 bg-white/40 hover:bg-white/60'}`} />
           ))}
         </div>
         <button onClick={() => setSlide((slide - 1 + HERO_SLIDES.length) % HERO_SLIDES.length)}
-          className="absolute left-3 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-black/30 flex items-center justify-center hover:bg-black/50 z-10" aria-label="Anterior">
-          <ChevronLeft className="w-3.5 h-3.5 text-white" />
+          className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/10 backdrop-blur-sm border border-white/15 flex items-center justify-center hover:bg-white/25 transition-colors z-10" aria-label="Anterior">
+          <ChevronLeft className="w-4 h-4 text-white" />
         </button>
         <button onClick={() => setSlide((slide + 1) % HERO_SLIDES.length)}
-          className="absolute right-3 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-black/30 flex items-center justify-center hover:bg-black/50 z-10" aria-label="Próximo">
-          <ChevronRight className="w-3.5 h-3.5 text-white" />
+          className="absolute right-4 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/10 backdrop-blur-sm border border-white/15 flex items-center justify-center hover:bg-white/25 transition-colors z-10" aria-label="Próximo">
+          <ChevronRight className="w-4 h-4 text-white" />
         </button>
       </section>
 
@@ -197,63 +209,79 @@ function HomeTab({ onNav }: { onNav: (id: TabId) => void }) {
       <div className="grid grid-cols-4 gap-3 shrink-0">
         {QUICK_CATS.map(({ label, subtitle, icon: Icon, tab, bg }) => (
           <button key={label} onClick={() => onNav(tab)}
-            className={cn('relative flex items-center gap-3 px-4 py-3 rounded-xl text-left overflow-hidden transition-all hover:scale-[1.02] shadow-sm', bg)}>
-            <Icon className="w-6 h-6 text-white/90 shrink-0" />
-            <div>
-              <p className="font-bold text-white text-sm">{label}</p>
-              <p className="text-[11px] text-white/75">{subtitle}</p>
+            className={cn('group/qc relative flex items-center gap-3.5 px-4 py-3.5 rounded-2xl text-left overflow-hidden transition-all duration-300 hover:scale-[1.03] shadow-lg shadow-black/10 hover:shadow-xl focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/50', bg)}>
+            <div className="absolute -right-4 -top-6 w-24 h-24 rounded-full bg-white/10 blur-xl transition-opacity group-hover/qc:opacity-100 opacity-60" />
+            <div className="relative w-11 h-11 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center shrink-0 shadow-inner">
+              <Icon className="w-5 h-5 text-white" />
             </div>
+            <div className="relative">
+              <p className="font-bold text-white text-base leading-tight">{label}</p>
+              <p className="text-[11px] text-white/80 mt-0.5">{subtitle}</p>
+            </div>
+            <ChevronRight className="relative ml-auto w-4 h-4 text-white/60 group-hover/qc:text-white group-hover/qc:translate-x-0.5 transition-all shrink-0" />
           </button>
         ))}
       </div>
 
       {/* Continuar assistindo */}
       <section className="shrink-0">
-        <h2 className="text-sm font-bold text-foreground mb-2">Continuar assistindo</h2>
+        <h2 className="text-base font-bold text-foreground mb-2.5 tracking-tight">Continuar assistindo</h2>
         <div className="grid grid-cols-4 gap-3">
           {WATCHING_ITEMS.map((item) => (
-            <div key={item.id}
-              className="relative rounded-xl overflow-hidden border border-border shadow-sm hover:shadow-md hover:scale-[1.02] transition-all cursor-pointer bg-card">
-              <div className="relative flex flex-col justify-end p-2.5" style={{ height: 90,
+            <button key={item.id}
+              className="group/w relative rounded-2xl overflow-hidden shadow-md hover:shadow-xl hover:shadow-black/20 hover:scale-[1.03] transition-all duration-300 cursor-pointer outline-none focus-visible:ring-4 focus-visible:ring-primary/60 text-left">
+              <div className="relative flex flex-col justify-end p-3" style={{ height: 96,
                 background: WATCHING_BG[item.title] ?? `linear-gradient(160deg,${item.colorFrom} 0%,${item.colorTo} 100%)` }}>
                 {item.isNew && (
-                  <span className="absolute top-1.5 left-1.5 text-[8px] font-bold px-1.5 py-0.5 rounded bg-red-500 text-white">AO VIVO</span>
+                  <span className="absolute top-2 left-2 flex items-center gap-1 text-[8px] font-bold px-1.5 py-0.5 rounded-md bg-red-500 text-white shadow-sm">
+                    <span className="w-1 h-1 rounded-full bg-white animate-pulse" />AO VIVO
+                  </span>
                 )}
-                <p className="text-[11px] text-white font-bold uppercase leading-tight">{item.title}</p>
-                <p className="text-[10px] text-white/70">{item.episode}</p>
+                {/* Play overlay */}
+                <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover/w:opacity-100 transition-opacity duration-300">
+                  <div className="w-10 h-10 rounded-full bg-primary/95 flex items-center justify-center shadow-lg shadow-primary/40">
+                    <Play className="w-4 h-4 text-primary-foreground fill-current ml-0.5" />
+                  </div>
+                </div>
+                <p className="relative text-[11px] text-white font-bold uppercase leading-tight drop-shadow">{item.title}</p>
+                <p className="relative text-[10px] text-white/70">{item.episode}</p>
               </div>
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-black/10">
+              <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/20">
                 <div className="h-full bg-primary rounded-full" style={{ width: `${item.progress}%` }} />
               </div>
-            </div>
+            </button>
           ))}
         </div>
       </section>
 
       {/* Em destaque */}
       <section className="flex-1 min-h-0 flex flex-col">
-        <h2 className="text-sm font-bold text-foreground mb-2 shrink-0">Em destaque</h2>
+        <h2 className="text-base font-bold text-foreground mb-2.5 shrink-0 tracking-tight">Em destaque</h2>
         <div className="flex gap-3 flex-1 min-h-0">
-          <div className="grid grid-cols-6 gap-2 flex-1 content-start">
-            {MOVIES.slice(0, 6).map((m) => <ContentCard key={m.id} item={m} onClick={() => {}} />)}
+          <div className="grid grid-cols-6 gap-2.5 flex-1 content-start">
+            {MOVIES.slice(0, 6).map((m) => <ContentCard key={m.id} item={m} onClick={handleSelect} />)}
           </div>
           {/* Device info card */}
-          <div className="shrink-0 rounded-xl border border-border bg-card shadow-sm p-3 flex flex-col gap-2.5" style={{ width: 170 }}>
-            <div className="flex items-start gap-2">
-              <Monitor className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
+          <div className="shrink-0 rounded-2xl border border-border/60 bg-card/95 backdrop-blur-sm shadow-md p-4 flex flex-col gap-3" style={{ width: 178 }}>
+            <div className="flex items-start gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center shrink-0">
+                <Monitor className="w-4 h-4 text-muted-foreground" />
+              </div>
               <div>
                 <p className="text-[10px] text-muted-foreground">Seu dispositivo</p>
                 <p className="text-base font-black text-foreground tracking-wider">{USER.deviceCode}</p>
               </div>
             </div>
-            <div className="flex items-start gap-2">
-              <Calendar className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+            <div className="flex items-start gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                <Calendar className="w-4 h-4 text-primary" />
+              </div>
               <div>
                 <p className="text-[10px] text-muted-foreground">Expira em</p>
                 <p className="text-xs font-bold text-primary">{USER.validity}</p>
               </div>
             </div>
-            <div className="flex items-center gap-2 pt-1.5 border-t border-border">
+            <div className="flex items-center gap-2 pt-2.5 mt-auto border-t border-border">
               <Shield className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
               <p className="text-[10px] text-muted-foreground">Versão {USER.appVersion}</p>
             </div>
@@ -261,6 +289,7 @@ function HomeTab({ onNav }: { onNav: (id: TabId) => void }) {
         </div>
       </section>
 
+      <ContentModal item={selected} onClose={handleClose} />
     </div>
   )
 }
