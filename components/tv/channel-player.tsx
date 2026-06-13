@@ -57,17 +57,17 @@ export function ChannelPlayer({ channel, onClose }: ChannelPlayerProps) {
         style={{ background: `radial-gradient(circle at 50% 45%, ${channel.logoColor}14 0%, #04060b 75%)` }}
       />
 
-      {/* Brief auto-hiding channel hint (bottom-left) — channel name, no A2 bug */}
+      {/* Brief auto-hiding channel hint (bottom-right) — channel name, no A2 bug */}
       <div
         className={cn(
-          'absolute bottom-10 left-10 flex items-center gap-3 transition-opacity duration-700',
+          'absolute bottom-10 right-10 flex items-center gap-3 transition-opacity duration-700',
           showHint ? 'opacity-100' : 'opacity-0',
         )}
       >
-        <span className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-red-600 text-white text-xs font-bold">
+        <span className="text-white text-2xl font-black drop-shadow-lg">{channel.name}</span>
+        <span className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-red-600 text-white text-xs font-bold ring-2 ring-white/80 shadow-lg">
           <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />AO VIVO
         </span>
-        <span className="text-white text-2xl font-black drop-shadow-lg">{channel.name}</span>
       </div>
     </div>,
     document.body,

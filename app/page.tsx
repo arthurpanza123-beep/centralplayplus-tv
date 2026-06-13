@@ -641,121 +641,193 @@ function ConfiguracoesTab() {
 }
 
 // ─── SHARED SEARCH INPUT ───────────────────────────────────���──────────────────
+// On a TV there is no physical text field, so tapping the search opens an on-screen
+// keyboard. Typing filters the results live behind the overlay.
 function SearchInput({ placeholder, value, onChange }: { placeholder: string; value: string; onChange: (v: string) => void }) {
+  const [open, setOpen] = useState(false)
+
   return (
-    <div className="relative ml-4">
-      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-      <input type="search" placeholder={placeholder} value={value} onChange={(e) => onChange(e.target.value)}
-        className="pl-9 pr-4 py-2 rounded-full bg-background border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary w-64 transition-colors" />
-    </div>
+    <>
+      <button
+        onClick={() => setOpen(true)}
+        className="relative ml-4 flex items-center gap-2 pl-9 pr-4 py-2 rounded-full bg-background border border-border w-64 text-left transition-colors hover:border-primary outline-none focus:border-primary focus:ring-2 focus:ring-primary/40"
+      >
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <span className={cn('text-sm truncate', value ? 'text-foreground' : 'text-muted-foreground')}>
+          {value || placeholder}
+        </span>
+      </button>
+
+      {open && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={placeholder}
+          onClick={() => setOpen(false)}
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 backdrop-blur-sm"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-2xl mb-10 mx-4 rounded-3xl border border-border bg-card p-6 shadow-2xl"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-sm font-semibold text-muted-foreground">{placeholder}</p>
+              <button
+                onClick={() => setOpen(false)}
+                className="px-4 py-2 rounded-full bg-primary text-primary-foreground text-sm font-semibold outline-none focus:ring-2 focus:ring-primary/40"
+              >
+                Concluir
+              </button>
+            </div>
+            {/* Query display */}
+            <div className="flex items-center gap-3 rounded-2xl border border-border bg-background px-5 py-4 mb-4">
+              <Search className="w-5 h-5 text-primary shrink-0" />
+              <span className={cn('text-xl font-semibold truncate', value ? 'text-foreground' : 'text-muted-foreground')}>
+                {value || 'Digite para buscar…'}
+              </span>
+              {value && <span className="ml-auto w-0.5 h-6 bg-primary animate-pulse shrink-0" aria-hidden />}
+            </div>
+            <VirtualKeyboard value={value} onChange={onChange} />
+          </div>
+        </div>
+      )}
+    </>
   )
 }
 
 // ─── KIDS TAB ────────────────────────────────���────────────────────────────────
+const KIDS_CATEGORIES = ['Destaques', 'Canais', 'Filmes', 'Séries']
+
 function KidsTab() {
+  const [category, setCategory] = useState(KIDS_CATEGORIES[0])
   const [selected, setSelected] = useState<Movie | Series | null>(null)
+  const [channel, setChannel] = useState<(typeof CHANNELS)[number] | null>(null)
   const handleSelect = useCallback((i: Movie | Series) => setSelected(i), [])
   const handleClose = useCallback(() => setSelected(null), [])
 
   const kidsChannels = useMemo(() => CHANNELS.filter((c) => c.category === 'Desenhos'), [])
-  const kidsMovies = useMemo(() => MOVIES.slice(0, 12), [])
-  const kidsSeries = useMemo(() => SERIES.slice(0, 12), [])
+  const kidsMovies = useMemo(() => MOVIES.slice(0, 15), [])
+  const kidsSeries = useMemo(() => SERIES.slice(0, 15), [])
 
   return (
     <>
       <ShellHeader title="Kids" />
-      <div className="flex-1 overflow-y-auto scrollbar-none pb-10 bg-gradient-to-b from-sky-500/10 via-fuchsia-500/[0.05] to-transparent">
-        {/* Playful, colorful banner with moving sheen + sparkles */}
-        <div className="px-6 pt-5">
-          <div className="relative overflow-hidden rounded-[2rem] p-8 mb-8 shadow-2xl shadow-fuchsia-900/30"
-            style={{ background: 'linear-gradient(120deg, #f472b6 0%, #a855f7 38%, #38bdf8 72%, #22d3ee 100%)' }}>
-            {/* Moving light sheen */}
-            <span aria-hidden className="pointer-events-none absolute inset-y-0 left-0 w-1/4 bg-white/30 blur-xl animate-cp-kid-shine" />
-            {/* Twinkling sparkles */}
-            <Sparkles aria-hidden className="absolute top-6 right-10 w-7 h-7 text-white/90 animate-cp-kid-twinkle" />
-            <Sparkles aria-hidden className="absolute bottom-8 right-32 w-5 h-5 text-white/80 animate-cp-kid-twinkle" style={{ animationDelay: '0.8s' }} />
-            <Sparkles aria-hidden className="absolute top-16 right-52 w-4 h-4 text-white/70 animate-cp-kid-twinkle" style={{ animationDelay: '1.4s' }} />
-            <div className="relative z-10 max-w-lg">
-              <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/25 backdrop-blur-sm text-white text-sm font-bold mb-3">
-                <Smile className="w-4 h-4" /> Modo Kids
-              </span>
-              <h2 className="text-4xl font-black text-white text-balance leading-tight mb-2 drop-shadow-md">
-                Diversão segura para os pequenos
-              </h2>
-              <p className="text-base text-white/90 leading-relaxed">
-                Desenhos, filmes e séries divertidas, só para as crianças.
-              </p>
-            </div>
-            {/* Decorative bubbles */}
-            <div className="absolute -right-8 -top-8 w-48 h-48 rounded-full bg-white/15" aria-hidden />
-            <div className="absolute right-28 bottom-2 w-28 h-28 rounded-full bg-white/15" aria-hidden />
-            <div className="absolute right-6 -bottom-10 w-36 h-36 rounded-full bg-white/10" aria-hidden />
-          </div>
-        </div>
+      <div className="flex flex-1 overflow-hidden">
+        <CategorySidebar categories={KIDS_CATEGORIES} selected={category} onSelect={setCategory} />
+        <div className="flex-1 overflow-y-auto scrollbar-none pb-10 bg-gradient-to-b from-sky-500/10 via-fuchsia-500/[0.05] to-transparent">
 
-        {/* Glowing program cards with a gentle float */}
-        <div className="px-6">
-          <p className="text-lg font-black text-foreground mb-4 flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-fuchsia-400" /> Programas favoritos
-          </p>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-5">
-            {KIDS_ITEMS.map((item, i) => (
-              <button
-                key={item.id}
-                aria-label={`Assistir ${item.title}`}
-                className="group/kid animate-cp-kid-float relative aspect-video rounded-[1.75rem] overflow-hidden outline-none transition-transform duration-300 hover:scale-[1.05] focus-visible:scale-[1.05] focus-visible:ring-4 focus-visible:ring-white/70"
-                style={{ animationDelay: `${(i % 3) * 0.5}s`, boxShadow: `0 10px 30px -6px ${item.colorTo}aa` }}
-              >
-                <Image src={`/kids/${item.id}.png`} alt={item.title} fill sizes="(max-width: 768px) 50vw, 30vw" className="object-cover" />
-                {/* Glow ring on hover */}
-                <span className="pointer-events-none absolute inset-0 rounded-[1.75rem] ring-2 ring-white/0 group-hover/kid:ring-white/60 transition-all duration-300" aria-hidden />
-                <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full bg-white/95 flex items-center justify-center shadow-xl scale-75 opacity-0 transition-all duration-300 group-hover/kid:scale-100 group-hover/kid:opacity-100 group-focus-visible/kid:scale-100 group-focus-visible/kid:opacity-100">
-                  <Play className="w-7 h-7 text-pink-600 fill-current ml-0.5" />
-                </span>
-                <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/75 to-transparent">
-                  <p className="text-white font-black text-lg leading-tight text-left text-balance drop-shadow-md">
-                    {item.title}
-                  </p>
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Kids channels */}
-        {kidsChannels.length > 0 && (
-          <div className="mt-9 px-6">
-            <p className="text-lg font-black text-foreground mb-4">Canais infantis</p>
-            <div className="flex gap-4 overflow-x-auto scrollbar-none py-1">
-              {kidsChannels.map((ch) => (
-                <div key={ch.id}
-                  className="shrink-0 w-52 rounded-2xl p-4 flex flex-col gap-3 shadow-lg transition-transform duration-300 hover:scale-[1.04]"
-                  style={{ background: `linear-gradient(150deg, ${ch.logoColor} 0%, ${ch.logoColor}99 100%)` }}>
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-base font-black text-white shrink-0">
-                      {ch.logoText}
-                    </div>
-                    <span className="text-white font-bold text-base leading-tight">{ch.name}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-white/90 text-sm">
-                    <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-red-600 text-white text-[9px] font-bold shrink-0">
-                      <span className="w-1 h-1 rounded-full bg-white animate-pulse" />AO VIVO
+          {/* ── DESTAQUES ── */}
+          {category === 'Destaques' && (
+            <>
+              <div className="px-6 pt-5">
+                <div className="relative overflow-hidden rounded-[2rem] p-8 mb-8 shadow-2xl shadow-fuchsia-900/30"
+                  style={{ background: 'linear-gradient(120deg, #f472b6 0%, #a855f7 38%, #38bdf8 72%, #22d3ee 100%)' }}>
+                  <span aria-hidden className="pointer-events-none absolute inset-y-0 left-0 w-1/4 bg-white/30 blur-xl animate-cp-kid-shine" />
+                  <Sparkles aria-hidden className="absolute top-6 right-10 w-7 h-7 text-white/90 animate-cp-kid-twinkle" />
+                  <Sparkles aria-hidden className="absolute bottom-8 right-32 w-5 h-5 text-white/80 animate-cp-kid-twinkle" style={{ animationDelay: '0.8s' }} />
+                  <Sparkles aria-hidden className="absolute top-16 right-52 w-4 h-4 text-white/70 animate-cp-kid-twinkle" style={{ animationDelay: '1.4s' }} />
+                  <div className="relative z-10 max-w-lg">
+                    <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/25 backdrop-blur-sm text-white text-sm font-bold mb-3">
+                      <Smile className="w-4 h-4" /> Modo Kids
                     </span>
-                    <span className="truncate">{ch.currentProgram}</span>
+                    <h2 className="text-4xl font-black text-white text-balance leading-tight mb-2 drop-shadow-md">
+                      Diversão segura para os pequenos
+                    </h2>
+                    <p className="text-base text-white/90 leading-relaxed">
+                      Desenhos, filmes e séries divertidas, só para as crianças.
+                    </p>
                   </div>
+                  <div className="absolute -right-8 -top-8 w-48 h-48 rounded-full bg-white/15" aria-hidden />
+                  <div className="absolute right-28 bottom-2 w-28 h-28 rounded-full bg-white/15" aria-hidden />
+                  <div className="absolute right-6 -bottom-10 w-36 h-36 rounded-full bg-white/10" aria-hidden />
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
+              </div>
 
-        {/* Kid-friendly movies & series */}
-        <div className="flex flex-col gap-8 mt-9">
-          <PosterRow title="Filmes para crianças" items={kidsMovies} onSelect={handleSelect} />
-          <PosterRow title="Séries para crianças" items={kidsSeries} onSelect={handleSelect} />
+              <div className="px-6">
+                <p className="text-lg font-black text-foreground mb-4 flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-fuchsia-400" /> Programas favoritos
+                </p>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-5">
+                  {KIDS_ITEMS.map((item, i) => (
+                    <button
+                      key={item.id}
+                      aria-label={`Assistir ${item.title}`}
+                      className="group/kid animate-cp-kid-float relative aspect-video rounded-[1.75rem] overflow-hidden outline-none transition-transform duration-300 hover:scale-[1.05] focus:scale-[1.05] focus:ring-4 focus:ring-white/80"
+                      style={{ animationDelay: `${(i % 3) * 0.5}s`, boxShadow: `0 10px 30px -6px ${item.colorTo}aa` }}
+                    >
+                      <Image src={`/kids/${item.id}.png`} alt={item.title} fill sizes="(max-width: 768px) 50vw, 30vw" className="object-cover" />
+                      <span className="pointer-events-none absolute inset-0 rounded-[1.75rem] ring-2 ring-white/0 group-hover/kid:ring-white/60 transition-all duration-300" aria-hidden />
+                      <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full bg-white/95 flex items-center justify-center shadow-xl scale-75 opacity-0 transition-all duration-300 group-hover/kid:scale-100 group-hover/kid:opacity-100 group-focus/kid:scale-100 group-focus/kid:opacity-100">
+                        <Play className="w-7 h-7 text-pink-600 fill-current ml-0.5" />
+                      </span>
+                      <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/75 to-transparent">
+                        <p className="text-white font-black text-lg leading-tight text-left text-balance drop-shadow-md">
+                          {item.title}
+                        </p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* ── CANAIS ── */}
+          {category === 'Canais' && (
+            <div className="px-6 py-5">
+              <p className="text-lg font-black text-foreground mb-4">Canais infantis</p>
+              {kidsChannels.length > 0 ? (
+                <div className="grid grid-cols-3 gap-5">
+                  {kidsChannels.map((ch) => (
+                    <button key={ch.id}
+                      onClick={() => setChannel(ch)}
+                      aria-label={`Assistir ${ch.name}`}
+                      className="group/kch text-left rounded-3xl p-5 flex flex-col gap-4 shadow-lg outline-none transition-transform duration-300 hover:scale-[1.04] focus:scale-[1.04] focus:ring-4 focus:ring-white/80"
+                      style={{ background: `linear-gradient(150deg, ${ch.logoColor} 0%, ${ch.logoColor}99 100%)` }}>
+                      <div className="flex items-center gap-3">
+                        <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-lg font-black text-white shrink-0">
+                          {ch.logoText}
+                        </div>
+                        <span className="text-white font-black text-lg leading-tight">{ch.name}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-white/90 text-sm">
+                        <span className="flex items-center gap-1 px-2 py-0.5 rounded bg-red-600 text-white text-[10px] font-bold shrink-0 ring-2 ring-white/80">
+                          <span className="w-1 h-1 rounded-full bg-white animate-pulse" />AO VIVO
+                        </span>
+                        <span className="truncate">{ch.currentProgram}</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex items-center justify-center h-48 text-muted-foreground text-sm">Nenhum canal infantil disponível.</div>
+              )}
+            </div>
+          )}
+
+          {/* ── FILMES ── */}
+          {category === 'Filmes' && (
+            <div className="px-6 py-5">
+              <p className="text-lg font-black text-foreground mb-4">Filmes para crianças</p>
+              <div className="grid grid-cols-5 gap-5">
+                {kidsMovies.map((m) => <ContentCard key={m.id} item={m} onClick={handleSelect} />)}
+              </div>
+            </div>
+          )}
+
+          {/* ── SÉRIES ── */}
+          {category === 'Séries' && (
+            <div className="px-6 py-5">
+              <p className="text-lg font-black text-foreground mb-4">Séries para crianças</p>
+              <div className="grid grid-cols-5 gap-5">
+                {kidsSeries.map((s) => <ContentCard key={s.id} item={s} onClick={handleSelect} />)}
+              </div>
+            </div>
+          )}
         </div>
       </div>
       <ContentDetail item={selected} onClose={handleClose} />
+      <ChannelPlayer channel={channel} onClose={() => setChannel(null)} />
     </>
   )
 }
@@ -851,7 +923,7 @@ function FavoritosTab() {
   )
 }
 
-// ─── ROOT SHELL ──────────────────────────────────────────���────────────────────
+// ─── ROOT SHELL ────────────────────────────��─────────────���────────────────────
 const TABS: TabId[] = ['home', 'canais', 'filmes', 'series', 'kids', 'buscar', 'favoritos', 'configuracoes']
 
 type AppStage = 'intro' | 'login' | 'loading' | 'app'

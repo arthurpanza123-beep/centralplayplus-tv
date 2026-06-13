@@ -18,10 +18,10 @@ export const ContentCard = memo(function ContentCard({ item, onClick, className 
       className={cn(
         'group/card relative flex flex-col w-full rounded-md overflow-hidden outline-none bg-card',
         'transition-[transform,box-shadow] duration-300 ease-out',
-        'hover:scale-[1.08] hover:z-10 focus-visible:scale-[1.08] focus-visible:z-10',
+        'hover:scale-[1.08] hover:z-10 focus:scale-[1.08] focus:z-10',
         'shadow-md hover:shadow-2xl hover:shadow-black/60',
-        // White selection contour on hover/focus — inset so it's never clipped by the row
-        'ring-inset ring-0 ring-white hover:ring-[3px] focus-visible:ring-[3px] focus-visible:shadow-2xl',
+        // White selection contour on hover/focus (focus fires on click too, for TV remotes + mouse)
+        'ring-inset ring-0 ring-white hover:ring-4 focus:ring-4 focus:shadow-2xl',
         className
       )}
       aria-label={`Abrir detalhes de ${item.title}`}
