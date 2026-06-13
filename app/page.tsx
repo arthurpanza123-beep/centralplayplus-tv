@@ -5,7 +5,7 @@ import { Activity } from 'react'
 import Image from 'next/image'
 import {
   Home, Radio, Film, Tv2, Smile, Search, Heart, Settings, Crown,
-  Play,
+  Play, Info, Star,
   Bell, Shield, MessageSquare, MonitorPlay, Monitor, ChevronRight, LogOut,
   User, Mail, Calendar, Smartphone,
 } from 'lucide-react'
@@ -18,7 +18,7 @@ import { LoginScreen } from '@/components/tv/login-screen'
 import { useTvNavigation } from '@/hooks/use-tv-navigation'
 import { cn } from '@/lib/utils'
 import {
-  MOVIES, SERIES, CHANNELS, WATCHING_ITEMS, KIDS_ITEMS, USER,
+  MOVIES, SERIES, CHANNELS, KIDS_ITEMS, USER,
   MOVIE_CATEGORIES, SERIES_CATEGORIES, CHANNEL_CATEGORIES,
 } from '@/lib/data'
 import type { Movie, Series, Channel } from '@/lib/types'
@@ -138,7 +138,7 @@ const PosterRow = memo(function PosterRow({
   return (
     <section className="flex flex-col gap-2">
       <h2 className="text-lg font-bold text-foreground px-8 tracking-tight">{title}</h2>
-      <div className="flex gap-2.5 overflow-x-auto overflow-y-visible px-8 py-2 scrollbar-none">
+      <div className="flex items-start gap-2.5 overflow-x-auto overflow-y-visible px-8 py-2 scrollbar-none">
         {items.map((item) => (
           <div key={item.id} className="shrink-0 w-[140px]">
             <ContentCard item={item} onClick={onSelect} />

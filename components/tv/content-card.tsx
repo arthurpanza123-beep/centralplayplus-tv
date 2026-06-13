@@ -16,7 +16,7 @@ export const ContentCard = memo(function ContentCard({ item, onClick, className 
     <button
       onClick={() => onClick(item)}
       className={cn(
-        'group/card relative flex flex-col rounded-md overflow-hidden outline-none bg-card',
+        'group/card relative flex flex-col w-full rounded-md overflow-hidden outline-none bg-card',
         'transition-[transform,box-shadow] duration-300 ease-out',
         'hover:scale-[1.08] hover:z-10 focus-visible:scale-[1.08] focus-visible:z-10',
         'shadow-md hover:shadow-2xl hover:shadow-black/60',
