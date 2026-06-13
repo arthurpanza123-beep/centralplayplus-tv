@@ -38,7 +38,7 @@ const NAV_ITEMS: { id: TabId; label: string; icon: React.ElementType }[] = [
 const Sidebar = memo(function Sidebar({ active, onNav }: { active: TabId; onNav: (id: TabId) => void }) {
   return (
     <aside
-      className="flex flex-col h-screen bg-gradient-to-b from-white/70 via-white/55 to-white/20 border-r border-white/40 shrink-0"
+      className="flex flex-col rounded-2xl bg-gradient-to-b from-white/80 via-white/60 to-white/15 border border-white/50 shadow-sm shrink-0 overflow-hidden"
       style={{ width: 'var(--tv-sidebar-width)' }}
     >
       {/* Logo */}
@@ -593,7 +593,7 @@ export default function AppShell() {
   const [active, setActive] = useState<TabId>('home')
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden">
+    <div className="flex h-screen w-screen overflow-hidden p-4 gap-4">
       {/* Wallpaper — fixed layer behind everything */}
       <img
         src="/bg-wall.png"
@@ -605,8 +605,7 @@ export default function AppShell() {
       {/* Sidebar */}
       <Sidebar active={active} onNav={setActive} />
 
-      {/* Main content area — content sits directly over the wallpaper */}
-      <div className="flex flex-col flex-1 min-w-0 relative">
+      <div className="flex flex-col flex-1 min-w-0 relative rounded-2xl bg-white/80 overflow-hidden border border-white/50 shadow-sm">
         {TABS.map((tab) => (
           <Activity key={tab} mode={active === tab ? 'visible' : 'hidden'}>
             <div
