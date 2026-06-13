@@ -33,19 +33,31 @@ export function IntroVideo({ onDone }: { onDone: () => void }) {
     const v = videoRef.current
     if (!v) return
 
-    // Sound ON by default. If the browser blocks it, fall back to muted.
-    v.muted = false
+    // Try sound ON immediately. Browsers usually block unmuted autoplay with no
+    // prior gesture, so we fall back to muted playback to keep the video rolling.
     v.volume = 1
+    v.muted = false
     v.play().catch(() => {
       v.muted = true
       v.play().catch(() => finish())
     })
+
+    // If we ended up muted, unmute on the user's first interaction — no button needed.
+    const unmute = () => {
+      if (done.current) return
+      v.muted = false
+      v.volume = 1
+      v.play().catch(() => {})
+    }
+    const events: (keyof WindowEventMap)[] = ['pointerdown', 'click', 'keydown', 'touchstart', 'mousemove', 'wheel']
+    events.forEach((e) => window.addEventListener(e, unmute, { once: true, passive: true }))
 
     const onError = () => finish()
     v.addEventListener('error', onError)
     return () => {
       cancelAnimationFrame(raf)
       v.removeEventListener('error', onError)
+      events.forEach((e) => window.removeEventListener(e, unmute))
     }
   }, [])
 
@@ -58,6 +70,7 @@ export function IntroVideo({ onDone }: { onDone: () => void }) {
       <video
         ref={videoRef}
         src="/intro.webm"
+        poster="/intro-poster.webp"
         className="h-full w-full object-cover"
         playsInline
         autoPlay
