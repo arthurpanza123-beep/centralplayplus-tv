@@ -2,17 +2,10 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
-import { Loader2, RefreshCw, Tv, Film, Clapperboard } from 'lucide-react'
+import { Loader2, RefreshCw } from 'lucide-react'
 import { unlockAudio, playIntroMusic } from '@/lib/sounds'
 
 const DEVICE_KEY = 'A7K9-42XP'
-
-// Real poster art for the showcase wall (already generated in /public/posters).
-const WALL = [
-  'm1', 's1', 'm7', 's16', 'm4', 's7',
-  'm13', 's4', 'm16', 's2', 'm11', 's13',
-  'm15', 's17', 'm6', 's8', 'm2', 's10',
-]
 
 export function LoginScreen({ onLogin }: { onLogin: () => void }) {
   const [loading, setLoading] = useState(false)
@@ -26,59 +19,38 @@ export function LoginScreen({ onLogin }: { onLogin: () => void }) {
   }
 
   return (
-    <div className="fixed inset-0 z-40 flex overflow-hidden bg-background animate-cp-fade-in">
-      {/* ── Poster wall (background) ── */}
-      <div className="absolute inset-0 select-none pointer-events-none" aria-hidden>
-        <div className="grid grid-cols-6 gap-3 p-3 rotate-[-8deg] scale-125 origin-center opacity-90">
-          {WALL.map((id, i) => (
-            <div
-              key={id}
-              className="relative aspect-[2/3] rounded-lg overflow-hidden"
-              style={{ transform: `translateY(${i % 2 === 0 ? '-12px' : '14px'})` }}
-            >
-              <Image src={`/posters/${id}.png`} alt="" fill sizes="220px" className="object-cover" />
-            </div>
-          ))}
-        </div>
-      </div>
+    <div className="fixed inset-0 z-40 flex items-center overflow-hidden bg-background animate-cp-fade-in">
+      {/* ── Cozy living-room background ── */}
+      <Image
+        src="/login-room.png"
+        alt=""
+        fill
+        priority
+        aria-hidden
+        className="object-cover object-center select-none pointer-events-none"
+      />
+      {/* Left-side cinematic darkening so the panel stays readable */}
+      <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/55 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-background/70 via-transparent to-background/30" />
 
-      {/* Cinematic darkening so text/panel stay readable */}
-      <div className="absolute inset-0 bg-background/30" />
-      <div className="absolute inset-0 bg-gradient-to-r from-background via-background/90 to-background/20" />
-      <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-background/50" />
-
-      {/* ── Content ── */}
-      <div className="relative z-10 flex flex-col justify-center w-full max-w-xl px-12 lg:px-16 animate-cp-fade-up">
+      {/* ── Activation panel (left) ── */}
+      <div className="relative z-10 flex flex-col w-full max-w-md px-10 lg:px-16 animate-cp-fade-up">
         {/* Brand logo */}
-        <div className="relative w-60 h-20 mb-8 drop-shadow-[0_4px_24px_rgba(37,99,235,0.45)]">
+        <div className="relative w-52 h-16 mb-7 drop-shadow-[0_4px_24px_rgba(37,99,235,0.5)]">
           <Image src="/logo-full.png" alt="Central Play Plus" fill className="object-contain object-left" priority />
         </div>
 
-        <h1 className="text-5xl lg:text-6xl font-black tracking-tight text-foreground text-balance leading-[1.05]">
-          Filmes, séries e canais{' '}
-          <span className="text-primary">sem limites.</span>
+        <h1 className="text-4xl lg:text-5xl font-black tracking-tight text-white text-balance leading-[1.05] drop-shadow-lg">
+          Ative sua TV
         </h1>
-        <p className="mt-4 text-lg text-muted-foreground max-w-md leading-relaxed">
-          Ative sua TV com o código abaixo e libere todo o catálogo em segundos.
+        <p className="mt-3 text-base text-white/70 max-w-xs leading-relaxed">
+          Use o código abaixo no painel de ativação para liberar todo o catálogo.
         </p>
 
-        {/* Feature chips */}
-        <div className="mt-5 flex flex-wrap gap-2">
-          {[
-            { icon: Tv, label: '2.312 canais ao vivo' },
-            { icon: Film, label: '23.894 filmes' },
-            { icon: Clapperboard, label: '6.128 séries' },
-          ].map(({ icon: Icon, label }) => (
-            <span key={label} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-card/80 border border-white/10 text-xs font-medium text-foreground/90">
-              <Icon className="w-3.5 h-3.5 text-primary" />{label}
-            </span>
-          ))}
-        </div>
-
         {/* Device key card */}
-        <div className="mt-8 rounded-2xl bg-card/85 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/50 px-8 py-7">
-          <p className="text-xs font-bold tracking-[0.35em] text-muted-foreground">DEVICE KEY</p>
-          <p className="mt-2 text-4xl lg:text-5xl font-black tracking-[0.04em] text-foreground tabular-nums whitespace-nowrap drop-shadow-[0_0_18px_rgba(96,165,250,0.25)]">
+        <div className="mt-7 rounded-2xl bg-black/45 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/60 px-7 py-6">
+          <p className="text-[11px] font-bold tracking-[0.35em] text-white/50">DEVICE KEY</p>
+          <p className="mt-2 text-4xl lg:text-5xl font-black tracking-[0.04em] text-white tabular-nums whitespace-nowrap drop-shadow-[0_0_18px_rgba(96,165,250,0.3)]">
             {DEVICE_KEY}
           </p>
           <div className="my-5 h-px w-full bg-white/10" />
@@ -90,7 +62,7 @@ export function LoginScreen({ onLogin }: { onLogin: () => void }) {
                 <span className="absolute inline-flex h-4 w-4 rounded-full border-2 border-primary/30 border-t-primary animate-cp-ring-spin" />
               </span>
             )}
-            <span className="text-base text-muted-foreground font-medium">
+            <span className="text-sm text-white/70 font-medium">
               {loading ? 'Liberando acesso…' : 'Aguardando ativação…'}
             </span>
           </div>
