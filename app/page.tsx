@@ -107,7 +107,7 @@ const Sidebar = memo(function Sidebar({ active, onNav, collapsed }: { active: Ta
       <div className={cn('relative pb-5', collapsed ? 'px-2.5' : 'px-3')}>
         {/* Mascot video tumbles once then freezes on the last frame behind the card */}
         {!collapsed && (
-          <MascotVideo className="pointer-events-none absolute left-0 right-0 bottom-[52px] mx-auto w-24 h-24 z-0 drop-shadow-[0_4px_14px_rgba(37,99,235,0.45)]" />
+          <MascotVideo className="pointer-events-none absolute left-0 right-0 bottom-[76px] mx-auto w-32 h-32 z-20 drop-shadow-[0_6px_18px_rgba(37,99,235,0.5)]" />
         )}
         <button
           title={collapsed ? `${planTitle} · ${planSubtitle}` : undefined}
