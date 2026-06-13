@@ -27,7 +27,7 @@ export function LoginScreen({ onLogin }: { onLogin: () => void }) {
         fill
         priority
         aria-hidden
-        className="object-cover object-center select-none pointer-events-none scale-110 blur-2xl"
+        className="object-cover object-center select-none pointer-events-none scale-105 blur-md"
       />
 
       {/* ── Moving neon orbs ── */}
@@ -42,10 +42,14 @@ export function LoginScreen({ onLogin }: { onLogin: () => void }) {
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_30%,rgba(0,0,0,0.65)_100%)]" />
 
       {/* ── Centered activation card ── */}
-      <div className="relative z-10 w-full max-w-md mx-4 flex flex-col items-center text-center rounded-3xl bg-black/50 backdrop-blur-2xl border border-white/10 shadow-2xl shadow-black/70 px-9 py-11 animate-cp-fade-up">
+      <div className="relative z-10 w-full max-w-md mx-4 flex flex-col items-center text-center rounded-[1.75rem] bg-black/55 backdrop-blur-xl border border-white/15 ring-1 ring-white/5 shadow-2xl shadow-black/70 px-10 py-12 animate-cp-fade-up overflow-hidden">
+        {/* Subtle top sheen */}
+        <div aria-hidden className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent" />
+        <div aria-hidden className="absolute -top-24 left-1/2 -translate-x-1/2 w-72 h-48 rounded-full bg-primary/15 blur-3xl" />
+
         {/* Brand logo */}
-        <div className="relative w-72 h-24 mb-7 drop-shadow-[0_6px_32px_rgba(37,99,235,0.6)]">
-          <Image src="/logo-full.png" alt="Central Play Plus" fill className="object-contain" priority />
+        <div className="relative w-full max-w-[18rem] h-28 mx-auto mb-8 drop-shadow-[0_6px_32px_rgba(37,99,235,0.6)]">
+          <Image src="/logo-full.png" alt="Central Play Plus" fill className="object-contain object-center" priority />
         </div>
 
         <h1 className="text-3xl font-black tracking-tight text-white text-balance leading-tight drop-shadow-lg">
