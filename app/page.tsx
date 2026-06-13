@@ -199,53 +199,23 @@ const PosterRow = memo(function PosterRow({
 
 function HomeTab({ onNav }: { onNav: (id: TabId) => void }) {
   const [selected, setSelected] = useState<Movie | Series | null>(null)
-  const featured = MOVIES[0]
 
   const handleSelect = useCallback((item: Movie | Series) => setSelected(item), [])
   const handleClose = useCallback(() => setSelected(null), [])
 
   return (
     <div className="h-full overflow-y-auto overflow-x-hidden scrollbar-none">
-      {/* Floating clock */}
-      <div className="absolute top-4 right-6 z-30">
+      {/* Header row with greeting + clock */}
+      <div className="flex items-center justify-between px-8 pt-6 pb-1">
+        <div>
+          <h1 className="text-3xl font-black text-foreground tracking-tight">Início</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">O que você quer assistir hoje?</p>
+        </div>
         <Topbar />
       </div>
 
-      {/* Full-bleed cinematic hero */}
-      <section className="relative w-full" style={{ height: '58vh' }}>
-        <Image src="/posters/hero-backdrop.png" alt="" fill priority sizes="100vw" className="object-cover object-center" />
-        {/* Fades into the page */}
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/30 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-r from-background/90 via-background/30 to-transparent" />
-
-        <div className="absolute inset-0 flex flex-col justify-end pb-10 px-8 max-w-2xl gap-3">
-          <h1 className="text-5xl font-black text-white leading-[1.02] text-balance tracking-tight drop-shadow-lg">
-            {featured.title}
-          </h1>
-          <div className="flex items-center gap-3 text-sm text-white/85">
-            <span className="flex items-center gap-1 text-amber-400 font-bold">
-              <Star className="w-4 h-4 fill-current" />{featured.rating}
-            </span>
-            <span>{featured.year}</span>
-            <span className="px-1.5 py-0.5 rounded border border-white/40 text-xs">{featured.quality}</span>
-            <span>{featured.genre}</span>
-          </div>
-          <p className="text-sm text-white/75 leading-relaxed max-w-lg line-clamp-2">{featured.description}</p>
-          <div className="flex items-center gap-3 mt-2">
-            <button onClick={() => handleSelect(featured)}
-              className="inline-flex items-center gap-2 px-7 py-3 rounded-md bg-white text-black text-base font-bold hover:bg-white/85 hover:scale-[1.03] transition-all outline-none focus-visible:ring-2 focus-visible:ring-white">
-              <Play className="w-5 h-5 fill-current" />Assistir
-            </button>
-            <button onClick={() => handleSelect(featured)}
-              className="inline-flex items-center gap-2 px-7 py-3 rounded-md bg-white/15 text-white text-base font-bold backdrop-blur-sm hover:bg-white/25 transition-all outline-none focus-visible:ring-2 focus-visible:ring-white">
-              <Info className="w-5 h-5" />Mais informações
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* Rows — pulled up to overlap the hero fade */}
-      <div className="relative z-10 flex flex-col gap-9 mt-2 pb-10">
+      {/* Content rows */}
+      <div className="relative z-10 flex flex-col gap-9 mt-4 pb-10">
         <PosterRow title="Em alta hoje" items={MOVIES.slice(0, 12)} onSelect={handleSelect} />
         <PosterRow title="Continue assistindo" items={MOVIES.slice(10, 20)} onSelect={handleSelect} />
         <PosterRow title="Séries em destaque" items={SERIES.slice(0, 12)} onSelect={handleSelect} />
