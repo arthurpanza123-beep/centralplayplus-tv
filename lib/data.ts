@@ -772,6 +772,98 @@ export const CHANNELS: Channel[] = [
     logoColor: '#006b2a',
     logoText: 'SP+',
   },
+  {
+    id: 'c9', number: 201, name: 'CineMax Prime', category: 'Filmes', currentProgram: 'A Última Fronteira',
+    programs: [
+      { time: '18:00', endTime: '20:10', title: 'A Última Fronteira', isLive: true },
+      { time: '20:10', endTime: '22:30', title: 'Noite de Ação' },
+      { time: '22:30', endTime: '00:40', title: 'Clássico da Madrugada' },
+    ],
+    logoColor: '#102a52', logoText: 'CX',
+  },
+  {
+    id: 'c10', number: 202, name: 'Tela Premium', category: 'Filmes', currentProgram: 'Cidade dos Sonhos',
+    programs: [
+      { time: '17:40', endTime: '19:50', title: 'Cidade dos Sonhos', isLive: true },
+      { time: '19:50', endTime: '22:00', title: 'Sessão Blockbuster' },
+    ],
+    logoColor: '#3a1052', logoText: 'TP',
+  },
+  {
+    id: 'c11', number: 203, name: 'Film & Co', category: 'Filmes', currentProgram: 'O Enigma Final',
+    programs: [
+      { time: '18:30', endTime: '20:40', title: 'O Enigma Final', isLive: true },
+      { time: '20:40', endTime: '22:50', title: 'Suspense da Noite' },
+    ],
+    logoColor: '#52102a', logoText: 'FC',
+  },
+  {
+    id: 'c12', number: 301, name: 'Séries Mania', category: 'Séries', currentProgram: 'Corações de Aurora',
+    programs: [
+      { time: '18:00', endTime: '19:00', title: 'Corações de Aurora', isLive: true },
+      { time: '19:00', endTime: '20:00', title: 'Chamas do Destino' },
+      { time: '20:00', endTime: '21:00', title: 'Maratona Drama' },
+    ],
+    logoColor: '#0d4d4d', logoText: 'SM',
+  },
+  {
+    id: 'c13', number: 302, name: 'Drama Plus', category: 'Séries', currentProgram: 'A Cidade Submersa',
+    programs: [
+      { time: '18:20', endTime: '19:20', title: 'A Cidade Submersa', isLive: true },
+      { time: '19:20', endTime: '20:20', title: 'O Guardião da Neblina' },
+    ],
+    logoColor: '#4d2a0d', logoText: 'D+',
+  },
+  {
+    id: 'c14', number: 401, name: 'News 24h', category: 'Notícias', currentProgram: 'Jornal das Seis',
+    programs: [
+      { time: '18:00', endTime: '19:00', title: 'Jornal das Seis', isLive: true },
+      { time: '19:00', endTime: '20:00', title: 'Economia Hoje' },
+      { time: '20:00', endTime: '21:00', title: 'Mundo Agora' },
+    ],
+    logoColor: '#0a2a5a', logoText: 'N24',
+  },
+  {
+    id: 'c15', number: 402, name: 'Global News', category: 'Notícias', currentProgram: 'Cobertura Internacional',
+    programs: [
+      { time: '18:00', endTime: '19:30', title: 'Cobertura Internacional', isLive: true },
+      { time: '19:30', endTime: '21:00', title: 'Debate da Noite' },
+    ],
+    logoColor: '#5a0a0a', logoText: 'GN',
+  },
+  {
+    id: 'c16', number: 501, name: 'Discovery Wild', category: 'Documentários', currentProgram: 'Planeta Selvagem',
+    programs: [
+      { time: '18:00', endTime: '19:00', title: 'Planeta Selvagem', isLive: true },
+      { time: '19:00', endTime: '20:00', title: 'Oceanos Profundos' },
+    ],
+    logoColor: '#1a4d0d', logoText: 'DW',
+  },
+  {
+    id: 'c17', number: 502, name: 'História Viva', category: 'Documentários', currentProgram: 'Civilizações Perdidas',
+    programs: [
+      { time: '18:30', endTime: '19:30', title: 'Civilizações Perdidas', isLive: true },
+      { time: '19:30', endTime: '20:30', title: 'Grandes Guerras' },
+    ],
+    logoColor: '#4d3a0d', logoText: 'HV',
+  },
+  {
+    id: 'c18', number: 601, name: 'Kids Fun', category: 'Desenhos', currentProgram: 'Os Exploradores',
+    programs: [
+      { time: '18:00', endTime: '18:30', title: 'Os Exploradores', isLive: true },
+      { time: '18:30', endTime: '19:00', title: 'Turma da Floresta' },
+      { time: '19:00', endTime: '19:30', title: 'Robôs Amigos' },
+    ],
+    logoColor: '#0d6b52', logoText: 'KF',
+  },
+  {
+    id: 'c19', number: 602, name: 'Cartoon Mix', category: 'Desenhos', currentProgram: 'Aventuras Mágicas',
+    programs: [
+      { time: '18:00', endTime: '18:30', title: 'Aventuras Mágicas', isLive: true },
+      { time: '18:30', endTime: '19:00', title: 'Super Heróis Jr.' },
+    ],
+    logoColor: '#6b0d52', logoText: 'CM',
+  },
 ]
 
 export const WATCHING_ITEMS: WatchingItem[] = [
@@ -904,12 +996,13 @@ export const SERIES_CATEGORIES = [
 ]
 
 export const CHANNEL_CATEGORIES = [
+  'Todos',
   'Esportes',
   'Filmes',
   'Séries',
+  'Notícias',
   'Documentários',
   'Desenhos',
-  'Jogos do dia',
 ]
 
 // Inject pre-computed gradient strings so components never run template literals on each render

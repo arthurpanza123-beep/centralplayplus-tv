@@ -320,11 +320,9 @@ function CanaisTab() {
   const [category, setCategory] = useState(CHANNEL_CATEGORIES[0])
   const [selectedChannel, setSelectedChannel] = useState<Channel>(CHANNELS[1])
   const [fullscreen, setFullscreen] = useState(false)
-  // EPG (program guide) is hidden by default — shown only when the user opens it.
-  const [showEpg, setShowEpg] = useState(false)
 
   const filteredChannels = useMemo(
-    () => CHANNELS.filter((c) => (category === 'Esportes' ? c.category === 'Esportes' : true)),
+    () => CHANNELS.filter((c) => (category === 'Todos' ? true : c.category === category)),
     [category],
   )
 
@@ -416,21 +414,12 @@ function CanaisTab() {
 
         {/* Player + EPG */}
         <div className="flex-1 flex flex-col overflow-hidden p-4 gap-4">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <span className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-red-600 text-white text-[10px] font-bold shrink-0">
-                <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />AO VIVO
-              </span>
-              <span className="text-base font-bold text-foreground truncate">{selectedChannel.name}</span>
-            </div>
-            <button
-              onClick={() => setShowEpg((v) => !v)}
-              aria-pressed={showEpg}
-              className={cn('flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-colors outline-none focus-visible:ring-2 focus-visible:ring-primary/60 shrink-0',
-                showEpg ? 'bg-primary text-primary-foreground' : 'bg-white/5 text-muted-foreground hover:text-foreground hover:bg-white/10')}
-            >
-              <CalendarClock className="w-4 h-4" /> EPG
-            </button>
+          <div className="flex items-center justify-end gap-2.5 min-w-0">
+            <span className="text-base font-bold text-foreground truncate text-right">{selectedChannel.name}</span>
+            <span className="text-xs text-muted-foreground shrink-0">{selectedChannel.category}</span>
+            <span className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-red-600 text-white text-[10px] font-bold shrink-0">
+              <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />AO VIVO
+            </span>
           </div>
           {/* Reduced 16:9 preview, centered — click (or 20s idle) zooms to fullscreen */}
           <div className="flex items-center justify-center pt-2 pb-1" onMouseMove={resetIdle}>
@@ -470,23 +459,37 @@ function CanaisTab() {
           </button>
           </div>
 
-          {/* Today's schedule (read-only) — toggled by the EPG button */}
-          {showEpg && (
-          <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
-            <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border/60 bg-white/[0.03]">
-              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Programação de hoje</span>
+          {/* EPG — program guide, always visible below the preview */}
+          <div className="flex-1 min-h-0 rounded-2xl border border-border bg-card shadow-sm overflow-hidden flex flex-col">
+            <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border/60 bg-white/[0.03] shrink-0">
+              <CalendarClock className="w-4 h-4 text-primary" />
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Guia de programação · {selectedChannel.name}</span>
             </div>
-            {selectedChannel.programs.map((prog) => (
-              <div key={prog.time} className={cn('flex items-center gap-4 px-4 py-3 border-b border-border/60 last:border-0', prog.isLive && 'bg-primary/5')}>
-                <span className="text-sm font-semibold text-foreground w-12 shrink-0">{prog.time}</span>
-                {prog.isLive && <span className="w-2 h-2 rounded-full bg-primary shrink-0" aria-hidden />}
-                <span className={cn('text-sm flex-1', prog.isLive ? 'text-foreground font-medium' : 'text-muted-foreground')}>{prog.title}</span>
-                <span className="text-xs text-muted-foreground shrink-0">{prog.time} – {prog.endTime}</span>
-                {prog.isLive && <div className="h-1 w-28 bg-muted rounded-full shrink-0"><div className="h-full w-1/2 bg-primary rounded-full" /></div>}
-              </div>
-            ))}
+            <div className="overflow-y-auto scrollbar-none">
+              {selectedChannel.programs.map((prog, i) => {
+                const next = !prog.isLive && (i === 0 || selectedChannel.programs[i - 1]?.isLive)
+                return (
+                  <div key={prog.time} className={cn('flex items-center gap-4 px-4 py-3 border-b border-border/60 last:border-0 transition-colors', prog.isLive ? 'bg-primary/10' : 'hover:bg-accent/40')}>
+                    <span className={cn('text-sm font-semibold w-12 shrink-0', prog.isLive ? 'text-primary' : 'text-foreground')}>{prog.time}</span>
+                    {prog.isLive ? (
+                      <span className="flex items-center gap-1.5 px-1.5 py-0.5 rounded bg-primary text-primary-foreground text-[9px] font-bold shrink-0 w-14 justify-center">AGORA</span>
+                    ) : next ? (
+                      <span className="px-1.5 py-0.5 rounded bg-white/10 text-muted-foreground text-[9px] font-bold shrink-0 w-14 text-center">A SEGUIR</span>
+                    ) : (
+                      <span className="w-14 shrink-0" />
+                    )}
+                    <span className={cn('text-sm flex-1 truncate', prog.isLive ? 'text-foreground font-semibold' : 'text-muted-foreground')}>{prog.title}</span>
+                    <span className="text-xs text-muted-foreground shrink-0 hidden sm:block">{prog.time} – {prog.endTime}</span>
+                    {prog.isLive && (
+                      <div className="h-1.5 w-28 bg-muted rounded-full shrink-0 overflow-hidden">
+                        <div className="h-full bg-gradient-to-r from-primary to-cyan-400 rounded-full" style={{ width: '55%' }} />
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
           </div>
-          )}
         </div>
       </div>
 
