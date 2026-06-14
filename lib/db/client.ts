@@ -12,4 +12,14 @@ import { neon } from '@neondatabase/serverless'
  * (O schema neon_auth/Better Auth é gerenciado pela integração e usado
  *  apenas para autenticar o painel /admin.)
  */
-export const sql = neon(process.env.DATABASE_URL!)
+export const isDatabaseConfigured = Boolean(process.env.DATABASE_URL)
+
+type NeonSql = ReturnType<typeof neon>
+
+function missingDatabase(): NeonSql {
+  return (async () => {
+    throw new Error('DATABASE_URL não configurado.')
+  }) as NeonSql
+}
+
+export const sql: NeonSql = isDatabaseConfigured ? neon(process.env.DATABASE_URL!) : missingDatabase()

@@ -4,10 +4,12 @@
  * Backend implementado pelo Codex.
  */
 import { json, apiError, isAdmin } from '@/lib/api/helpers'
+import { renewDevice } from '@/lib/devices/service'
 
 interface RenewBody {
   device_key: string
-  months: number
+  months?: number
+  days?: number
 }
 
 export async function POST(req: Request) {
@@ -19,12 +21,14 @@ export async function POST(req: Request) {
   } catch {
     return apiError('invalid_body', 'JSON inválido', 400)
   }
-  if (!body?.device_key || !body?.months) {
-    return apiError('missing_fields', 'device_key e months são obrigatórios', 422)
+  if (!body?.device_key || (!body?.months && !body?.days)) {
+    return apiError('missing_fields', 'device_key e months/days são obrigatórios', 422)
   }
 
-  // TODO(Codex):
-  // 1. Renovar conta no fornecedor via Provider Adapter.renewUser().
-  // 2. Atualizar tv_devices.expires_at.
-  return json({ ok: true })
+  try {
+    const device = await renewDevice(body.device_key, body.days || (body.months || 1) * 30)
+    return json({ ok: true, expires_at: device.expires_at, status: device.status })
+  } catch (error) {
+    return apiError('renew_failed', error instanceof Error ? error.message : 'Falha ao renovar dispositivo.', 500)
+  }
 }

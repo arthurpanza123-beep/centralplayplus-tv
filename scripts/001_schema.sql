@@ -184,6 +184,21 @@ create table if not exists playback_errors (
 create index if not exists idx_play_errors_created on playback_errors(created_at);
 create index if not exists idx_play_errors_variant on playback_errors(variant_id);
 
+create table if not exists content_reports (
+  id            text primary key,
+  kind          text not null check (kind in ('channel','movie','series')),
+  content_id    text not null,
+  content_title text not null,
+  category      text,
+  device_key    text,
+  reason        text,
+  note          text,
+  status        text not null default 'new' check (status in ('new','sent_to_media','resolved')),
+  created_at    timestamptz not null default now()
+);
+create index if not exists idx_content_reports_created on content_reports(created_at desc);
+create index if not exists idx_content_reports_status on content_reports(status);
+
 create table if not exists app_update_logs (
   id          bigserial primary key,
   device_id   uuid references tv_devices(id) on delete set null,

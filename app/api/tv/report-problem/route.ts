@@ -10,6 +10,7 @@
 import { json, apiError } from '@/lib/api/helpers'
 import { limiters } from '@/lib/redis/rate-limit'
 import { pushReport, type ReportKind } from '@/lib/reports'
+import { sql, isDatabaseConfigured } from '@/lib/db/client'
 
 export const runtime = 'nodejs'
 
@@ -49,6 +50,24 @@ export async function POST(req: Request) {
       reason: typeof body.reason === 'string' ? body.reason : undefined,
       note: typeof body.note === 'string' ? body.note : undefined,
     })
+    if (isDatabaseConfigured) {
+      await sql`
+        insert into content_reports (id, kind, content_id, content_title, category, device_key, reason, note, status, created_at)
+        values (
+          ${report.id},
+          ${report.kind},
+          ${report.contentId},
+          ${report.contentTitle},
+          ${report.category || null},
+          ${report.deviceKey || null},
+          ${report.reason || null},
+          ${report.note || null},
+          ${report.status},
+          ${new Date(report.createdAt).toISOString()}
+        )
+        on conflict (id) do nothing
+      `
+    }
     return json({ ok: true, id: report.id })
   } catch {
     return apiError('storage_error', 'Não foi possível registrar o relato agora.', 503)

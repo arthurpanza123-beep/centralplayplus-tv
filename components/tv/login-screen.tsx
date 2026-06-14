@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import { RefreshCw, Loader2, CheckCircle2, XCircle } from 'lucide-react'
 import { unlockAudio } from '@/lib/sounds'
-import { markDeviceActivated, getDeviceKey } from '@/lib/activation'
+import { markDeviceActivated, getDeviceKey, registerDevice } from '@/lib/activation'
 
 type CheckState = 'idle' | 'checking' | 'pending' | 'active' | 'blocked' | 'error'
 
@@ -15,7 +15,18 @@ export function LoginScreen({ onLogin }: { onLogin: () => void }) {
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
-    setDeviceKey(getDeviceKey())
+    let alive = true
+    registerDevice()
+      .then((registered) => {
+        if (!alive) return
+        setDeviceKey(registered.deviceKey)
+      })
+      .catch(() => {
+        if (!alive) return
+        setDeviceKey(getDeviceKey())
+        setState('error')
+      })
+    return () => { alive = false }
   }, [])
 
   /**
@@ -24,7 +35,12 @@ export function LoginScreen({ onLogin }: { onLogin: () => void }) {
    */
   const checkActivation = useCallback(
     async (opts: { manual?: boolean } = {}) => {
-      const key = getDeviceKey()
+      let key = getDeviceKey()
+      if (key === 'CP-000000') {
+        const registered = await registerDevice()
+        key = registered.deviceKey
+        setDeviceKey(key)
+      }
       setState((s) => (s === 'active' ? s : 'checking'))
       try {
         const res = await fetch(`/api/tv/status/${encodeURIComponent(key)}`, { cache: 'no-store' })
@@ -33,7 +49,7 @@ export function LoginScreen({ onLogin }: { onLogin: () => void }) {
 
         if (status === 'active') {
           setState('active')
-          markDeviceActivated()
+          markDeviceActivated({ access_token: data?.access_token, refresh_token: data?.refresh_token })
           if (pollRef.current) clearInterval(pollRef.current)
           // Pequena pausa para o usuário ver o "Ativado!" antes de entrar.
           setTimeout(() => onLogin(), 900)

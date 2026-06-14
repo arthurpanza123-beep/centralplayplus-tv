@@ -14,20 +14,17 @@ import { MainProviderAdapter } from './provider-main'
 /**
  * Retorna a implementação de adapter para o fornecedor informado.
  *
- * TODO(Codex): carregar credenciais a partir de provider_servers no banco
- * e cachear instâncias por server_id. Adicionar novos `kind` conforme
- * forem integrados novos fornecedores (M3U, custom, etc).
  */
 export function getProviderAdapter(credentials: ProviderCredentials): ProviderAdapter {
   switch (credentials.kind) {
     case 'xtream':
       return new MainProviderAdapter(credentials)
     case 'm3u':
-      // TODO(Codex): implementar M3uProviderAdapter
-      throw new Error('Provider M3U ainda não implementado')
+      if (credentials.base_url && credentials.username && credentials.password) return new MainProviderAdapter({ ...credentials, kind: 'xtream' })
+      throw new Error('Provider M3U requer m3u_url ou credenciais Xtream-compatible.')
     case 'custom':
-      // TODO(Codex): implementar adapter custom
-      throw new Error('Provider custom ainda não implementado')
+      if (credentials.base_url && credentials.username && credentials.password) return new MainProviderAdapter({ ...credentials, kind: 'xtream' })
+      throw new Error('Provider custom sem adapter configurado.')
     default:
       throw new Error(`Fornecedor desconhecido: ${(credentials as ProviderCredentials).kind}`)
   }

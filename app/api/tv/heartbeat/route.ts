@@ -5,6 +5,8 @@
  * Backend implementado pelo Codex.
  */
 import { json, apiError } from '@/lib/api/helpers'
+import { requireActiveDevice, updateHeartbeat } from '@/lib/devices/service'
+import { touchSession } from '@/lib/streaming/live-sessions'
 import type { HeartbeatRequest, HeartbeatResponse } from '@/lib/types/tv'
 
 export async function POST(req: Request) {
@@ -18,11 +20,23 @@ export async function POST(req: Request) {
     return apiError('missing_fields', 'device_key é obrigatório', 422)
   }
 
-  // TODO(Codex):
-  // 1. Atualizar tv_sessions.last_ping_at e current_channel_id.
-  // 2. Verificar limite de telas do plano (derrubar sessão antiga se exceder).
-  // 3. Se device bloqueado/expirado -> force_logout=true.
-  // 4. Sinalizar should_refresh_config/catalog quando houver mudança.
-  const res: HeartbeatResponse = { ok: true }
-  return json(res)
+  const device = await requireActiveDevice(req)
+  if (device instanceof Response) return device
+
+  try {
+    await Promise.all([
+      updateHeartbeat(device, body.current_channel_id),
+      touchSession({
+        deviceKey: device.device_key,
+        platform: body.platform,
+        appVersion: body.app_version,
+        screen: body.current_screen,
+        channelId: body.current_channel_id,
+      }),
+    ])
+    const res: HeartbeatResponse = { ok: true }
+    return json(res)
+  } catch (error) {
+    return apiError('heartbeat_failed', error instanceof Error ? error.message : 'Falha no heartbeat.', 500)
+  }
 }

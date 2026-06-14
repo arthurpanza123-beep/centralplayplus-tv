@@ -1,4 +1,8 @@
 import { json, apiError } from '@/lib/api/helpers'
+import { credentialsFromServer, getDefaultServer, providerAccountFromCredentials } from '@/lib/catalog/service'
+import { isDatabaseConfigured, sql } from '@/lib/db/client'
+import { getProviderAdapter } from '@/lib/providers/provider-adapter'
+import { degradeVariant, recoverVariant } from '@/lib/streaming/variant-health'
 
 /**
  * Health-check automático (stub) — GET /api/cron/health-check
@@ -22,10 +26,57 @@ export async function GET(req: Request) {
     return apiError('UNAUTHORIZED', 'Cron não autorizado', 401)
   }
 
-  // TODO(Codex): implementar o probe das variantes e atualização de saúde.
-  // const variants = await sql`SELECT * FROM channel_variants WHERE enabled = true`
-  // const results = await Promise.allSettled(variants.map(probeVariant))
-  // ...atualizar health_score conforme resultado.
+  if (!isDatabaseConfigured) return json({ ok: true, checked: 0, note: 'DATABASE_URL ausente; cron sem banco.' })
 
-  return json({ ok: true, checked: 0, note: 'Health-check a implementar pelo Codex' })
+  try {
+    const server = await getDefaultServer()
+    const credentials = credentialsFromServer(server)
+    const account = providerAccountFromCredentials(credentials)
+    const adapter = getProviderAdapter(credentials)
+    const variants = await sql<Array<{ id: string; channel_id: string; provider_ref: string }>>`
+      select id, channel_id, provider_ref
+      from channel_variants
+      where status = 'active'
+      order by last_checked_at nulls first, health_score asc
+      limit ${Number(process.env.HEALTH_CHECK_BATCH_SIZE || 40)}
+    `
+
+    let ok = 0
+    let failed = 0
+    for (const variant of variants) {
+      try {
+        const raw = await adapter.getStreamUrl({ account, provider_ref: variant.provider_ref, type: 'live' })
+        const healthy = await probe(raw.url)
+        if (healthy) {
+          ok++
+          await recoverVariant(variant.channel_id, variant.id)
+        } else {
+          failed++
+          await degradeVariant(variant.channel_id, variant.id, 'cron_probe_failed')
+        }
+      } catch {
+        failed++
+        await degradeVariant(variant.channel_id, variant.id, 'cron_probe_error')
+      }
+    }
+
+    return json({ ok: true, checked: variants.length, healthy: ok, failed })
+  } catch (error) {
+    return apiError('HEALTH_CHECK_FAILED', error instanceof Error ? error.message : 'Falha no health-check.', 500)
+  }
+}
+
+async function probe(url: string) {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), Number(process.env.HEALTH_CHECK_TIMEOUT_MS || 5000))
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: { range: 'bytes=0-1024', accept: '*/*' },
+      signal: controller.signal,
+    })
+    return response.status >= 200 && response.status < 500
+  } finally {
+    clearTimeout(timeout)
+  }
 }

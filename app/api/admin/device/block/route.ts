@@ -4,6 +4,7 @@
  * Backend implementado pelo Codex.
  */
 import { json, apiError, isAdmin } from '@/lib/api/helpers'
+import { setDeviceBlocked } from '@/lib/devices/service'
 
 interface BlockBody {
   device_key: string
@@ -23,9 +24,10 @@ export async function POST(req: Request) {
     return apiError('missing_fields', 'device_key e blocked são obrigatórios', 422)
   }
 
-  // TODO(Codex):
-  // 1. Atualizar tv_devices.status (blocked/active).
-  // 2. Opcional: bloquear/desbloquear conta no fornecedor (Provider Adapter).
-  // 3. Forçar logout das sessões ativas no próximo heartbeat.
-  return json({ ok: true, status: body.blocked ? 'blocked' : 'active' })
+  try {
+    const device = await setDeviceBlocked(body.device_key, body.blocked)
+    return json({ ok: true, status: device.status })
+  } catch (error) {
+    return apiError('block_failed', error instanceof Error ? error.message : 'Falha ao atualizar bloqueio.', 500)
+  }
 }

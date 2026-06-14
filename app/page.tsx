@@ -21,11 +21,11 @@ import { LoadingScreen } from '@/components/tv/loading-screen'
 import { useTvNavigation } from '@/hooks/use-tv-navigation'
 import { playCue } from '@/lib/sounds'
 import { isDeviceActivated, getDeviceKey, regenerateDeviceKey, getTrialRemainingMs } from '@/lib/activation'
+import { TvCatalogProvider, useTvCatalog } from '@/lib/tv-catalog'
 import { cn } from '@/lib/utils'
 import {
-  MOVIES, SERIES, CHANNELS, KIDS_ITEMS, USER, daysRemaining,
+  daysRemaining,
   isTrialPlan, formatTrialRemaining,
-  MOVIE_CATEGORIES, SERIES_CATEGORIES, CHANNEL_CATEGORIES,
 } from '@/lib/data'
 import type { Movie, Series, Channel } from '@/lib/types'
 
@@ -46,8 +46,9 @@ const NAV_ITEMS: { id: TabId; label: string; icon: React.ElementType }[] = [
 
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
 const Sidebar = memo(function Sidebar({ active, onNav, collapsed }: { active: TabId; onNav: (id: TabId) => void; collapsed: boolean }) {
-  const trial = isTrialPlan(USER.plan)
-  const planDays = daysRemaining(USER.validity)
+  const { user } = useTvCatalog()
+  const trial = isTrialPlan(user.plan)
+  const planDays = daysRemaining(user.validity)
   // Live trial countdown — refreshes every 30s so the remaining time stays current.
   const [trialMs, setTrialMs] = useState(0)
   useEffect(() => {
@@ -57,7 +58,7 @@ const Sidebar = memo(function Sidebar({ active, onNav, collapsed }: { active: Ta
     return () => clearInterval(id)
   }, [trial])
 
-  const planTitle = trial ? 'Teste ativado' : USER.plan
+  const planTitle = trial ? 'Teste ativado' : user.plan
   const planSubtitle = trial ? formatTrialRemaining(trialMs) : `${planDays} dias restantes`
 
   return (
@@ -198,11 +199,15 @@ const PosterRow = memo(function PosterRow({
 })
 
 function HomeTab({ onNav }: { onNav: (id: TabId) => void }) {
+  const { movies, series, loading, error } = useTvCatalog()
   const [selected, setSelected] = useState<Movie | Series | null>(null)
-  const featured = MOVIES[2]
+  const featured = movies[2] || movies[0] || series[0]
 
   const handleSelect = useCallback((item: Movie | Series) => setSelected(item), [])
   const handleClose = useCallback(() => setSelected(null), [])
+
+  if (loading) return <div className="flex h-full items-center justify-center text-sm text-muted-foreground">Carregando catálogo real...</div>
+  if (error || !featured) return <div className="flex h-full items-center justify-center text-sm text-red-300">{error || 'Catálogo real indisponível.'}</div>
 
   return (
     <div className="h-full overflow-y-auto overflow-x-hidden scrollbar-none">
@@ -218,7 +223,7 @@ function HomeTab({ onNav }: { onNav: (id: TabId) => void }) {
       >
         {/* Capa do filme em alta resolução — object-position centro-topo para rostos/ação ficarem visíveis */}
         <Image
-          src={`/posters/${featured.id}.png`}
+          src={featured.poster || `/posters/${featured.id}.png`}
           alt={featured.title}
           fill
           priority
@@ -269,12 +274,12 @@ function HomeTab({ onNav }: { onNav: (id: TabId) => void }) {
 
       {/* ── Fileiras de conteúdo ── */}
       <div className="relative z-10 flex flex-col gap-9 mt-2 pb-10">
-        <PosterRow title="Em alta hoje" items={MOVIES.slice(0, 12)} onSelect={handleSelect} />
-        <PosterRow title="Continue assistindo" items={MOVIES.slice(10, 20)} onSelect={handleSelect} />
-        <PosterRow title="Séries em destaque" items={SERIES.slice(0, 12)} onSelect={handleSelect} />
-        <PosterRow title="Filmes em destaque" items={MOVIES.slice(4, 16)} onSelect={handleSelect} />
-        <PosterRow title="Lançamentos" items={MOVIES.slice(16).concat(MOVIES.slice(0, 4))} onSelect={handleSelect} />
-        <PosterRow title="Para a família" items={SERIES.slice(6, 18)} onSelect={handleSelect} />
+        <PosterRow title="Em alta hoje" items={movies.slice(0, 12)} onSelect={handleSelect} />
+        <PosterRow title="Continue assistindo" items={movies.slice(10, 20)} onSelect={handleSelect} />
+        <PosterRow title="Séries em destaque" items={series.slice(0, 12)} onSelect={handleSelect} />
+        <PosterRow title="Filmes em destaque" items={movies.slice(4, 16)} onSelect={handleSelect} />
+        <PosterRow title="Lançamentos" items={movies.slice(16).concat(movies.slice(0, 4))} onSelect={handleSelect} />
+        <PosterRow title="Para a família" items={series.slice(6, 18)} onSelect={handleSelect} />
       </div>
 
       <ContentDetail item={selected} onClose={handleClose} />
@@ -284,31 +289,33 @@ function HomeTab({ onNav }: { onNav: (id: TabId) => void }) {
 
 // ─── FILMES TAB ───────────────────────────────────────────────────────────────
 function FilmesTab() {
-  const [category, setCategory] = useState(MOVIE_CATEGORIES[0])
+  const { movies, movieCategories } = useTvCatalog()
+  const [category, setCategory] = useState('Todos')
   const [selected, setSelected] = useState<Movie | Series | null>(null)
   const [search, setSearch] = useState('')
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase()
-    return MOVIES.filter((m) => {
+    return movies.filter((m) => {
       const matchSearch = !q || m.title.toLowerCase().includes(q)
-      const matchCategory = category === 'Lançamentos' || category === 'Em alta' ||
-        m.genre.toLowerCase() === category.toLowerCase() || (category === 'Infantil' && m.rating <= 10)
+      const matchCategory = category === 'Todos' || m.genre.toLowerCase() === category.toLowerCase() || (category === 'Infantil' && m.rating <= 10)
       return matchSearch && matchCategory
     })
-  }, [search, category])
+  }, [search, category, movies])
 
   const handleSelect = useCallback((item: Movie | Series) => setSelected(item), [])
   const handleClose = useCallback(() => setSelected(null), [])
 
   // Filme em destaque para o hero do topo (muda só quando não há busca ativa).
-  const heroMovie = MOVIES[5]
+  const heroMovie = movies[5] || movies[0]
+
+  if (!heroMovie) return <div className="flex h-full items-center justify-center text-sm text-muted-foreground">Nenhum filme real carregado.</div>
 
   return (
     <>
       <ShellHeader title="Filmes" right={<SearchInput placeholder="Buscar filmes" value={search} onChange={setSearch} />} />
       <div className="flex flex-1 overflow-hidden">
-        <CategorySidebar categories={MOVIE_CATEGORIES} selected={category} onSelect={setCategory} />
+        <CategorySidebar categories={movieCategories} selected={category} onSelect={setCategory} />
         <div className="flex-1 overflow-y-auto px-6 py-4 scrollbar-none">
           {/* Hero de filme em destaque */}
           {!search && (
@@ -318,7 +325,7 @@ function FilmesTab() {
               aria-label={`Ver ${heroMovie.title}`}
             >
               <Image
-                src={`/posters/${heroMovie.id}.png`}
+                src={heroMovie.poster || `/posters/${heroMovie.id}.png`}
                 alt={heroMovie.title}
                 fill
                 sizes="100vw"
@@ -359,19 +366,19 @@ function FilmesTab() {
 
 // ─── SÉRIES TAB ───────────────────────────────────────────────────────────────
 function SeriesTab() {
-  const [category, setCategory] = useState(SERIES_CATEGORIES[0])
+  const { series, seriesCategories } = useTvCatalog()
+  const [category, setCategory] = useState('Todos')
   const [selected, setSelected] = useState<Movie | Series | null>(null)
   const [search, setSearch] = useState('')
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase()
-    return SERIES.filter((s) => {
+    return series.filter((s) => {
       const matchSearch = !q || s.title.toLowerCase().includes(q)
-      const matchCategory = category === 'Lançamentos' || category === 'Em alta' ||
-        s.genre.toLowerCase() === category.toLowerCase() || (category === 'Infantil' && s.rating <= 10)
+      const matchCategory = category === 'Todos' || s.genre.toLowerCase() === category.toLowerCase() || (category === 'Infantil' && s.rating <= 10)
       return matchSearch && matchCategory
     })
-  }, [search, category])
+  }, [search, category, series])
 
   const handleSelect = useCallback((item: Movie | Series) => setSelected(item), [])
   const handleClose = useCallback(() => setSelected(null), [])
@@ -380,7 +387,7 @@ function SeriesTab() {
     <>
       <ShellHeader title="Séries" right={<SearchInput placeholder="Buscar séries" value={search} onChange={setSearch} />} />
       <div className="flex flex-1 overflow-hidden">
-        <CategorySidebar categories={SERIES_CATEGORIES} selected={category} onSelect={setCategory} />
+        <CategorySidebar categories={seriesCategories} selected={category} onSelect={setCategory} />
         <div className="flex-1 overflow-y-auto px-6 py-4 scrollbar-none">
           <p className="text-sm font-semibold text-primary mb-4">{category}</p>
           {filtered.length > 0

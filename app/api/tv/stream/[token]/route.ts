@@ -1,4 +1,8 @@
 import { apiError } from '@/lib/api/helpers'
+import { credentialsFromServer, getDefaultServer } from '@/lib/catalog/service'
+import { findActiveProviderAccount, getDeviceByKey } from '@/lib/devices/service'
+import { getProviderAdapter } from '@/lib/providers/provider-adapter'
+import { verifyStreamToken } from '@/lib/security/tokens'
 
 /**
  * Proxy de stream (stub) — GET /api/tv/stream/:token
@@ -25,12 +29,21 @@ import { apiError } from '@/lib/api/helpers'
 export async function GET(_req: Request, { params }: { params: Promise<{ token: string }> }) {
   const { token } = await params
 
-  // TODO(Codex):
-  // 1. const claims = verifyStreamToken(token)  // assinatura + exp + device_key
-  // 2. if (!claims) return apiError('INVALID_TOKEN', 'Token inválido ou expirado', 401)
-  // 3. const { primary } = rankVariants(await loadVariants(claims.channelId))
-  // 4. return Response.redirect(primary.url, 302)  // ou stream/proxy real
-  void token
+  const claims = verifyStreamToken(token)
+  if (!claims) return apiError('INVALID_TOKEN', 'Token inválido ou expirado', 401)
 
-  return apiError('NOT_IMPLEMENTED', 'Proxy de stream a implementar pelo Codex', 501)
+  try {
+    const device = await getDeviceByKey(claims.device_key)
+    if (!device || device.id !== claims.device_id || device.status !== 'active') {
+      return apiError('DEVICE_NOT_ACTIVE', 'Aparelho não autorizado para reproduzir.', 403)
+    }
+    const account = await findActiveProviderAccount(device)
+    if (!account) return apiError('PROVIDER_ACCOUNT_MISSING', 'Conta do fornecedor não vinculada.', 403)
+    const server = await getDefaultServer()
+    const adapter = getProviderAdapter(credentialsFromServer(server))
+    const raw = await adapter.getStreamUrl({ account, provider_ref: claims.provider_ref, type: claims.type })
+    return Response.redirect(raw.url, 302)
+  } catch (error) {
+    return apiError('STREAM_RESOLVE_FAILED', error instanceof Error ? error.message : 'Falha ao resolver stream.', 502)
+  }
 }

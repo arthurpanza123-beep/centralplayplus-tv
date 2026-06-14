@@ -8,6 +8,7 @@ export interface CastMember {
 export interface Movie {
   id: string
   title: string
+  poster?: string
   year: number
   duration: string
   genre: string
@@ -26,6 +27,7 @@ export interface Movie {
 export interface Series {
   id: string
   title: string
+  poster?: string
   year: number
   seasons: number
   genre: string
@@ -53,6 +55,7 @@ export interface Channel {
   number: number
   name: string
   category: string
+  logo?: string
   currentProgram: string
   programs: Program[]
   logoColor: string

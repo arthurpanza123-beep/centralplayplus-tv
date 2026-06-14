@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import Image from 'next/image'
 import { ArrowLeft, Play, Plus, Star } from 'lucide-react'
-import { MOVIES, SERIES } from '@/lib/data'
+import { useTvCatalog } from '@/lib/tv-catalog'
 import type { Movie, Series } from '@/lib/types'
 import { ReportProblem } from '@/components/tv/report-problem'
 
@@ -13,9 +13,9 @@ interface ContentDetailProps {
   onClose: () => void
 }
 
-const POOL: (Movie | Series)[] = [...MOVIES, ...SERIES]
-
 export function ContentDetail({ item, onClose }: ContentDetailProps) {
+  const { movies, series } = useTvCatalog()
+  const pool: (Movie | Series)[] = useMemo(() => [...movies, ...series], [movies, series])
   const watchBtnRef = useRef<HTMLButtonElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   // Internal "current" item so clicking a recommendation swaps content in place.
@@ -50,10 +50,10 @@ export function ContentDetail({ item, onClose }: ContentDetailProps) {
   // Recommendations: same genre first, then fill with others. Excludes current.
   const recommendations = useMemo(() => {
     if (!current) return []
-    const sameGenre = POOL.filter((i) => i.id !== current.id && i.genre === current.genre)
-    const others = POOL.filter((i) => i.id !== current.id && i.genre !== current.genre)
+    const sameGenre = pool.filter((i) => i.id !== current.id && i.genre === current.genre)
+    const others = pool.filter((i) => i.id !== current.id && i.genre !== current.genre)
     return [...sameGenre, ...others].slice(0, 12)
-  }, [current])
+  }, [current, pool])
 
   if (!current || typeof document === 'undefined') return null
 
@@ -70,7 +70,7 @@ export function ContentDetail({ item, onClose }: ContentDetailProps) {
         {/* ── Cinematic hero ── */}
         <div className="relative w-full h-[62vh] min-h-[420px]">
           <Image
-            src={`/posters/${current.id}.png`}
+            src={current.poster || `/posters/${current.id}.png`}
             alt={current.title}
             fill
             priority
@@ -158,7 +158,7 @@ export function ContentDetail({ item, onClose }: ContentDetailProps) {
                   aria-label={`Ver ${rec.title}`}
                 >
                   <Image
-                    src={`/posters/${rec.id}.png`}
+                    src={rec.poster || `/posters/${rec.id}.png`}
                     alt={rec.title}
                     fill
                     sizes="300px"

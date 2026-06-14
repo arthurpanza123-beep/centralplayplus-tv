@@ -4,6 +4,7 @@
  * Backend implementado pelo Codex.
  */
 import { json, apiError } from '@/lib/api/helpers'
+import { refreshDeviceTokens } from '@/lib/devices/service'
 import type { ActivateTokenRequest, ActivateTokenResponse } from '@/lib/types/tv'
 
 export async function POST(req: Request) {
@@ -17,14 +18,12 @@ export async function POST(req: Request) {
     return apiError('missing_fields', 'device_key e refresh_token são obrigatórios', 422)
   }
 
-  // TODO(Codex):
-  // 1. Validar refresh_token contra device_tokens (e expiração).
-  // 2. Rotacionar tokens (emitir novo access + refresh) e revogar o antigo.
-  // 3. Atualizar last_seen_at do device.
-  const res: ActivateTokenResponse = {
-    access_token: 'stub_access_token',
-    refresh_token: 'stub_refresh_token',
-    expires_at: new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(),
+  try {
+    const tokens = await refreshDeviceTokens(body.device_key, body.refresh_token)
+    if (!tokens) return apiError('invalid_refresh_token', 'Refresh token inválido ou expirado.', 401)
+    const res: ActivateTokenResponse = tokens
+    return json(res)
+  } catch (error) {
+    return apiError('token_refresh_failed', error instanceof Error ? error.message : 'Falha ao renovar token.', 500)
   }
-  return json(res)
 }

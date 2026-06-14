@@ -32,7 +32,7 @@ export const ContentCard = memo(function ContentCard({ item, onClick, className 
       <div className="relative w-full aspect-[2/3] overflow-hidden rounded-lg">
         {/* Real poster art */}
         <Image
-          src={`/posters/${item.id}.png`}
+          src={item.poster || `/posters/${item.id}.png`}
           alt={item.title}
           fill
           sizes="(max-width: 1920px) 16vw, 220px"

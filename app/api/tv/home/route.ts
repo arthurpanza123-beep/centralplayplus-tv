@@ -3,14 +3,18 @@
  * Blocos prontos para a tela inicial (catálogo normalizado + cache).
  * Backend implementado pelo Codex.
  */
-import { json } from '@/lib/api/helpers'
+import { apiError, json } from '@/lib/api/helpers'
+import { getHome } from '@/lib/catalog/service'
+import { requireActiveDevice } from '@/lib/devices/service'
 import type { HomeResponse } from '@/lib/types/tv'
 
-export async function GET(_req: Request) {
-  // TODO(Codex):
-  // 1. Validar token do aparelho (getDeviceToken) e plano do cliente.
-  // 2. Montar rows a partir do catálogo normalizado em cache (Redis).
-  // 3. Versionar com catalog_version para a TV saber quando recarregar.
-  const res: HomeResponse = { rows: [], catalog_version: '0' }
-  return json(res)
+export async function GET(req: Request) {
+  const device = await requireActiveDevice(req)
+  if (device instanceof Response) return device
+  try {
+    const res: HomeResponse = await getHome()
+    return json(res)
+  } catch (error) {
+    return apiError('catalog_unavailable', error instanceof Error ? error.message : 'Catálogo indisponível.', 503)
+  }
 }

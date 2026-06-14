@@ -5,17 +5,15 @@
  * Caixa de entrada de "conteúdo não funcionando" para o operador
  * encaminhar à equipe de mídia.
  *
- * NOTA: a proteção por x-admin-key está comentada para o painel de demo
- * funcionar sem header. O Codex deve reativar `isAdmin(req)` quando o
- * painel tiver login (Better Auth/Neon).
  */
 
-import { json, apiError } from '@/lib/api/helpers'
+import { json, apiError, isAdmin } from '@/lib/api/helpers'
 import { listReports, unreadReports, markReportsRead } from '@/lib/reports'
 
 export const runtime = 'nodejs'
 
-export async function GET() {
+export async function GET(req: Request) {
+  if (!isAdmin(req)) return apiError('unauthorized', 'Acesso negado', 401)
   try {
     const [reports, unread] = await Promise.all([listReports(100), unreadReports()])
     return json({ reports, unread })
@@ -25,7 +23,8 @@ export async function GET() {
   }
 }
 
-export async function POST() {
+export async function POST(req: Request) {
+  if (!isAdmin(req)) return apiError('unauthorized', 'Acesso negado', 401)
   try {
     await markReportsRead()
     return json({ ok: true })

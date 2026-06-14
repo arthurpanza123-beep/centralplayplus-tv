@@ -4,22 +4,36 @@
  * Backend implementado pelo Codex.
  */
 import { json, apiError } from '@/lib/api/helpers'
+import { getDeviceByKey, issueDeviceTokens } from '@/lib/devices/service'
 import type { DeviceStatusResponse } from '@/lib/types/tv'
 
 export async function GET(_req: Request, ctx: { params: Promise<{ deviceKey: string }> }) {
   const { deviceKey } = await ctx.params
   if (!deviceKey) return apiError('missing_device_key', 'deviceKey ausente', 422)
 
-  // TODO(Codex): substituir por lógica real do banco:
-  // 1. Buscar device em tv_devices pela device_key.
-  // 2. Se status=pending -> { status: 'pending' } (a TV mostra "Não ativado").
-  // 3. Se status=active -> emitir access/refresh token e devolver expires_at.
-  // 4. Se blocked/expired -> devolver status com message amigável.
-  //
-  // DEMO/PREVIEW: enquanto não há banco, retornamos 'active' para o fluxo de
-  // ativação funcionar de ponta a ponta no preview. Defina TV_STATUS_FORCE=pending
-  // para testar visualmente o estado "Não ativado".
-  const forced = process.env.TV_STATUS_FORCE as DeviceStatusResponse['status'] | undefined
-  const res: DeviceStatusResponse = { status: forced ?? 'active' }
-  return json(res)
+  try {
+    const device = await getDeviceByKey(deviceKey)
+    if (!device) return apiError('device_not_found', 'Device Key não encontrada.', 404)
+    if (device.expires_at && new Date(device.expires_at).getTime() < Date.now()) {
+      const res: DeviceStatusResponse = { status: 'expired', message: 'Acesso expirado. Fale com o suporte.' }
+      return json(res)
+    }
+    if (device.status === 'active') {
+      const tokens = await issueDeviceTokens(device)
+      const res: DeviceStatusResponse = {
+        status: 'active',
+        access_token: tokens.access_token,
+        refresh_token: tokens.refresh_token,
+        expires_at: tokens.expires_at,
+      }
+      return json(res)
+    }
+    const res: DeviceStatusResponse = {
+      status: device.status,
+      message: device.status === 'blocked' ? 'Dispositivo bloqueado. Fale com o suporte.' : undefined,
+    }
+    return json(res)
+  } catch (error) {
+    return apiError('status_failed', error instanceof Error ? error.message : 'Falha ao consultar status.', 500)
+  }
 }

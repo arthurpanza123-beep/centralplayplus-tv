@@ -3,22 +3,26 @@
  * Lista de canais normalizados (paginada). NUNCA inclui provider_ref.
  * Backend implementado pelo Codex.
  */
-import { json } from '@/lib/api/helpers'
+import { apiError, json } from '@/lib/api/helpers'
+import { getCatalog } from '@/lib/catalog/service'
+import { requireActiveDevice } from '@/lib/devices/service'
 import type { Channel } from '@/lib/types/tv'
 
 export async function GET(req: Request) {
+  const device = await requireActiveDevice(req)
+  if (device instanceof Response) return device
   const { searchParams } = new URL(req.url)
-  const _category = searchParams.get('category')
-  const _page = Number(searchParams.get('page') ?? '1')
+  const category = searchParams.get('category')
+  const page = Math.max(Number(searchParams.get('page') ?? '1'), 1)
+  const pageSize = Math.min(Math.max(Number(searchParams.get('page_size') || 80), 1), 200)
 
-  // TODO(Codex):
-  // 1. Validar token do aparelho.
-  // 2. Buscar canais do catálogo normalizado (cache/DB), paginado.
-  // 3. Expor apenas variantes públicas (id + quality), sem provider_ref.
-  const res: { items: Channel[]; page: number; has_more: boolean } = {
-    items: [],
-    page: _page,
-    has_more: false,
+  try {
+    const catalog = await getCatalog()
+    const filtered = category ? catalog.channels.filter((channel) => channel.category === category || channel.id === category) : catalog.channels
+    const start = (page - 1) * pageSize
+    const items: Channel[] = filtered.slice(start, start + pageSize)
+    return json({ items, page, has_more: start + pageSize < filtered.length })
+  } catch (error) {
+    return apiError('channels_unavailable', error instanceof Error ? error.message : 'Canais indisponíveis.', 503)
   }
-  return json(res)
 }

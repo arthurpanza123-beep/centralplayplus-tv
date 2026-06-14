@@ -1,4 +1,5 @@
 import { redis, KEYS } from '@/lib/redis/client'
+import { sql, isDatabaseConfigured } from '@/lib/db/client'
 import type { StreamQuality } from '@/lib/types/tv'
 
 /**
@@ -42,11 +43,15 @@ export function rankVariants(variants: StreamVariant[]): {
 
 /** Rebaixa a saúde de uma variante após um erro reportado pela TV. */
 export async function degradeVariant(channelId: string, variantId: string, reason: string) {
-  // TODO(Codex): persistir no Postgres:
-  //   UPDATE channel_variants
-  //   SET health_score = GREATEST(0, health_score - 20), last_error = ${reason}, last_error_at = now()
-  //   WHERE id = ${variantId}
-  // Espelho rápido no Redis para o /play não precisar bater no banco:
+  if (isDatabaseConfigured) {
+    await sql`
+      update channel_variants
+      set health_score = greatest(0, health_score - 20),
+          fail_count = fail_count + 1,
+          last_error_at = now()
+      where id = ${variantId}
+    `
+  }
   try {
     await redis.hset(KEYS.channelHealth(channelId), { [variantId]: Date.now() })
   } catch {
@@ -57,7 +62,15 @@ export async function degradeVariant(channelId: string, variantId: string, reaso
 
 /** Restaura saúde quando o health-check confirma que a variante voltou. */
 export async function recoverVariant(channelId: string, variantId: string) {
-  // TODO(Codex): UPDATE channel_variants SET health_score = 100, last_ok_at = now() WHERE id = ${variantId}
+  if (isDatabaseConfigured) {
+    await sql`
+      update channel_variants
+      set health_score = least(100, greatest(health_score, 85) + 5),
+          success_count = success_count + 1,
+          last_checked_at = now()
+      where id = ${variantId}
+    `
+  }
   try {
     await redis.hdel(KEYS.channelHealth(channelId), variantId)
   } catch {

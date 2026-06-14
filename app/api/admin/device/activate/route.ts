@@ -4,13 +4,17 @@
  * Backend implementado pelo Codex.
  */
 import { json, apiError, isAdmin } from '@/lib/api/helpers'
+import { activateDevice } from '@/lib/devices/service'
 
 interface ActivateBody {
   device_key: string
-  client_id: string
-  plan_ref: string
-  server_id: string
+  client_id?: string
+  client_name?: string
+  plan_ref?: string
+  plan?: string
+  server_id?: string
   provider_account_id?: string // vincular acesso existente (opcional)
+  days?: number
 }
 
 export async function POST(req: Request) {
@@ -22,14 +26,14 @@ export async function POST(req: Request) {
   } catch {
     return apiError('invalid_body', 'JSON inválido', 400)
   }
-  if (!body?.device_key || !body?.client_id) {
-    return apiError('missing_fields', 'device_key e client_id são obrigatórios', 422)
+  if (!body?.device_key || (!body?.client_id && !body?.client_name)) {
+    return apiError('missing_fields', 'device_key e cliente são obrigatórios', 422)
   }
 
-  // TODO(Codex):
-  // 1. Vincular device_key ao client_id (tv_devices).
-  // 2. Se provider_account_id ausente -> criar conta via Provider Adapter.createUser().
-  // 3. Definir status=active e expires_at conforme o plano.
-  // 4. Registrar evento device_ativado.
-  return json({ ok: true, status: 'active' })
+  try {
+    const device = await activateDevice(body)
+    return json({ ok: true, status: device.status, device_key: device.device_key, expires_at: device.expires_at })
+  } catch (error) {
+    return apiError('activation_failed', error instanceof Error ? error.message : 'Falha ao ativar dispositivo.', 500)
+  }
 }
