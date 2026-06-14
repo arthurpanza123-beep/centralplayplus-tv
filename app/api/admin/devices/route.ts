@@ -28,7 +28,7 @@ export async function GET(req: Request) {
     }
 
     const [devices, playbackErrors, channelHealth] = await Promise.all([
-      sql<DeviceViewRow[]>`
+      sql`
         select
           d.device_key,
           c.name as client_name,
@@ -45,15 +45,15 @@ export async function GET(req: Request) {
         left join provider_servers ps on ps.id = d.server_id
         order by d.created_at desc
         limit 500
-      `,
-      sql<Array<{ id: string; device_key: string | null; channel_id: string | null; variant_id: string | null; error_type: string; created_at: string }>>`
+      `.then((r) => r as unknown as DeviceViewRow[]),
+      sql`
         select e.id::text, d.device_key, e.channel_id, e.variant_id, e.error_type, e.created_at
         from playback_errors e
         left join tv_devices d on d.id = e.device_id
         order by e.created_at desc
         limit 100
-      `,
-      sql<Array<{ channel_name: string; total_variants: number; healthy_variants: number; health_score: number }>>`
+      `.then((r) => r as unknown as Array<{ id: string; device_key: string | null; channel_id: string | null; variant_id: string | null; error_type: string; created_at: string }>),
+      sql`
         select c.name as channel_name,
                count(v.id)::int as total_variants,
                count(v.id) filter (where v.health_score >= 70 and v.status = 'active')::int as healthy_variants,
@@ -63,7 +63,7 @@ export async function GET(req: Request) {
         group by c.id, c.name
         order by health_score asc, c.name asc
         limit 100
-      `,
+      `.then((r) => r as unknown as Array<{ channel_name: string; total_variants: number; healthy_variants: number; health_score: number }>),
     ])
 
     return json({

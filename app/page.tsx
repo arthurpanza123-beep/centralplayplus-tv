@@ -26,6 +26,7 @@ import { cn } from '@/lib/utils'
 import {
   daysRemaining,
   isTrialPlan, formatTrialRemaining,
+  CHANNELS, MOVIES, SERIES, USER, KIDS_ITEMS, CHANNEL_CATEGORIES,
 } from '@/lib/data'
 import type { Movie, Series, Channel } from '@/lib/types'
 

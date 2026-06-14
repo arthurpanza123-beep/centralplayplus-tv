@@ -19,7 +19,7 @@ type NeonSql = ReturnType<typeof neon>
 function missingDatabase(): NeonSql {
   return (async () => {
     throw new Error('DATABASE_URL não configurado.')
-  }) as NeonSql
+  }) as unknown as NeonSql
 }
 
 export const sql: NeonSql = isDatabaseConfigured ? neon(process.env.DATABASE_URL!) : missingDatabase()

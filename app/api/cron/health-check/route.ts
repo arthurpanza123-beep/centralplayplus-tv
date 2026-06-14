@@ -33,13 +33,13 @@ export async function GET(req: Request) {
     const credentials = credentialsFromServer(server)
     const account = providerAccountFromCredentials(credentials)
     const adapter = getProviderAdapter(credentials)
-    const variants = await sql<Array<{ id: string; channel_id: string; provider_ref: string }>>`
+    const variants = (await sql`
       select id, channel_id, provider_ref
       from channel_variants
       where status = 'active'
       order by last_checked_at nulls first, health_score asc
       limit ${Number(process.env.HEALTH_CHECK_BATCH_SIZE || 40)}
-    `
+    `) as unknown as Array<{ id: string; channel_id: string; provider_ref: string }>
 
     let ok = 0
     let failed = 0

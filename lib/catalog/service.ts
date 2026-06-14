@@ -5,6 +5,7 @@ import { sql, isDatabaseConfigured } from '@/lib/db/client'
 import { getProviderAdapter } from '@/lib/providers/provider-adapter'
 import type { ProviderAccount, ProviderCredentials, RawCategory, RawSeries, RawStream } from '@/lib/providers/types'
 import type { CatalogItem, Category, Channel, ChannelVariantPublic, ContentType, HomeResponse, StreamQuality } from '@/lib/types/tv'
+import type { StreamVariant } from '@/lib/streaming/variant-health'
 
 export type CatalogPayload = {
   serverId: string
@@ -69,13 +70,13 @@ export function slugId(prefix: string, text: string) {
 
 export async function getDefaultServer(): Promise<ProviderServerRow> {
   if (isDatabaseConfigured) {
-    const rows = await sql<ProviderServerRow[]>`
+    const rows = (await sql`
       select id, name, kind, base_url, username, password, api_key, m3u_url
       from provider_servers
       where status = 'active'
       order by created_at asc
       limit 1
-    `
+    `) as unknown as ProviderServerRow[]
     if (rows[0]) return rows[0]
   }
 
@@ -319,10 +320,10 @@ async function loadFromDatabase(): Promise<CatalogPayload | null> {
   if (!isDatabaseConfigured) return null
   const server = await getDefaultServer()
   const [channelRows, variantRows, vodRows, seriesRows] = await Promise.all([
-    sql<ChannelRow[]>`select id, name, logo, category, type from channels where server_id = ${server.id} and type = 'live' order by sort_order asc, name asc`,
-    sql<VariantRow[]>`select id, channel_id, quality, provider_ref, health_score, status from channel_variants where status = 'active' order by channel_id asc, health_score desc`,
-    sql<CatalogCacheRow[]>`select payload, version from provider_catalog_cache where server_id = ${server.id} and type = 'vod' order by fetched_at desc limit 1`,
-    sql<CatalogCacheRow[]>`select payload, version from provider_catalog_cache where server_id = ${server.id} and type = 'series' order by fetched_at desc limit 1`,
+    sql`select id, name, logo, category, type from channels where server_id = ${server.id} and type = 'live' order by sort_order asc, name asc`.then((r) => r as unknown as ChannelRow[]),
+    sql`select id, channel_id, quality, provider_ref, health_score, status from channel_variants where status = 'active' order by channel_id asc, health_score desc`.then((r) => r as unknown as VariantRow[]),
+    sql`select payload, version from provider_catalog_cache where server_id = ${server.id} and type = 'vod' order by fetched_at desc limit 1`.then((r) => r as unknown as CatalogCacheRow[]),
+    sql`select payload, version from provider_catalog_cache where server_id = ${server.id} and type = 'series' order by fetched_at desc limit 1`.then((r) => r as unknown as CatalogCacheRow[]),
   ])
 
   if (!channelRows.length && !vodRows[0]?.payload?.length && !seriesRows[0]?.payload?.length) return null
@@ -373,10 +374,10 @@ export async function getHome(): Promise<HomeResponse> {
   return {
     catalog_version: catalog.version,
     rows: [
-      { id: 'live-featured', title: 'Canais ao vivo', type: 'live', items: catalog.channels.slice(0, 20).map(channelToItem) },
-      { id: 'movies-featured', title: 'Filmes em destaque', type: 'vod', items: catalog.movies.slice(0, 30) },
-      { id: 'series-featured', title: 'Séries em destaque', type: 'series', items: catalog.series.slice(0, 30) },
-      { id: 'kids-featured', title: 'Kids', type: 'vod', items: catalog.movies.filter((item) => /kids|infantil|desenho|anima/i.test(item.genre || item.title)).slice(0, 20) },
+      { id: 'live-featured', title: 'Canais ao vivo', type: 'live' as const, items: catalog.channels.slice(0, 20).map(channelToItem) },
+      { id: 'movies-featured', title: 'Filmes em destaque', type: 'vod' as const, items: catalog.movies.slice(0, 30) },
+      { id: 'series-featured', title: 'Séries em destaque', type: 'series' as const, items: catalog.series.slice(0, 30) },
+      { id: 'kids-featured', title: 'Kids', type: 'vod' as const, items: catalog.movies.filter((item) => /kids|infantil|desenho|anima/i.test(item.genre || item.title)).slice(0, 20) },
     ].filter((row) => row.items.length),
   }
 }
@@ -392,7 +393,7 @@ function channelToItem(channel: Channel): CatalogItem {
   }
 }
 
-export async function loadChannelVariants(channelId: string) {
+export async function loadChannelVariants(channelId: string): Promise<StreamVariant[]> {
   if (!isDatabaseConfigured) {
     const catalog = await getCatalog()
     const channel = catalog.channels.find((item) => item.id === channelId)
@@ -408,12 +409,12 @@ export async function loadChannelVariants(channelId: string) {
     }))
   }
 
-  const rows = await sql<VariantRow[]>`
+  const rows = (await sql`
     select id, channel_id, quality, provider_ref, health_score, status
     from channel_variants
     where channel_id = ${channelId}
     order by health_score desc, id asc
-  `
+  `) as unknown as VariantRow[]
   return rows.map((row, index) => ({
     id: row.id,
     channelId: row.channel_id,

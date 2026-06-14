@@ -97,22 +97,22 @@ export async function registerDevice(input: RegisterDeviceRequest): Promise<Devi
     return row
   }
 
-  const existing = await sql<DeviceRow[]>`
+  const existing = (await sql`
     select * from tv_devices
     where install_id = ${input.install_id}
     order by created_at desc
     limit 1
-  `
+  `) as unknown as DeviceRow[]
   if (existing[0]) return existing[0]
 
   for (let attempt = 0; attempt < 8; attempt++) {
     const deviceKey = generateDeviceKey()
     try {
-      const rows = await sql<DeviceRow[]>`
+      const rows = (await sql`
         insert into tv_devices (device_key, install_id, platform, device_model, app_version, status)
         values (${deviceKey}, ${input.install_id}, ${input.platform}, ${input.device_model || null}, ${input.app_version || null}, 'pending')
         returning *
-      `
+      `) as unknown as DeviceRow[]
       return rows[0]
     } catch (error) {
       if (!String(error).includes('duplicate')) throw error
@@ -124,7 +124,7 @@ export async function registerDevice(input: RegisterDeviceRequest): Promise<Devi
 export async function getDeviceByKey(deviceKey: string): Promise<DeviceRow | null> {
   const key = normalizeDeviceKey(deviceKey)
   if (!isDatabaseConfigured) return memoryDevices.get(key) || null
-  const rows = await sql<DeviceRow[]>`select * from tv_devices where device_key = ${key} limit 1`
+  const rows = (await sql`select * from tv_devices where device_key = ${key} limit 1`) as unknown as DeviceRow[]
   return rows[0] || null
 }
 
@@ -134,14 +134,14 @@ export async function findActiveProviderAccount(device: DeviceRow): Promise<Prov
     const server = await getDefaultServer()
     return providerAccountFromCredentials(credentialsFromServer(server))
   }
-  const rows = await sql<ProviderAccountRow[]>`
+  const rows = (await sql`
     select * from provider_accounts
     where client_id = ${device.client_id}
       and (${device.server_id}::uuid is null or server_id = ${device.server_id})
       and status = 'active'
     order by created_at desc
     limit 1
-  `
+  `) as unknown as ProviderAccountRow[]
   const account = rows[0]
   if (!account) return null
   return {
@@ -174,14 +174,14 @@ export async function refreshDeviceTokens(deviceKey: string, refreshToken: strin
   const device = await getDeviceByKey(deviceKey)
   if (!device || device.id !== claims.device_id || device.status !== 'active') return null
   if (isDatabaseConfigured) {
-    const rows = await sql<{ id: string }[]>`
+    const rows = (await sql`
       select id from device_tokens
       where device_id = ${device.id}
         and refresh_hash = ${hashToken(refreshToken)}
         and revoked = false
         and expires_at > now()
       limit 1
-    `
+    `) as unknown as { id: string }[]
     if (!rows[0]) return null
     await sql`update device_tokens set revoked = true where id = ${rows[0].id}`
   }
@@ -267,19 +267,19 @@ export async function activateDevice(input: {
   }
 
   const clientRows = input.client_id
-    ? await sql<{ id: string }[]>`select id from clients where id = ${input.client_id}::uuid limit 1`
+    ? (await sql`select id from clients where id = ${input.client_id}::uuid limit 1`) as unknown as { id: string }[]
     : []
-  const clientId = clientRows[0]?.id || (await sql<{ id: string }[]>`
+  const clientId = clientRows[0]?.id || ((await sql`
     insert into clients (name, note)
     values (${input.client_name || input.client_id || device.device_key}, ${`Ativado via Device Key ${device.device_key}`})
     returning id
-  `)[0].id
+  `) as unknown as { id: string }[])[0].id
 
   await sql`
     insert into provider_accounts (client_id, server_id, account_ref, username, password, max_conns, status, expires_at)
     values (${clientId}, ${server.id}, ${providerAccount.account_id}, ${providerAccount.username}, ${providerAccount.password}, ${providerAccount.max_connections}, 'active', ${providerAccount.expires_at || expiresAt})
   `
-  const rows = await sql<DeviceRow[]>`
+  const rows = (await sql`
     update tv_devices
     set client_id = ${clientId},
         server_id = ${server.id},
@@ -288,7 +288,7 @@ export async function activateDevice(input: {
         expires_at = ${expiresAt}
     where device_key = ${device.device_key}
     returning *
-  `
+  `) as unknown as DeviceRow[]
   return rows[0]
 }
 
@@ -298,7 +298,7 @@ export async function renewDevice(deviceKey: string, days = 30) {
   const base = Math.max(device.expires_at ? new Date(device.expires_at).getTime() : 0, Date.now())
   const expiresAt = new Date(base + days * 86400_000).toISOString()
   if (isDatabaseConfigured) {
-    const rows = await sql<DeviceRow[]>`update tv_devices set status = 'active', expires_at = ${expiresAt} where id = ${device.id} returning *`
+    const rows = (await sql`update tv_devices set status = 'active', expires_at = ${expiresAt} where id = ${device.id} returning *`) as unknown as DeviceRow[]
     return rows[0]
   }
   const next = { ...device, status: 'active' as DeviceStatus, expires_at: expiresAt }
@@ -311,7 +311,7 @@ export async function setDeviceBlocked(deviceKey: string, blocked: boolean) {
   if (!device) throw new Error('Device Key não encontrada.')
   const status: DeviceStatus = blocked ? 'blocked' : 'active'
   if (isDatabaseConfigured) {
-    const rows = await sql<DeviceRow[]>`update tv_devices set status = ${status} where id = ${device.id} returning *`
+    const rows = (await sql`update tv_devices set status = ${status} where id = ${device.id} returning *`) as unknown as DeviceRow[]
     return rows[0]
   }
   const next = { ...device, status }

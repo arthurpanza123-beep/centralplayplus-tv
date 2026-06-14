@@ -1,4 +1,4 @@
-allowBuilds:
-  ffmpeg-static: false
-  msw: false
-  sharp: false
+onlyBuiltDependencies:
+  - ffmpeg-static
+  - msw
+  - sharp

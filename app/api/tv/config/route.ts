@@ -12,9 +12,9 @@ import type { RemoteConfig } from '@/lib/types/tv'
 export async function GET() {
   const config = await cached('remote-config', 'global', async () => {
     if (!isDatabaseConfigured) return DEFAULT_REMOTE_CONFIG
-    const rows = await sql<{ config: Partial<RemoteConfig> }[]>`
+    const rows = (await sql`
       select config from tv_remote_config where key = 'global' limit 1
-    `
+    `) as unknown as { config: Partial<RemoteConfig> }[]
     const override = rows[0]?.config || {}
     return {
       ...DEFAULT_REMOTE_CONFIG,

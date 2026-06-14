@@ -64,7 +64,8 @@ function memoryRedis(): RedisLike {
       sorted.set(k, list)
       return list.length as never
     },
-    async zrange(key, start, stop, options) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    async zrange(key: string, start: any, stop: any, options?: any) {
       const list = [...(sorted.get(String(key)) || [])].sort((a, b) =>
         (options as { rev?: boolean } | undefined)?.rev ? b.score - a.score : a.score - b.score,
       )

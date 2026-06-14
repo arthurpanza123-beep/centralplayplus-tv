@@ -17,7 +17,7 @@ export async function GET(req: Request) {
   }
 
   if (isDatabaseConfigured) {
-    const rows = await sql<AppVersionResponse[]>`
+    const rows = (await sql`
       select
         latest_version,
         latest_version_code,
@@ -30,7 +30,7 @@ export async function GET(req: Request) {
       where platform = ${platform}
       order by created_at desc
       limit 1
-    `
+    `) as unknown as AppVersionResponse[]
     if (rows[0]) return json(rows[0])
   }
 
