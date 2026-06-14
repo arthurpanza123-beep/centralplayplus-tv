@@ -7,6 +7,38 @@
 
 ---
 
+## ⚡ MODO DE EXECUÇÃO CONTÍNUA (LEIA PRIMEIRO)
+
+**Você deve executar este projeto do início ao fim sem parar para pedir confirmação.**
+
+1. **NÃO PARE entre as etapas.** Termine uma seção e comece a próxima imediatamente.
+   Faça as Seções 4 → 5 → 6 → 7 → 8 em ordem, uma após a outra, até concluir TUDO.
+2. **NÃO peça permissão** para continuar, nem pergunte "quer que eu siga?". Apenas siga.
+   A única exceção é se faltar um **segredo/credencial** que só o dono tem (ex.: uma
+   chave de API ausente) — nesse caso, liste exatamente o que falta e continue com o
+   restante que não depende daquele segredo.
+3. **Trabalhe em ordem de dependência:** primeiro o backend (Provider Adapter Xtream +
+   catálogo + ativação + play/fallback), depois conecte o app de TV aos dados reais,
+   depois finalize o site de ativação, e SÓ ENTÃO gere o APK.
+4. **Defina de pronto = funcionando de verdade.** Não deixe stub, mock, `501`, `TODO`,
+   nem dado fake. Ao terminar:
+   - O app deve mostrar **canais, filmes e séries REAIS** do Xtream, com **capas reais**
+     (Xtream ou TMDB) — nada de gradiente/placeholder/mock.
+   - O **site de ativação deve ativar de verdade** (Device Key → Yellow Box → Xtream),
+     e a TV deve sair de "Não ativado" para "Ativado" e carregar o conteúdo do cliente.
+   - Backend, APIs e banco populados e respondendo. Player tocando os streams.
+5. **Valide antes de declarar concluído.** Rode o "Checklist final de aceite" (Seção 8)
+   item por item, testando **canal por canal** (abrir, zapear, cair e recuperar sozinho).
+6. **Entregue o pacote final:** app de TV pronto, backend/APIs prontos, site de ativação
+   no ar ativando de verdade, e o **APK assinado** publicado no GitHub Releases e na VPS.
+   Ao final, escreva um relatório curto do que foi feito, URLs/links e como instalar o APK.
+
+> Resumindo o pedido do dono: **"não quero fazer nada — entregue o app pronto, backend
+> pronto, APIs prontas e o site de ativação ativando de verdade, com canais, filmes e
+> séries perfeitos, trocando capas e tudo por conteúdo real."** Execute até esse estado.
+
+---
+
 ## 0. Regras de ouro (segurança)
 
 1. **NUNCA** coloque segredos no código. Tudo via `process.env.*`.
@@ -178,23 +210,64 @@ TMDB_API_KEY=             # api key v3
 
 ---
 
-## 7. APK para Android TV
+## 7. APK para Android TV (passo a passo detalhado)
 
-- Empacotar o app web como APK Android TV **otimizado e rápido**:
-  - Opção recomendada: WebView/TWA dedicada para TV **ou** Capacitor, com ExoPlayer nativo
-    para o vídeo (não reproduzir HLS dentro de WebView por performance).
-  - Suporte a **D-pad/controle remoto** (a navegação espacial já existe no front — validar foco).
-  - `splash`/ícone, `leanback` feature, banner de TV, orientação landscape, retomar estado.
-  - Build de release assinado, minificado, com network security config.
-- **Publicar o APK**:
-  - Anexar o `.apk` em **GitHub Releases** do repo `centralplayplus-tv`.
-  - Colocar o `.apk` também na **VPS** (download direto) e versionar em `/api/app/version`
-    para o app oferecer atualização obrigatória quando sair versão nova.
+Objetivo: um APK **leve, rápido e fluido** em Android TV/TV Box baratas, com vídeo
+nativo (ExoPlayer/Media3) e navegação 100% por controle remoto (D-pad).
+
+### 7.1 Arquitetura recomendada
+- App **híbrido**: a UI (que já existe e é responsiva para TV) roda numa WebView de alta
+  performance, **mas o vídeo NÃO toca dentro da WebView**. Use uma ponte JS↔nativo para
+  entregar a URL de play ao **ExoPlayer/Media3** nativo (HLS/TS), que é muito mais fluido.
+  - Stack sugerida: **Capacitor** (empacota o Next.js exportado) + um **plugin nativo**
+    que abre uma `PlayerActivity` com `androidx.media3:media3-exoplayer` +
+    `media3-exoplayer-hls`. Alternativa: app 100% nativo Kotlin/Compose for TV consumindo a API.
+- O front chama `/api/tv/channel/[id]/play` → recebe o token → manda a URL
+  `/api/tv/stream/[token]` pro player nativo. A troca de variante (fallback) é feita
+  pedindo um novo token sem fechar a `PlayerActivity`.
+
+### 7.2 Configuração Android TV (obrigatória)
+- `minSdk 21+`, `targetSdk` atual; `android.software.leanback` **required=false** só se
+  também rodar em celular; para TV use `<uses-feature android:name="android.software.leanback" android:required="true"/>`
+  e `<uses-feature android:name="android.hardware.touchscreen" android:required="false"/>`.
+- `MainActivity` com `<intent-filter>` incluindo `android.intent.category.LEANBACK_LAUNCHER`
+  (senão não aparece na home da TV).
+- **Banner de TV** 320x180 (`android:banner`), ícone adaptativo, splash screen, `screenOrientation="landscape"`.
+- `network_security_config` permitindo o domínio da API (e cleartext só se algum
+  fornecedor exigir HTTP — preferir HTTPS sempre).
+
+### 7.3 Controle remoto / D-pad
+- Garantir foco visível (o contorno premium já existe no front) e navegação espacial.
+- Mapear teclas: **OK** = play/abrir, **Voltar** = fecha player/volta aba,
+  **setas** = navegação, **canal +/-** e setas ↑/↓ no player = zapping.
+- Testar com `adb shell input keyevent` (DPAD_UP/DOWN/LEFT/RIGHT/CENTER/BACK).
+
+### 7.4 Performance (metas)
+- Cold start rápido; **zapping de canal < 1,5s** (ajudado pelo pré-buffer da Seção 5).
+- Pré-bufferizar o próximo canal provável; manter o ExoPlayer "aquecido".
+- Habilitar R8/minify + `shrinkResources`, remover libs não usadas, comprimir assets.
+- Cache de imagens de capa (Coil/Glide) com placeholder.
+
+### 7.5 Build de release assinado
+- Gerar keystore (`keytool`), configurar `signingConfigs.release` no `build.gradle`.
+- `./gradlew assembleRelease` (ou `bundleRelease`) → gera o `.apk` (ou `.aab`).
+  Para sideload em TV Box use **APK**; para Play Store, AAB.
+- Versionar `versionCode`/`versionName` a cada build.
+
+### 7.6 Publicação e atualização automática
+- Anexar o `app-release.apk` em **GitHub Releases** do repo `centralplayplus-tv`
+  (tag por versão, ex.: `v1.0.0`).
+- Subir o mesmo `.apk` na **VPS** para download direto (ex.: `https://device.centralplayplus.com.br/app/centralplayplus.apk`).
+- Atualizar `/api/app/version` com `{ versionCode, versionName, apkUrl, mandatory }`
+  para o app detectar versão nova e oferecer/forçar atualização (download do APK da VPS).
+- Documentar no relatório final o **link do APK** e o passo a passo de instalação na TV
+  (Downloader app / sideload / "fontes desconhecidas").
 
 ---
 
 ## 8. Checklist final de aceite
 
+- [ ] **ZERO mock/placeholder/501/TODO** no fluxo do usuário — tudo conteúdo real.
 - [ ] Catálogo real (filmes, séries, canais, kids) com **capas** vindo do Xtream/TMDB.
 - [ ] Busca, favoritos e configurações conectados ao banco.
 - [ ] Ativação por Device Key ponta a ponta (TV ↔ painel ↔ Yellow Box ↔ Xtream).
