@@ -118,6 +118,12 @@ TMDB_API_KEY=             # api key v3
   as credenciais do fornecedor no servidor (cifradas).
 - `POST /api/tv/activate-token` → troca a Device Key ativada por um token de sessão da TV.
 
+> **Estado atual (ponto de partida):** a tela de ativação (`components/tv/login-screen.tsx`)
+> já faz polling real em `GET /api/tv/status/[deviceKey]` e renderiza 3 estados:
+> **verificando**, **não ativado** (status `pending`/`blocked`/`expired`) e **ativado** (entra no app).
+> O stub atualmente retorna `active` para o preview funcionar; defina `TV_STATUS_FORCE=pending`
+> para ver o estado "Não ativado". Troque o stub pela lógica real do banco — a UI não precisa mudar.
+
 ### 4.4 Play + Fallback (engenharia de estabilidade)
 - `GET /api/tv/channel/[id]/play` → retorna a **melhor variante** (via `rankVariants`)
   + lista de fallback ordenada por `health_score`/prioridade.
