@@ -201,15 +201,6 @@ function HomeTab({ onNav }: { onNav: (id: TabId) => void }) {
   const [selected, setSelected] = useState<Movie | Series | null>(null)
   const featured = MOVIES[2]
 
-  // Cores vivas para o hero — independentes das cores escuras dos cards
-  const heroColors = [
-    { from: '#0f4c96', to: '#1e90e8' },   // azul oceano — "Sobre as Ondas"
-    { from: '#7c2d12', to: '#dc6a1a' },   // laranja épico
-    { from: '#134e4a', to: '#14b8a6' },   // verde-azulado
-    { from: '#3b0764', to: '#7c3aed' },   // roxo espacial
-  ]
-  const hero = heroColors[2 % heroColors.length] // índice alinhado ao MOVIES[2]
-
   const handleSelect = useCallback((item: Movie | Series) => setSelected(item), [])
   const handleClose = useCallback(() => setSelected(null), [])
 
@@ -223,25 +214,24 @@ function HomeTab({ onNav }: { onNav: (id: TabId) => void }) {
       {/* ── Card de destaque principal (cinematic) ── */}
       <section
         className="relative w-full overflow-hidden flex flex-col justify-end"
-        style={{ height: '52vh', minHeight: 320 }}
+        style={{ height: '58vh', minHeight: 340, position: 'relative' }}
       >
-        {/* Fundo principal vibrante */}
-        <div
-          className="absolute inset-0"
-          style={{ background: `linear-gradient(135deg, ${hero.from} 0%, ${hero.to} 100%)` }}
+        {/* Capa do filme em alta resolução — object-position centro-topo para rostos/ação ficarem visíveis */}
+        <Image
+          src={`/posters/${featured.id}.png`}
+          alt={featured.title}
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover object-center"
+          style={{ objectPosition: 'center 20%' }}
         />
-        {/* Brilho radial no centro-direito */}
-        <div
-          className="absolute inset-0 opacity-50"
-          style={{ background: `radial-gradient(ellipse 65% 75% at 72% 38%, ${hero.to}cc 0%, transparent 65%)` }}
-        />
-        {/* Padrão geométrico sutil */}
-        <div className="absolute inset-0 opacity-[0.06]"
-          style={{ backgroundImage: 'repeating-linear-gradient(45deg,#fff 0,#fff 1px,transparent 0,transparent 50%)', backgroundSize: '24px 24px' }} />
-        {/* Vinhetas para emergir o texto */}
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/55 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-r from-background/90 via-background/20 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-b from-background/20 to-transparent" />
+        {/* Vinheta inferior pesada para emergir o texto */}
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
+        {/* Vinheta lateral esquerda */}
+        <div className="absolute inset-0 bg-gradient-to-r from-background/90 via-background/30 to-transparent" />
+        {/* Sombra no topo para não ter borda branca */}
+        <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-transparent to-transparent" />
 
         {/* Infos do destaque */}
         <div className="absolute inset-0 flex flex-col justify-end pb-10 px-8 max-w-2xl gap-3">
