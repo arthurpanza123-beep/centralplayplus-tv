@@ -1,38 +1,88 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
-import { RefreshCw } from 'lucide-react'
+import { RefreshCw, Loader2, CheckCircle2, XCircle } from 'lucide-react'
 import { unlockAudio } from '@/lib/sounds'
 import { markDeviceActivated, getDeviceKey } from '@/lib/activation'
 
+type CheckState = 'idle' | 'checking' | 'pending' | 'active' | 'blocked' | 'error'
+
 export function LoginScreen({ onLogin }: { onLogin: () => void }) {
   const [shake, setShake] = useState(false)
-  // Simulated activation: device is only considered activated after the first check.
-  const [activated, setActivated] = useState(false)
-  // This device's persistent key (read on the client to avoid SSR mismatch).
+  const [state, setState] = useState<CheckState>('idle')
   const [deviceKey, setDeviceKey] = useState('····')
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
     setDeviceKey(getDeviceKey())
   }, [])
 
-  function reload() {
-    // First user gesture — unlock audio so it can play once activated.
-    unlockAudio()
+  /**
+   * Consulta o backend de ativação. O operador ativa a Device Key no painel /admin;
+   * enquanto isso o status volta 'pending' (não ativado). Quando ativar, volta 'active'.
+   */
+  const checkActivation = useCallback(
+    async (opts: { manual?: boolean } = {}) => {
+      const key = getDeviceKey()
+      setState((s) => (s === 'active' ? s : 'checking'))
+      try {
+        const res = await fetch(`/api/tv/status/${encodeURIComponent(key)}`, { cache: 'no-store' })
+        const data = await res.json().catch(() => ({}))
+        const status: string = data?.status ?? 'pending'
 
-    if (!activated) {
-      // Not activated yet: shake the button and arm activation for next time.
-      setActivated(true)
-      setShake(true)
-      setTimeout(() => setShake(false), 500)
+        if (status === 'active') {
+          setState('active')
+          markDeviceActivated()
+          if (pollRef.current) clearInterval(pollRef.current)
+          // Pequena pausa para o usuário ver o "Ativado!" antes de entrar.
+          setTimeout(() => onLogin(), 900)
+          return
+        }
+        if (status === 'blocked' || status === 'expired') {
+          setState('blocked')
+          return
+        }
+        // pending / qualquer outro → ainda não ativado
+        setState('pending')
+        if (opts.manual) {
+          setShake(true)
+          setTimeout(() => setShake(false), 500)
+        }
+      } catch {
+        setState('error')
+      }
+    },
+    [onLogin],
+  )
+
+  // Polling automático a cada 5s enquanto não estiver ativo.
+  useEffect(() => {
+    checkActivation()
+    pollRef.current = setInterval(() => checkActivation(), 5000)
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current)
+    }
+  }, [checkActivation])
+
+  function handleClick() {
+    unlockAudio() // primeiro gesto do usuário — libera áudio
+    if (state === 'active') {
+      onLogin()
       return
     }
-
-    // Activated — persist it and hand off to the loading stage.
-    markDeviceActivated()
-    onLogin()
+    checkActivation({ manual: true })
   }
+
+  // Texto e visual de status conforme o estado atual.
+  const statusUI = {
+    idle: { dot: 'ring', text: 'Conectando…' },
+    checking: { dot: 'ring', text: 'Verificando ativação…' },
+    pending: { dot: 'red', text: 'Não ativado. Aguardando liberação no painel.' },
+    active: { dot: 'green', text: 'Ativado! Entrando…' },
+    blocked: { dot: 'red', text: 'Dispositivo bloqueado. Fale com o suporte.' },
+    error: { dot: 'red', text: 'Sem conexão. Verifique a internet e tente de novo.' },
+  }[state]
 
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center overflow-hidden bg-background animate-cp-fade-in">
@@ -69,7 +119,7 @@ export function LoginScreen({ onLogin }: { onLogin: () => void }) {
           Ative sua TV
         </h1>
         <p className="mt-2.5 text-sm text-white/65 leading-relaxed max-w-[16rem]">
-          Use o código abaixo no painel de ativação para liberar todo o catálogo.
+          Informe o código abaixo no painel de ativação para liberar todo o catálogo.
         </p>
 
         {/* Device key */}
@@ -81,27 +131,35 @@ export function LoginScreen({ onLogin }: { onLogin: () => void }) {
         </div>
 
         {/* Status */}
-        <div className="mt-5 flex items-center justify-center gap-2.5">
-          <span className="relative flex h-4 w-4 items-center justify-center">
-            {activated ? (
-              <span className="inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.8)]" />
-            ) : (
-              <span className="absolute inline-flex h-4 w-4 rounded-full border-2 border-primary/30 border-t-primary animate-cp-ring-spin" />
-            )}
-          </span>
-          <span className="text-sm text-white/65 font-medium">
-            {activated ? 'Ativado! Clique para entrar.' : 'Aguardando ativação…'}
-          </span>
+        <div className="mt-5 flex items-center justify-center gap-2.5 min-h-[1.5rem]">
+          {statusUI.dot === 'green' && <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />}
+          {statusUI.dot === 'red' && <XCircle className="w-4 h-4 text-red-400 shrink-0" />}
+          {statusUI.dot === 'ring' && <Loader2 className="w-4 h-4 text-primary animate-spin shrink-0" />}
+          <span className="text-sm text-white/70 font-medium">{statusUI.text}</span>
         </div>
 
-        {/* Reload button */}
+        {/* Action button */}
         <button
-          onClick={reload}
+          onClick={handleClick}
           autoFocus
-          className={`group mt-7 w-full flex items-center justify-center gap-3 py-4 rounded-2xl bg-primary text-primary-foreground text-base font-bold tracking-wide shadow-xl shadow-primary/40 transition-all hover:bg-primary/90 hover:scale-[1.02] outline-none focus-visible:ring-4 focus-visible:ring-primary/60 ${shake ? 'animate-cp-shake' : ''}`}
+          disabled={state === 'checking'}
+          className={`group mt-7 w-full flex items-center justify-center gap-3 py-4 rounded-2xl text-base font-bold tracking-wide shadow-xl transition-all hover:scale-[1.02] outline-none focus-visible:ring-4 disabled:opacity-70 disabled:hover:scale-100 ${
+            state === 'active'
+              ? 'bg-emerald-500 text-white shadow-emerald-500/40 focus-visible:ring-emerald-400/60'
+              : 'bg-primary text-primary-foreground shadow-primary/40 hover:bg-primary/90 focus-visible:ring-primary/60'
+          } ${shake ? 'animate-cp-shake' : ''}`}
         >
-          <RefreshCw className="w-5 h-5 group-hover:rotate-180 transition-transform duration-500" />
-          {activated ? 'Entrar' : 'Recarregar'}
+          {state === 'active' ? (
+            <>
+              <CheckCircle2 className="w-5 h-5" />
+              Entrar
+            </>
+          ) : (
+            <>
+              <RefreshCw className={`w-5 h-5 transition-transform duration-500 ${state === 'checking' ? 'animate-spin' : 'group-hover:rotate-180'}`} />
+              {state === 'checking' ? 'Verificando…' : 'Verificar ativação'}
+            </>
+          )}
         </button>
       </div>
     </div>

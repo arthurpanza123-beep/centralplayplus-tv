@@ -5,7 +5,6 @@ import { createPortal } from 'react-dom'
 import type { Channel } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { playCue } from '@/lib/sounds'
-import { ReportProblem } from '@/components/tv/report-problem'
 
 interface ChannelPlayerProps {
   channel: Channel | null
@@ -71,23 +70,6 @@ export function ChannelPlayer({ channel, onClose }: ChannelPlayerProps) {
         </span>
       </div>
 
-      {/* Botão "Não está funcionando" — canto inferior esquerdo, junto com o hint.
-          Tem cursor visível e não fecha o player ao clicar. */}
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className={cn(
-          'absolute bottom-10 left-10 cursor-auto transition-opacity duration-700',
-          showHint ? 'opacity-100' : 'opacity-0 pointer-events-none',
-        )}
-      >
-        <ReportProblem
-          kind="channel"
-          contentId={channel.id}
-          contentTitle={channel.name}
-          category={channel.category}
-          variant="ghost"
-        />
-      </div>
     </div>,
     document.body,
   )

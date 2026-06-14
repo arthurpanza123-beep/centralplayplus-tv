@@ -16,17 +16,20 @@ export const ContentCard = memo(function ContentCard({ item, onClick, className 
     <button
       onClick={() => onClick(item)}
       className={cn(
-        'group/card relative flex flex-col w-full rounded-md overflow-hidden outline-none bg-card',
+        'group/card relative flex flex-col w-full rounded-lg bg-card outline-none',
         'transition-[transform,box-shadow] duration-300 ease-out',
-        'hover:scale-[1.08] hover:z-10 focus:scale-[1.08] focus:z-10',
-        'shadow-md hover:shadow-2xl hover:shadow-black/60',
-        // White selection contour on hover/focus (focus fires on click too, for TV remotes + mouse)
-        'ring-inset ring-0 ring-white hover:ring-4 focus:ring-4 focus:shadow-2xl',
+        'hover:scale-[1.09] hover:z-20 focus:scale-[1.09] focus:z-20',
+        'shadow-md',
+        // Premium selection contour: thick bright ring + offset + glow (fires on focus AND hover, for TV remotes + mouse)
+        'ring-0 ring-white ring-offset-2 ring-offset-background',
+        'hover:ring-4 focus:ring-4',
+        'hover:shadow-[0_0_0_1px_rgba(255,255,255,0.4),0_12px_40px_-8px_rgba(0,0,0,0.8),0_0_30px_rgba(255,255,255,0.18)]',
+        'focus:shadow-[0_0_0_1px_rgba(255,255,255,0.4),0_12px_40px_-8px_rgba(0,0,0,0.8),0_0_30px_rgba(255,255,255,0.18)]',
         className
       )}
       aria-label={`Abrir detalhes de ${item.title}`}
     >
-      <div className="relative w-full aspect-[2/3]">
+      <div className="relative w-full aspect-[2/3] overflow-hidden rounded-lg">
         {/* Real poster art */}
         <Image
           src={`/posters/${item.id}.png`}

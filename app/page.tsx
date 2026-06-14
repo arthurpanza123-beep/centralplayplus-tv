@@ -301,12 +301,50 @@ function FilmesTab() {
   const handleSelect = useCallback((item: Movie | Series) => setSelected(item), [])
   const handleClose = useCallback(() => setSelected(null), [])
 
+  // Filme em destaque para o hero do topo (muda só quando não há busca ativa).
+  const heroMovie = MOVIES[5]
+
   return (
     <>
       <ShellHeader title="Filmes" right={<SearchInput placeholder="Buscar filmes" value={search} onChange={setSearch} />} />
       <div className="flex flex-1 overflow-hidden">
         <CategorySidebar categories={MOVIE_CATEGORIES} selected={category} onSelect={setCategory} />
         <div className="flex-1 overflow-y-auto px-6 py-4 scrollbar-none">
+          {/* Hero de filme em destaque */}
+          {!search && (
+            <button
+              onClick={() => handleSelect(heroMovie)}
+              className="group/hero relative w-full h-56 rounded-2xl overflow-hidden mb-6 text-left outline-none focus-visible:ring-4 focus-visible:ring-primary/60 shadow-xl"
+              aria-label={`Ver ${heroMovie.title}`}
+            >
+              <Image
+                src={`/posters/${heroMovie.id}.png`}
+                alt={heroMovie.title}
+                fill
+                sizes="100vw"
+                className="object-cover object-center transition-transform duration-500 group-hover/hero:scale-105"
+                style={{ objectPosition: 'center 25%' }}
+              />
+              <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/50 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
+              <div className="absolute inset-0 flex flex-col justify-center gap-2 px-8 max-w-lg">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-[10px] font-bold bg-primary/20 text-primary border border-primary/30 w-fit">
+                  EM DESTAQUE
+                </span>
+                <h2 className="text-3xl font-black text-white leading-tight text-balance drop-shadow-lg">{heroMovie.title}</h2>
+                <div className="flex items-center gap-3 text-sm text-white/85">
+                  <span className="flex items-center gap-1 text-amber-400 font-bold"><Star className="w-4 h-4 fill-current" />{heroMovie.rating}</span>
+                  <span>{heroMovie.year}</span>
+                  <span className="px-1.5 py-0.5 rounded border border-white/40 text-xs">{heroMovie.quality}</span>
+                  <span>{heroMovie.genre}</span>
+                </div>
+                <span className="inline-flex items-center gap-2 mt-1 px-5 py-2.5 rounded-lg bg-white text-black text-sm font-bold w-fit transition-transform group-hover/hero:scale-105">
+                  <Play className="w-4 h-4 fill-current" />Assistir
+                </span>
+              </div>
+            </button>
+          )}
+
           <p className="text-sm font-semibold text-primary mb-4">{category}</p>
           {filtered.length > 0
             ? <div className="grid grid-cols-5 gap-5">{filtered.map((m) => <ContentCard key={m.id} item={m} onClick={handleSelect} />)}</div>
@@ -540,9 +578,17 @@ function CanaisTab() {
 }
 
 // ─── CONFIGURAÇÕES TAB ────────────────────────────────────────────────────────
-function ConfiguracoesTab() {
+const PARENTAL_OPTIONS = ['Desativado', 'Livre', '10 anos', '12 anos', '14 anos', '16 anos', '18 anos']
+const LANGUAGE_OPTIONS = ['Português (Brasil)', 'English', 'Español']
+const QUALITY_OPTIONS = ['Automático', 'Full HD (1080p)', 'HD (720p)', 'Econômico']
+
+function ConfiguracoesTab({ onLogout }: { onLogout: () => void }) {
   const [notifications, setNotifications] = useState(USER.notifications)
   const [autoplay, setAutoplay] = useState(USER.autoplay)
+  // Cycling options for the "chevron" rows — now fully interactive.
+  const [parental, setParental] = useState(USER.parentalControl)
+  const [language, setLanguage] = useState(USER.language)
+  const [quality, setQuality] = useState(USER.videoQuality)
   // This device's persistent key (read on the client to avoid SSR mismatch).
   const [deviceKey, setDeviceKey] = useState('····')
 
@@ -560,6 +606,19 @@ function ConfiguracoesTab() {
     }
   }
 
+  function handleLogout() {
+    if (window.confirm('Deseja sair? Será necessário ativar a TV novamente.')) {
+      regenerateDeviceKey() // limpa ativação local
+      onLogout()
+    }
+  }
+
+  // Avança ciclicamente para a próxima opção de uma lista.
+  function cycle<T>(list: T[], current: T, set: (v: T) => void) {
+    const idx = list.indexOf(current)
+    set(list[(idx + 1) % list.length])
+  }
+
   const accountRows = [
     { icon: User, label: 'Nome', value: USER.name },
     { icon: Mail, label: 'E-mail', value: USER.email },
@@ -569,11 +628,11 @@ function ConfiguracoesTab() {
   ]
   const settingsRows = [
     { icon: Bell, label: 'Notificações', description: 'Receba novidades e alertas', type: 'toggle' as const, value: notifications, onToggle: () => setNotifications((v) => !v) },
-    { icon: Shield, label: 'Controle parental', description: `Filtragem de conteúdo: ${USER.parentalControl}`, type: 'chevron' as const },
-    { icon: MessageSquare, label: 'Idioma', description: USER.language, type: 'chevron' as const },
-    { icon: MonitorPlay, label: 'Qualidade de vídeo', description: `${USER.videoQuality} (Recomendada)`, type: 'chevron' as const },
+    { icon: Shield, label: 'Controle parental', description: `Filtragem de conteúdo: ${parental}`, type: 'chevron' as const, onSelect: () => cycle(PARENTAL_OPTIONS, parental, setParental) },
+    { icon: MessageSquare, label: 'Idioma', description: language, type: 'chevron' as const, onSelect: () => cycle(LANGUAGE_OPTIONS, language, setLanguage) },
+    { icon: MonitorPlay, label: 'Qualidade de vídeo', description: quality === USER.videoQuality ? `${quality} (Recomendada)` : quality, type: 'chevron' as const, onSelect: () => cycle(QUALITY_OPTIONS, quality, setQuality) },
     { icon: Play, label: 'Reprodução automática', description: 'Próximo episódio em 5 segundos', type: 'toggle' as const, value: autoplay, onToggle: () => setAutoplay((v) => !v) },
-    { icon: Monitor, label: 'Dispositivos conectados', description: `${USER.connectedDevices} dispositivos conectados nesta conta`, type: 'chevron' as const },
+    { icon: Monitor, label: 'Dispositivos conectados', description: `${USER.connectedDevices} dispositivos conectados nesta conta`, type: 'chevron' as const, onSelect: () => {} },
   ]
 
   return (
@@ -592,7 +651,7 @@ function ConfiguracoesTab() {
                 </div>
               ))}
             </div>
-            <button className="flex items-center gap-4 p-5 rounded-2xl border border-red-500/25 bg-red-500/10 hover:bg-red-500/20 transition-colors text-left group shadow-sm outline-none focus-visible:ring-4 focus-visible:ring-red-500/40">
+            <button onClick={handleLogout} className="flex items-center gap-4 p-5 rounded-2xl border border-red-500/25 bg-red-500/10 hover:bg-red-500/20 transition-colors text-left group shadow-sm outline-none focus-visible:ring-4 focus-visible:ring-red-500/40">
               <div className="w-10 h-10 rounded-xl border border-red-500/30 bg-red-500/15 flex items-center justify-center shrink-0">
                 <LogOut className="w-5 h-5 text-red-400" />
               </div>
@@ -604,24 +663,34 @@ function ConfiguracoesTab() {
             </button>
           </div>
           <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
-            {settingsRows.map(({ icon: Icon, label, description, type, value, onToggle }) => (
-              <div key={label} className={cn('flex items-center gap-4 px-5 py-4 border-b border-border/60 last:border-0', type === 'chevron' && 'cursor-pointer hover:bg-accent/60 transition-colors')}>
-                <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0"><Icon className="w-4 h-4 text-primary" /></div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground">{label}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
+            {settingsRows.map(({ icon: Icon, label, description, type, value, onToggle, onSelect }) => {
+              const isChevron = type === 'chevron'
+              return (
+                <div
+                  key={label}
+                  role={isChevron ? 'button' : undefined}
+                  tabIndex={isChevron ? 0 : undefined}
+                  onClick={isChevron ? onSelect : undefined}
+                  onKeyDown={isChevron ? (e) => { if (e.key === 'Enter') onSelect?.() } : undefined}
+                  className={cn('flex items-center gap-4 px-5 py-4 border-b border-border/60 last:border-0 outline-none', isChevron && 'cursor-pointer hover:bg-accent/60 transition-colors focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-inset')}
+                >
+                  <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0"><Icon className="w-4 h-4 text-primary" /></div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground">{label}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
+                  </div>
+                  {type === 'toggle' ? (
+                    <button role="switch" aria-checked={value} onClick={onToggle}
+                      className={cn('relative inline-flex items-center h-7 w-12 rounded-full transition-colors duration-300 ease-out shrink-0 outline-none focus-visible:ring-4 focus-visible:ring-primary/40', value ? 'bg-primary' : 'bg-muted')}>
+                      <span className={cn('inline-block h-5 w-5 rounded-full bg-white shadow-md transition-transform duration-300 ease-out', value ? 'translate-x-6' : 'translate-x-1')} />
+                      <span className="sr-only">{value ? 'Ativado' : 'Desativado'}</span>
+                    </button>
+                  ) : (
+                    <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+                  )}
                 </div>
-                {type === 'toggle' ? (
-                  <button role="switch" aria-checked={value} onClick={onToggle}
-                    className={cn('relative inline-flex items-center h-7 w-12 rounded-full transition-colors duration-300 ease-out shrink-0 outline-none focus-visible:ring-4 focus-visible:ring-primary/40', value ? 'bg-primary' : 'bg-muted')}>
-                    <span className={cn('inline-block h-5 w-5 rounded-full bg-white shadow-md transition-transform duration-300 ease-out', value ? 'translate-x-6' : 'translate-x-1')} />
-                    <span className="sr-only">{value ? 'Ativado' : 'Desativado'}</span>
-                  </button>
-                ) : (
-                  <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
-                )}
-              </div>
-            ))}
+              )
+            })}
           </div>
 
           {/* Device key — persistent per install, with option to generate a new one. */}
@@ -914,34 +983,101 @@ function BuscarTab() {
 }
 
 // ─── FAVORITOS TAB ────────────────────────────────────────────────────────────
+type FavSection = 'canais' | 'filmes' | 'series'
+
 function FavoritosTab() {
   const [selected, setSelected] = useState<Movie | Series | null>(null)
+  const [section, setSection] = useState<FavSection>('canais')
+  const [fullscreenChannel, setFullscreenChannel] = useState<Channel | null>(null)
   const handleSelect = useCallback((i: Movie | Series) => setSelected(i), [])
   const handleClose = useCallback(() => setSelected(null), [])
 
-  // Everything the user has marked as favorite (curated demo selection).
-  const favorites = useMemo(() => [...MOVIES.slice(0, 7), ...SERIES.slice(0, 7)], [])
+  // Curated demo favorites for each type.
+  const favChannels = useMemo(() => CHANNELS.slice(0, 6), [])
+  const favMovies = useMemo(() => MOVIES.slice(0, 7), [])
+  const favSeries = useMemo(() => SERIES.slice(0, 7), [])
+
+  const sections: { id: FavSection; label: string; count: number }[] = [
+    { id: 'canais', label: 'Canais', count: favChannels.length },
+    { id: 'filmes', label: 'Filmes', count: favMovies.length },
+    { id: 'series', label: 'Séries', count: favSeries.length },
+  ]
+
+  const total = favChannels.length + favMovies.length + favSeries.length
 
   return (
     <>
       <ShellHeader title="Favoritos" />
-      <div className="flex-1 overflow-y-auto scrollbar-none px-6 py-4">
-        {favorites.length > 0 ? (
-          <>
-            <p className="text-sm font-semibold text-primary mb-4">{favorites.length} títulos salvos</p>
-            <div className="grid grid-cols-5 gap-5">
-              {favorites.map((i) => <ContentCard key={i.id} item={i} onClick={handleSelect} />)}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Sub-tabs sidebar */}
+        <aside className="flex flex-col shrink-0 py-4 gap-1.5 border-r border-border" style={{ width: 220 }}>
+          {sections.map((s) => (
+            <button
+              key={s.id}
+              onClick={() => setSection(s.id)}
+              className={cn(
+                'flex items-center justify-between px-5 py-3.5 mx-3 rounded-xl text-lg font-semibold transition-colors text-left outline-none focus-visible:ring-2 focus-visible:ring-primary/60',
+                section === s.id ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' : 'text-muted-foreground hover:text-foreground hover:bg-accent',
+              )}
+            >
+              <span>{s.label}</span>
+              <span className={cn('text-xs font-bold tabular-nums', section === s.id ? 'text-primary-foreground/80' : 'text-muted-foreground/70')}>{s.count}</span>
+            </button>
+          ))}
+        </aside>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto scrollbar-none px-6 py-4">
+          {total === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
+              <HeartOff className="w-12 h-12 text-muted-foreground" />
+              <p className="text-lg font-semibold text-foreground">Nenhum favorito ainda</p>
+              <p className="text-sm text-muted-foreground max-w-xs">Toque no coração de um título ou canal para salvá-lo aqui.</p>
             </div>
-          </>
-        ) : (
-          <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
-            <HeartOff className="w-12 h-12 text-muted-foreground" />
-            <p className="text-lg font-semibold text-foreground">Nenhum favorito ainda</p>
-            <p className="text-sm text-muted-foreground max-w-xs">Toque no coração de um título para salvá-lo aqui.</p>
-          </div>
-        )}
+          ) : section === 'canais' ? (
+            <>
+              <p className="text-sm font-semibold text-primary mb-4">{favChannels.length} canais salvos</p>
+              <div className="grid grid-cols-3 gap-4">
+                {favChannels.map((ch) => (
+                  <button
+                    key={ch.id}
+                    onClick={() => setFullscreenChannel(ch)}
+                    className="group/fav flex items-center gap-4 p-4 rounded-2xl border border-border bg-card text-left transition-all hover:bg-accent hover:scale-[1.02] outline-none focus-visible:ring-4 focus-visible:ring-primary/50 shadow-sm"
+                    aria-label={`Abrir ${ch.name}`}
+                  >
+                    <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-base font-black text-white shrink-0 shadow-md" style={{ background: ch.logoColor }}>
+                      {ch.logoText}
+                    </div>
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <span className="text-base font-bold text-foreground truncate">{ch.name}</span>
+                      <span className="text-sm text-muted-foreground truncate">{ch.currentProgram}</span>
+                    </div>
+                    <Play className="w-5 h-5 text-primary shrink-0 opacity-0 group-hover/fav:opacity-100 transition-opacity" />
+                  </button>
+                ))}
+              </div>
+            </>
+          ) : section === 'filmes' ? (
+            <>
+              <p className="text-sm font-semibold text-primary mb-4">{favMovies.length} filmes salvos</p>
+              <div className="grid grid-cols-5 gap-5">
+                {favMovies.map((i) => <ContentCard key={i.id} item={i} onClick={handleSelect} />)}
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="text-sm font-semibold text-primary mb-4">{favSeries.length} séries salvas</p>
+              <div className="grid grid-cols-5 gap-5">
+                {favSeries.map((i) => <ContentCard key={i.id} item={i} onClick={handleSelect} />)}
+              </div>
+            </>
+          )}
+        </div>
       </div>
       <ContentDetail item={selected} onClose={handleClose} />
+      {fullscreenChannel && (
+        <ChannelPlayer channel={fullscreenChannel} onClose={() => setFullscreenChannel(null)} />
+      )}
     </>
   )
 }
@@ -992,7 +1128,7 @@ export default function AppShell() {
               {tab === 'filmes' && <FilmesTab />}
               {tab === 'series' && <SeriesTab />}
               {tab === 'canais' && <CanaisTab />}
-              {tab === 'configuracoes' && <ConfiguracoesTab />}
+              {tab === 'configuracoes' && <ConfiguracoesTab onLogout={() => setStage('login')} />}
               {tab === 'kids' && <KidsTab />}
               {tab === 'buscar' && <BuscarTab />}
               {tab === 'favoritos' && <FavoritosTab />}

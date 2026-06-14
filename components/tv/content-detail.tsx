@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import Image from 'next/image'
-import { ArrowLeft, Play, Plus, Star, Share2 } from 'lucide-react'
+import { ArrowLeft, Play, Plus, Star } from 'lucide-react'
 import { MOVIES, SERIES } from '@/lib/data'
 import type { Movie, Series } from '@/lib/types'
 import { ReportProblem } from '@/components/tv/report-problem'
@@ -129,12 +129,6 @@ export function ContentDetail({ item, onClose }: ContentDetailProps) {
               >
                 <Plus className="w-5 h-5" />
                 Minha Lista
-              </button>
-              <button
-                className="flex items-center justify-center w-12 h-12 rounded-xl border border-white/25 bg-white/10 text-white backdrop-blur-sm transition-colors hover:bg-white/20 outline-none focus-visible:ring-2 focus-visible:ring-white"
-                aria-label="Compartilhar"
-              >
-                <Share2 className="w-5 h-5" />
               </button>
               <ReportProblem
                 kind={isMovie ? 'movie' : 'series'}
