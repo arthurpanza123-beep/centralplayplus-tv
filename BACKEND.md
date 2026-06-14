@@ -15,7 +15,29 @@ lib/config/remote-config.ts  Defaults de remote config.
 lib/api/helpers.ts           Respostas JSON, auth de aparelho e admin.
 scripts/001_schema.sql       Schema do banco (todas as tabelas do briefing).
 .env.example                 Variáveis de ambiente necessárias.
+
+lib/db/client.ts             Cliente Neon Postgres (template tag `sql`, parametrizado).
+lib/redis/client.ts          Cliente Upstash Redis + convenções de chaves.
+lib/redis/rate-limit.ts      Rate limiting / anti-abuso (sliding window por área).
+lib/cache/catalog-cache.ts   Cache de catálogo (TTL curto, degradação graciosa).
+lib/streaming/variant-health.ts   Ranking de variantes + degrade/recover (fallback).
+lib/streaming/live-sessions.ts    Sessões ao vivo no Redis (alimenta o /admin).
 ```
+
+## Estabilidade / Fallback (infra pronta para o Codex)
+
+```txt
+app/api/tv/stream/[token]/route.ts    Proxy de stream: esconde a URL do fornecedor
+                                       e troca variante sem reabrir o player.
+app/api/cron/health-check/route.ts    Cron (a cada 5 min, ver vercel.json): testa
+                                       variantes e atualiza health_score sozinho.
+```
+
+- **Cache**: `cached()` em `catalog-cache.ts` para home/categorias/canais.
+- **Rate limit**: `limiters.activation|play|api` nas rotas sensíveis.
+- **Fallback**: `rankVariants()` ordena por saúde+prioridade; erros da TV
+  chamam `degradeVariant()` e o cron chama `recoverVariant()`.
+- **Monitoramento**: `touchSession()` no heartbeat → `listActiveSessions()` no painel.
 
 ## Endpoints (App Router — `app/api/...`)
 
