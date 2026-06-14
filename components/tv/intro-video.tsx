@@ -110,7 +110,7 @@ export function IntroVideo({ onDone }: { onDone: () => void }) {
     >
       <video
         ref={videoRef}
-        src="/intro.webm"
+        src="/intro-hd.webm"
         poster="/intro-poster.webp"
         className="h-full w-full object-cover"
         playsInline

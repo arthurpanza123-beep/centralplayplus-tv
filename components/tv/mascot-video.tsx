@@ -44,7 +44,7 @@ export function MascotVideo({ className }: { className?: string }) {
   return (
     <video
       ref={videoRef}
-      src="/central-mascot.webm"
+      src="/mascot-alpha.webm"
       muted
       playsInline
       autoPlay
