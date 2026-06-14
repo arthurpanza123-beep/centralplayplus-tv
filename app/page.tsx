@@ -26,7 +26,6 @@ import { cn } from '@/lib/utils'
 import {
   daysRemaining,
   isTrialPlan, formatTrialRemaining,
-  CHANNELS, MOVIES, SERIES, USER, KIDS_ITEMS, CHANNEL_CATEGORIES,
 } from '@/lib/data'
 import type { Movie, Series, Channel } from '@/lib/types'
 
@@ -404,13 +403,21 @@ function SeriesTab() {
 
 // ─── CANAIS TAB ───────────────────────────────────────────────────────────────
 function CanaisTab() {
-  const [category, setCategory] = useState(CHANNEL_CATEGORIES[0])
-  const [selectedChannel, setSelectedChannel] = useState<Channel>(CHANNELS[1])
+  const { channels, channelCategories } = useTvCatalog()
+  const [category, setCategory] = useState(channelCategories[0] || 'Todos')
+  const [selectedChannel, setSelectedChannel] = useState<Channel | null>(null)
   const [fullscreen, setFullscreen] = useState(false)
 
+  // Inicializa selectedChannel quando os canais carregarem
+  useEffect(() => {
+    if (channels.length > 0 && !selectedChannel) {
+      setSelectedChannel(channels[0])
+    }
+  }, [channels, selectedChannel])
+
   const filteredChannels = useMemo(
-    () => CHANNELS.filter((c) => (category === 'Todos' ? true : c.category === category)),
-    [category],
+    () => channels.filter((c) => (category === 'Todos' ? true : c.category === category)),
+    [category, channels],
   )
 
   // Channel-name flash overlay shown briefly whenever the channel changes.
@@ -469,7 +476,7 @@ function CanaisTab() {
       >
         {/* Category column — big, TV-sized */}
         <aside className="flex flex-col shrink-0 py-4 gap-1.5 border-r border-border overflow-y-auto scrollbar-none" style={{ width: 240 }}>
-          {CHANNEL_CATEGORIES.map((cat) => (
+          {channelCategories.map((cat) => (
             <button key={cat} onClick={() => setCategory(cat)}
               className={cn('flex items-center px-5 py-3.5 mx-3 rounded-xl text-lg font-semibold transition-colors text-left outline-none focus-visible:ring-2 focus-visible:ring-primary/60',
                 category === cat ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' : 'text-muted-foreground hover:text-foreground hover:bg-accent')}>
@@ -483,28 +490,31 @@ function CanaisTab() {
           <div className="px-5 py-4 border-b border-border shrink-0">
             <p className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Canais &bull; {category}</p>
           </div>
+          {filteredChannels.length === 0 && (
+            <div className="flex items-center justify-center h-40 text-muted-foreground text-sm">Nenhum canal disponível.</div>
+          )}
           {filteredChannels.map((ch) => (
             <div key={ch.id} role="button" tabIndex={0}
               onClick={() => handleChannelClick(ch)}
               onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleChannelClick(ch) } }}
               className={cn('group/ch relative flex items-center gap-4 px-5 py-4 border-b border-border/60 text-left transition-all duration-300 cursor-pointer outline-none overflow-hidden shrink-0',
-                selectedChannel.id === ch.id
+                selectedChannel?.id === ch.id
                   ? 'bg-primary/15 shadow-[inset_0_0_24px_rgba(37,99,235,0.25)]'
                   : 'hover:bg-accent')}>
               {/* Animated active accent bar (blue/white) */}
-              {selectedChannel.id === ch.id && (
+              {selectedChannel?.id === ch.id && (
                 <span className="absolute left-0 top-0 h-full w-1.5 bg-gradient-to-b from-cyan-300 via-primary to-cyan-300 bg-[length:100%_200%] animate-cp-accent-slide shadow-[0_0_12px_rgba(37,99,235,0.9)]" />
               )}
               <div className={cn('w-16 h-16 rounded-2xl flex items-center justify-center text-lg font-black text-white shrink-0 shadow-md transition-all duration-300',
-                selectedChannel.id === ch.id && 'ring-2 ring-cyan-300/70 ring-offset-2 ring-offset-card scale-105')}
+                selectedChannel?.id === ch.id && 'ring-2 ring-cyan-300/70 ring-offset-2 ring-offset-card scale-105')}
                 style={{ background: ch.logoColor }}>
                 {ch.logoText}
               </div>
               <div className="flex flex-col min-w-0 flex-1">
-                <span className={cn('text-lg font-bold truncate transition-colors', selectedChannel.id === ch.id ? 'text-white' : 'text-foreground')}>{ch.name}</span>
+                <span className={cn('text-lg font-bold truncate transition-colors', selectedChannel?.id === ch.id ? 'text-white' : 'text-foreground')}>{ch.name}</span>
                 <span className="text-sm text-muted-foreground truncate">{ch.currentProgram}</span>
               </div>
-              {selectedChannel.id === ch.id && (
+              {selectedChannel?.id === ch.id && (
                 <span className="flex items-end gap-0.5 h-5 shrink-0" aria-label="No ar">
                   <span className="w-1 bg-cyan-300 rounded-full animate-cp-eq-1" />
                   <span className="w-1 bg-white rounded-full animate-cp-eq-2" />
@@ -520,12 +530,13 @@ function CanaisTab() {
         <div className="flex-1 flex flex-col overflow-hidden p-6 gap-4 min-w-0">
           {/* Channel name on the LEFT, above the preview */}
           <div className="flex items-baseline gap-3 min-w-0 shrink-0">
-            <h2 className="text-3xl font-black text-foreground truncate">{selectedChannel.name}</h2>
-            <span className="text-base text-muted-foreground shrink-0">{selectedChannel.category}</span>
+            <h2 className="text-3xl font-black text-foreground truncate">{selectedChannel?.name || 'Selecione um canal'}</h2>
+            <span className="text-base text-muted-foreground shrink-0">{selectedChannel?.category || ''}</span>
           </div>
 
           {/* Large preview — fills width and most of the height */}
           <div className="flex-[3] min-h-0" onMouseMove={resetIdle}>
+          {selectedChannel ? (
           <button
             onClick={() => openChannel(selectedChannel)}
             aria-label={`Abrir ${selectedChannel.name} em tela cheia`}
@@ -547,6 +558,9 @@ function CanaisTab() {
             )}
 
           </button>
+          ) : (
+            <div className="flex items-center justify-center h-full text-muted-foreground text-sm">Selecione um canal.</div>
+          )}
           </div>
 
           {/* EPG — compact program guide below the preview */}
@@ -556,8 +570,8 @@ function CanaisTab() {
               <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Guia de programação</span>
             </div>
             <div className="overflow-y-auto scrollbar-none">
-              {selectedChannel.programs.map((prog, i) => {
-                const next = !prog.isLive && (i === 0 || selectedChannel.programs[i - 1]?.isLive)
+              {(selectedChannel?.programs || []).map((prog, i) => {
+                const next = !prog.isLive && (i === 0 || selectedChannel?.programs[i - 1]?.isLive)
                 return (
                   <div key={prog.time} className={cn('flex items-center gap-4 px-5 py-3 border-b border-border/60 last:border-0 transition-colors', prog.isLive ? 'bg-primary/10' : 'hover:bg-accent/40')}>
                     <span className={cn('text-base font-semibold w-14 shrink-0', prog.isLive ? 'text-primary' : 'text-foreground')}>{prog.time}</span>
@@ -578,7 +592,7 @@ function CanaisTab() {
         </div>
       </div>
 
-      {fullscreen && (
+      {fullscreen && selectedChannel && (
         <ChannelPlayer channel={selectedChannel} onClose={() => setFullscreen(false)} />
       )}
     </>
@@ -591,12 +605,13 @@ const LANGUAGE_OPTIONS = ['Português (Brasil)', 'English', 'Español']
 const QUALITY_OPTIONS = ['Automático', 'Full HD (1080p)', 'HD (720p)', 'Econômico']
 
 function ConfiguracoesTab({ onLogout }: { onLogout: () => void }) {
-  const [notifications, setNotifications] = useState(USER.notifications)
-  const [autoplay, setAutoplay] = useState(USER.autoplay)
+  const { user: catalogUser } = useTvCatalog()
+  const [notifications, setNotifications] = useState(catalogUser.notifications)
+  const [autoplay, setAutoplay] = useState(catalogUser.autoplay)
   // Cycling options for the "chevron" rows — now fully interactive.
-  const [parental, setParental] = useState(USER.parentalControl)
-  const [language, setLanguage] = useState(USER.language)
-  const [quality, setQuality] = useState(USER.videoQuality)
+  const [parental, setParental] = useState(catalogUser.parentalControl)
+  const [language, setLanguage] = useState(catalogUser.language)
+  const [quality, setQuality] = useState(catalogUser.videoQuality)
   // This device's persistent key (read on the client to avoid SSR mismatch).
   const [deviceKey, setDeviceKey] = useState('····')
 
@@ -628,19 +643,19 @@ function ConfiguracoesTab({ onLogout }: { onLogout: () => void }) {
   }
 
   const accountRows = [
-    { icon: User, label: 'Nome', value: USER.name },
-    { icon: Mail, label: 'E-mail', value: USER.email },
-    { icon: Crown, label: 'Plano', value: USER.plan },
-    { icon: Calendar, label: 'Validade', value: USER.validity },
+    { icon: User, label: 'Nome', value: catalogUser.name },
+    { icon: Mail, label: 'E-mail', value: catalogUser.email },
+    { icon: Crown, label: 'Plano', value: catalogUser.plan },
+    { icon: Calendar, label: 'Validade', value: catalogUser.validity },
     { icon: Smartphone, label: 'Código do dispositivo', value: deviceKey },
   ]
   const settingsRows = [
     { icon: Bell, label: 'Notificações', description: 'Receba novidades e alertas', type: 'toggle' as const, value: notifications, onToggle: () => setNotifications((v) => !v) },
     { icon: Shield, label: 'Controle parental', description: `Filtragem de conteúdo: ${parental}`, type: 'chevron' as const, onSelect: () => cycle(PARENTAL_OPTIONS, parental, setParental) },
     { icon: MessageSquare, label: 'Idioma', description: language, type: 'chevron' as const, onSelect: () => cycle(LANGUAGE_OPTIONS, language, setLanguage) },
-    { icon: MonitorPlay, label: 'Qualidade de vídeo', description: quality === USER.videoQuality ? `${quality} (Recomendada)` : quality, type: 'chevron' as const, onSelect: () => cycle(QUALITY_OPTIONS, quality, setQuality) },
+    { icon: MonitorPlay, label: 'Qualidade de vídeo', description: quality === catalogUser.videoQuality ? `${quality} (Recomendada)` : quality, type: 'chevron' as const, onSelect: () => cycle(QUALITY_OPTIONS, quality, setQuality) },
     { icon: Play, label: 'Reprodução automática', description: 'Próximo episódio em 5 segundos', type: 'toggle' as const, value: autoplay, onToggle: () => setAutoplay((v) => !v) },
-    { icon: Monitor, label: 'Dispositivos conectados', description: `${USER.connectedDevices} dispositivos conectados nesta conta`, type: 'chevron' as const, onSelect: () => {} },
+    { icon: Monitor, label: 'Dispositivos conectados', description: `${catalogUser.connectedDevices} dispositivos conectados nesta conta`, type: 'chevron' as const, onSelect: () => {} },
   ]
 
   return (
@@ -723,15 +738,15 @@ function ConfiguracoesTab({ onLogout }: { onLogout: () => void }) {
           <div className="grid grid-cols-3 rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
             <div className="flex items-center gap-3 px-5 py-4 border-r border-border">
               <Shield className="w-4 h-4 text-primary shrink-0" />
-              <div><p className="text-[10px] text-muted-foreground uppercase tracking-wider">Versão do app</p><p className="text-sm font-semibold text-foreground">{USER.appVersion}</p></div>
+              <div><p className="text-[10px] text-muted-foreground uppercase tracking-wider">Versão do app</p><p className="text-sm font-semibold text-foreground">{catalogUser.appVersion}</p></div>
             </div>
             <div className="flex items-center gap-3 px-5 py-4 border-r border-border">
               <Crown className="w-4 h-4 text-yellow-500 shrink-0" />
-              <div><p className="text-[10px] text-muted-foreground uppercase tracking-wider">{USER.plan}</p><p className="text-sm font-semibold text-foreground">Ativo</p></div>
+              <div><p className="text-[10px] text-muted-foreground uppercase tracking-wider">{catalogUser.plan}</p><p className="text-sm font-semibold text-foreground">Ativo</p></div>
             </div>
             <div className="flex items-center gap-3 px-5 py-4">
               <Calendar className="w-4 h-4 text-primary shrink-0" />
-              <div><p className="text-[10px] text-muted-foreground uppercase tracking-wider">Validade</p><p className="text-sm font-semibold text-foreground">{USER.validity}</p></div>
+              <div><p className="text-[10px] text-muted-foreground uppercase tracking-wider">Validade</p><p className="text-sm font-semibold text-foreground">{catalogUser.validity}</p></div>
             </div>
           </div>
         </div>
@@ -799,15 +814,16 @@ function SearchInput({ placeholder, value, onChange }: { placeholder: string; va
 const KIDS_CATEGORIES = ['Destaques', 'Canais', 'Filmes', 'Séries']
 
 function KidsTab() {
+  const { channels, movies, series, kidsItems } = useTvCatalog()
   const [category, setCategory] = useState(KIDS_CATEGORIES[0])
   const [selected, setSelected] = useState<Movie | Series | null>(null)
-  const [channel, setChannel] = useState<(typeof CHANNELS)[number] | null>(null)
+  const [channel, setChannel] = useState<Channel | null>(null)
   const handleSelect = useCallback((i: Movie | Series) => setSelected(i), [])
   const handleClose = useCallback(() => setSelected(null), [])
 
-  const kidsChannels = useMemo(() => CHANNELS.filter((c) => c.category === 'Desenhos'), [])
-  const kidsMovies = useMemo(() => MOVIES.slice(0, 15), [])
-  const kidsSeries = useMemo(() => SERIES.slice(0, 15), [])
+  const kidsChannels = useMemo(() => channels.filter((c) => c.category === 'Desenhos'), [channels])
+  const kidsMovies = useMemo(() => movies.slice(0, 15), [movies])
+  const kidsSeries = useMemo(() => series.slice(0, 15), [series])
 
   return (
     <>
@@ -848,7 +864,7 @@ function KidsTab() {
                   <Sparkles className="w-5 h-5 text-fuchsia-400" /> Programas favoritos
                 </p>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-5">
-                  {KIDS_ITEMS.map((item, i) => (
+                  {kidsItems.map((item, i) => (
                     <button
                       key={item.id}
                       aria-label={`Assistir ${item.title}`}
@@ -934,6 +950,7 @@ function KidsTab() {
 
 // ─── BUSCAR TAB ───────────────────────────────────────────────────────────────
 function BuscarTab() {
+  const { movies, series } = useTvCatalog()
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState<Movie | Series | null>(null)
   const handleSelect = useCallback((i: Movie | Series) => setSelected(i), [])
@@ -942,12 +959,12 @@ function BuscarTab() {
   const results = useMemo(() => {
     const q = query.trim().toLowerCase()
     if (!q) return []
-    return [...MOVIES, ...SERIES]
+    return [...movies, ...series]
       .filter((i) => i.title.toLowerCase().includes(q) || i.genre.toLowerCase().includes(q))
       .slice(0, 30)
-  }, [query])
+  }, [query, movies, series])
 
-  const trending = useMemo(() => MOVIES.slice(0, 12), [])
+  const trending = useMemo(() => movies.slice(0, 12), [movies])
 
   return (
     <>
@@ -994,6 +1011,7 @@ function BuscarTab() {
 type FavSection = 'canais' | 'filmes' | 'series'
 
 function FavoritosTab() {
+  const { channels, movies, series } = useTvCatalog()
   const [selected, setSelected] = useState<Movie | Series | null>(null)
   const [section, setSection] = useState<FavSection>('canais')
   const [fullscreenChannel, setFullscreenChannel] = useState<Channel | null>(null)
@@ -1001,9 +1019,9 @@ function FavoritosTab() {
   const handleClose = useCallback(() => setSelected(null), [])
 
   // Curated demo favorites for each type.
-  const favChannels = useMemo(() => CHANNELS.slice(0, 6), [])
-  const favMovies = useMemo(() => MOVIES.slice(0, 7), [])
-  const favSeries = useMemo(() => SERIES.slice(0, 7), [])
+  const favChannels = useMemo(() => channels.slice(0, 6), [channels])
+  const favMovies = useMemo(() => movies.slice(0, 7), [movies])
+  const favSeries = useMemo(() => series.slice(0, 7), [series])
 
   const sections: { id: FavSection; label: string; count: number }[] = [
     { id: 'canais', label: 'Canais', count: favChannels.length },
