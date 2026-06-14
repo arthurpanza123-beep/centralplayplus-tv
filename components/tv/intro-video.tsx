@@ -108,11 +108,11 @@ export function IntroVideo({ onDone }: { onDone: () => void }) {
         visible && !closing ? 'opacity-100' : 'opacity-0'
       }`}
     >
+      {/* Fundo preto sólido enquanto o vídeo carrega — sem poster/print estático */}
       <video
         ref={videoRef}
         src="/intro-hd.webm"
-        poster="/intro-poster.webp"
-        className="h-full w-full object-cover"
+        className="h-full w-full object-cover bg-black"
         playsInline
         autoPlay
         preload="auto"

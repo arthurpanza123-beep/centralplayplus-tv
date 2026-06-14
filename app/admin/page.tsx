@@ -1,14 +1,15 @@
 'use client'
 
 import { useState } from 'react'
-import { LayoutDashboard, MonitorSmartphone, Activity } from 'lucide-react'
+import { LayoutDashboard, MonitorSmartphone, Activity, Inbox } from 'lucide-react'
 import { useAdminData } from '@/lib/admin/use-admin-data'
 import { StatCards } from '@/components/admin/stat-cards'
 import { ActivationPanel } from '@/components/admin/activation-panel'
 import { DeviceTable } from '@/components/admin/device-table'
 import { Monitoring } from '@/components/admin/monitoring'
+import { ReportsInbox } from '@/components/admin/reports-inbox'
 
-type Section = 'devices' | 'monitoring'
+type Section = 'devices' | 'monitoring' | 'reports'
 
 export default function AdminPage() {
   const { devices, stats, busyKey, activate, setBlocked, renew, changeProvider, playbackErrors, channelHealth } = useAdminData()
@@ -17,6 +18,7 @@ export default function AdminPage() {
   const tabs: { id: Section; label: string; icon: typeof MonitorSmartphone }[] = [
     { id: 'devices', label: 'Dispositivos', icon: MonitorSmartphone },
     { id: 'monitoring', label: 'Monitoramento', icon: Activity },
+    { id: 'reports', label: 'Relatos', icon: Inbox },
   ]
 
   return (
@@ -51,7 +53,7 @@ export default function AdminPage() {
 
         <StatCards stats={stats} />
 
-        {section === 'devices' ? (
+        {section === 'devices' && (
           <div className="flex flex-col gap-6">
             <ActivationPanel onActivate={activate} busy={busyKey !== null} />
             <DeviceTable
@@ -62,9 +64,11 @@ export default function AdminPage() {
               onChangeProvider={changeProvider}
             />
           </div>
-        ) : (
+        )}
+        {section === 'monitoring' && (
           <Monitoring devices={devices} errors={playbackErrors} health={channelHealth} />
         )}
+        {section === 'reports' && <ReportsInbox />}
       </div>
     </main>
   )

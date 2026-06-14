@@ -24,5 +24,9 @@ export const KEYS = {
   activeSessions: () => `sess:active`,
   // Saúde de variante de canal — ex.: health:ch:1201
   channelHealth: (channelId: string | number) => `health:ch:${channelId}`,
+  // Lista de relatos de "conteúdo não funcionando" (mais recentes primeiro)
+  reports: () => `reports:list`,
+  // Contador de relatos não lidos (badge no painel)
+  reportsUnread: () => `reports:unread`,
   // Rate limit — gerenciado pelo @upstash/ratelimit (prefixo abaixo)
 } as const

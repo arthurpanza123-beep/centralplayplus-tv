@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { ArrowLeft, Play, Plus, Star, Share2 } from 'lucide-react'
 import { MOVIES, SERIES } from '@/lib/data'
 import type { Movie, Series } from '@/lib/types'
+import { ReportProblem } from '@/components/tv/report-problem'
 
 interface ContentDetailProps {
   item: Movie | Series | null
@@ -135,6 +136,12 @@ export function ContentDetail({ item, onClose }: ContentDetailProps) {
               >
                 <Share2 className="w-5 h-5" />
               </button>
+              <ReportProblem
+                kind={isMovie ? 'movie' : 'series'}
+                contentId={current.id}
+                contentTitle={current.title}
+                category={current.genre}
+              />
             </div>
           </div>
         </div>
