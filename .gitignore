@@ -21,3 +21,4 @@ node_modules
 # Sensitive env backups and build info
 .env.local.bak*
 *.tsbuildinfo
+validate_https.sh
