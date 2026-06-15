@@ -77,13 +77,43 @@ export async function getDefaultServer(): Promise<ProviderServerRow> {
       order by created_at asc
       limit 1
     `) as unknown as ProviderServerRow[]
-    if (rows[0]) return rows[0]
+    // Only use DB row if it has a valid base_url (skip yellowbox placeholder rows)
+    if (rows[0] && rows[0].base_url) return rows[0]
+  }
+
+  // Yellow Box configured: build real Xtream credentials from env
+  if (process.env.YELLOW_BOX_FULL_API_URL && process.env.YELLOW_BOX_XTREAM_URL) {
+    return {
+      id: 'yellowbox',
+      name: 'Yellow Box',
+      kind: 'xtream',
+      base_url: process.env.YELLOW_BOX_XTREAM_URL,
+      username: process.env.YELLOW_BOX_XTREAM_USER || null,
+      password: process.env.YELLOW_BOX_XTREAM_PASS || null,
+      api_key: null,
+      m3u_url: null,
+    }
   }
 
   if (!isCatalogProviderConfigured()) {
-    throw new Error('Xtream não configurado. Defina XTREAM_BASE_URL, XTREAM_USERNAME e XTREAM_PASSWORD.')
+    // Allow placeholder operation with Yellow Box when only its provisioning URL is set
+    if (process.env.YELLOW_BOX_FULL_API_URL) {
+      return {
+        id: 'yellowbox',
+        name: 'Yellow Box',
+        kind: 'xtream',
+        base_url: '',
+        username: null,
+        password: null,
+        api_key: null,
+        m3u_url: null,
+      }
+    }
+    // Neither Xtream nor Yellow Box configured
+    throw new Error('XTREAM_BASE_URL ausente. Defina XTREAM_BASE_URL, XTREAM_USERNAME e XTREAM_PASSWORD.')
   }
 
+  // Xtream env configured – return its server info
   return {
     id: process.env.XTREAM_SERVER_ID || 'env-xtream',
     name: process.env.XTREAM_SERVER_NAME || 'Xtream Principal',
@@ -248,6 +278,12 @@ function mapLiveChannels(liveCategories: RawCategory[], liveStreams: RawStream[]
 export async function syncCatalog(): Promise<CatalogPayload> {
   const server = await getDefaultServer()
   const credentials = credentialsFromServer(server)
+
+  // Yellowbox placeholder without real Xtream credentials: catalog unavailable
+  if (!credentials.base_url) {
+    throw new Error('XTREAM_BASE_URL ausente. Configure YELLOW_BOX_XTREAM_URL ou XTREAM_BASE_URL para usar o catálogo.')
+  }
+
   const adapter = getProviderAdapter(credentials)
 
   const [liveCategories, liveStreams, vodCategories, vodStreams, seriesCategories, seriesRaw] = await Promise.all([

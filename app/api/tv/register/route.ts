@@ -21,8 +21,9 @@ export async function POST(req: Request) {
 
   try {
     const device = await registerDevice(body)
-    const res: RegisterDeviceResponse = {
+    const res = {
       device_key: device.device_key,
+      deviceKey: device.device_key,
       status: device.status,
       poll_interval_seconds: Number(process.env.TV_POLL_INTERVAL_SECONDS || 5),
     }

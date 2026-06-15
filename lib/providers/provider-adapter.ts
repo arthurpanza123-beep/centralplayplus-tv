@@ -19,6 +19,11 @@ export function getProviderAdapter(credentials: ProviderCredentials): ProviderAd
   switch (credentials.kind) {
     case 'xtream':
       return new MainProviderAdapter(credentials)
+    case 'yellowbox':
+    case 'yellow_box':
+    case 'yellow-box':
+      // Treat Yellow Box as Xtream-like provider using stored credentials
+      return new MainProviderAdapter({ ...credentials, kind: 'xtream' })
     case 'm3u':
       if (credentials.base_url && credentials.username && credentials.password) return new MainProviderAdapter({ ...credentials, kind: 'xtream' })
       throw new Error('Provider M3U requer m3u_url ou credenciais Xtream-compatible.')

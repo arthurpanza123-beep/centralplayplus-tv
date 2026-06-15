@@ -250,14 +250,24 @@ export async function activateDevice(input: {
   const plan = input.plan_ref || input.plan || 'Mensal'
   const days = planDays(plan, input.days)
   const expiresAt = addDaysIso(days)
-  const server = await getDefaultServer()
+  const server = process.env.YELLOW_BOX_FULL_API_URL ? ({
+    id: 'yellowbox',
+    name: 'Yellow Box',
+    kind: 'xtream',
+    base_url: '',
+    username: null,
+    password: null,
+    api_key: null,
+    m3u_url: null,
+  } as const) : await getDefaultServer()
   const credentials = credentialsFromServer(server)
   const fallbackAccount = providerAccountFromCredentials(credentials, {
     expires_at: expiresAt,
     max_connections: 1,
     status: 'active',
   })
-  const yellow = await callYellowBox({ deviceKey: device.device_key, clientName: input.client_name || input.client_id || device.device_key, plan, days })
+  const clientName = input.client_name || (input as any).clientName || input.client_id || process.env.DEFAULT_YELLOWBOX_CLIENT || "Arthur";
+  const yellow = await callYellowBox({ deviceKey: device.device_key, clientName, plan, days })
   const providerAccount = accountFromYellow(yellow, fallbackAccount)
 
   if (!isDatabaseConfigured) {

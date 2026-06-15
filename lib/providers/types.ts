@@ -17,7 +17,7 @@ export interface ProviderCredentials {
   /** Identificador do servidor/fornecedor no banco (provider_servers.id) */
   server_id: string
   /** Tipo do fornecedor — define qual adapter usar. */
-  kind: 'xtream' | 'm3u' | 'custom'
+  kind: 'xtream' | 'm3u' | 'custom' | 'yellowbox' | 'yellow_box' | 'yellow-box'
   base_url: string // DNS do painel/Xtream
   username?: string // Xtream
   password?: string // Xtream
