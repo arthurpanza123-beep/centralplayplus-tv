@@ -4,6 +4,7 @@ import { apiError } from '@/lib/api/helpers'
 import { getDefaultServer, credentialsFromServer, providerAccountFromCredentials } from '@/lib/catalog/service'
 import { sql, isDatabaseConfigured } from '@/lib/db/client'
 import { getProviderAdapter } from '@/lib/providers/provider-adapter'
+import { extractXtreamBaseUrl, normalizeXtreamBaseUrl } from '@/lib/providers/xtream-url'
 import type { ProviderAccount } from '@/lib/providers/types'
 import {
   accessTokenExpiresAt,
@@ -235,6 +236,10 @@ function accountFromYellow(data: Record<string, unknown> | null, fallback: Provi
   }
 }
 
+function baseUrlFromYellow(data: Record<string, unknown> | null) {
+  return extractXtreamBaseUrl(data)
+}
+
 function yellowBoxPlaceholderServer(id = 'yellowbox') {
   return {
     id,
@@ -264,7 +269,7 @@ async function getOrCreateYellowBoxServer() {
 
   const inserted = (await sql`
     insert into provider_servers (name, kind, base_url, status)
-    values ('Yellow Box', 'xtream', '', 'active')
+    values ('Yellow Box', 'xtream', ${normalizeXtreamBaseUrl(process.env.YELLOW_BOX_XTREAM_URL) || ''}, 'active')
     returning id, name, kind, base_url, username, password, api_key, m3u_url
   `) as unknown as any[]
 
@@ -298,6 +303,7 @@ export async function activateDevice(input: {
   const clientName = input.client_name || (input as any).clientName || input.client_id || process.env.DEFAULT_YELLOWBOX_CLIENT || "Arthur";
   const yellow = await callYellowBox({ deviceKey: device.device_key, clientName, plan, days })
   const providerAccount = accountFromYellow(yellow, fallbackAccount)
+  const yellowBaseUrl = baseUrlFromYellow(yellow)
 
   if (!isDatabaseConfigured) {
     const next = { ...device, status: 'active' as DeviceStatus, server_id: server.id, activated_at: new Date().toISOString(), expires_at: expiresAt }
@@ -313,6 +319,13 @@ export async function activateDevice(input: {
     values (${clientName}, ${`Ativado via Device Key ${device.device_key}`})
     returning id
   `) as unknown as { id: string }[])[0].id
+
+  await sql`
+    update provider_servers
+    set base_url = ${yellowBaseUrl}
+    where id = ${server.id}
+      and ${yellowBaseUrl} <> ''
+  `
 
   await sql`
     insert into provider_accounts (client_id, server_id, account_ref, username, password, max_conns, status, expires_at)

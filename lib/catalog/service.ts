@@ -3,6 +3,7 @@ import crypto from 'crypto'
 import { cached } from '@/lib/cache/catalog-cache'
 import { sql, isDatabaseConfigured } from '@/lib/db/client'
 import { getProviderAdapter } from '@/lib/providers/provider-adapter'
+import { normalizeXtreamBaseUrl } from '@/lib/providers/xtream-url'
 import type { ProviderAccount, ProviderCredentials, RawCategory, RawSeries, RawStream } from '@/lib/providers/types'
 import type { CatalogCounts, CatalogItem, Category, Channel, ChannelVariantPublic, ContentType, HomeResponse, StreamQuality } from '@/lib/types/tv'
 import type { StreamVariant } from '@/lib/streaming/variant-health'
@@ -77,7 +78,7 @@ async function getOrCreateYellowBoxCatalogServer(): Promise<ProviderServerRow> {
       id: 'yellowbox',
       name: 'Yellow Box',
       kind: 'xtream',
-      base_url: process.env.YELLOW_BOX_XTREAM_URL || '',
+      base_url: normalizeXtreamBaseUrl(process.env.YELLOW_BOX_XTREAM_URL) || '',
       username: process.env.YELLOW_BOX_XTREAM_USER || null,
       password: process.env.YELLOW_BOX_XTREAM_PASS || null,
       api_key: null,
@@ -98,7 +99,7 @@ async function getOrCreateYellowBoxCatalogServer(): Promise<ProviderServerRow> {
 
   const inserted = (await sql`
     insert into provider_servers (name, kind, base_url, status)
-    values ('Yellow Box', 'xtream', ${process.env.YELLOW_BOX_XTREAM_URL || ''}, 'active')
+    values ('Yellow Box', 'xtream', ${normalizeXtreamBaseUrl(process.env.YELLOW_BOX_XTREAM_URL) || ''}, 'active')
     returning id, name, kind, base_url, username, password, api_key, m3u_url
   `) as unknown as ProviderServerRow[]
 
@@ -138,7 +139,7 @@ export async function getDefaultServer(): Promise<ProviderServerRow> {
     id: process.env.XTREAM_SERVER_ID || 'env-xtream',
     name: process.env.XTREAM_SERVER_NAME || 'Xtream Principal',
     kind: 'xtream',
-    base_url: process.env.XTREAM_BASE_URL!,
+    base_url: normalizeXtreamBaseUrl(process.env.XTREAM_BASE_URL)!,
     username: process.env.XTREAM_USERNAME!,
     password: process.env.XTREAM_PASSWORD!,
     api_key: null,

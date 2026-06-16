@@ -9,6 +9,7 @@ import type {
   RawStreamUrl,
 } from './types'
 import type { ContentType } from '@/lib/types/tv'
+import { normalizeXtreamBaseUrl } from './xtream-url'
 
 export class MainProviderAdapter implements ProviderAdapter {
   private readonly creds: ProviderCredentials
@@ -186,13 +187,9 @@ type XtreamSeries = XtreamStream & {
 }
 
 function normalizeBaseUrl(value: string) {
-  const clean = String(value || '')
-    .trim()
-    .replace(/[?#].*$/, '')
-    .replace(/\/player_api\.php$/i, '')
-    .replace(/\/+$/, '')
+  const clean = normalizeXtreamBaseUrl(value)
   if (!clean) throw new Error('XTREAM_BASE_URL ausente.')
-  return /^https?:\/\//i.test(clean) ? clean : `http://${clean}`
+  return clean
 }
 
 function normalizeStatus(status?: string, expDate?: string): ProviderAccountStatus['status'] {
