@@ -41,16 +41,18 @@ public class MainActivity extends Activity {
     private static final String API = "https://device.centralplayplus.com.br";
     private static final String PLATFORM = "android_tv";
 
-    private static final int BG = Color.rgb(10, 22, 40);
-    private static final int BG_2 = Color.rgb(6, 13, 26);
-    private static final int SURFACE = Color.rgb(15, 30, 53);
-    private static final int SURFACE_2 = Color.rgb(22, 42, 66);
-    private static final int TEXT = Color.rgb(232, 237, 244);
-    private static final int MUTED = Color.rgb(107, 127, 153);
-    private static final int DIM = Color.rgb(74, 90, 112);
-    private static final int BLUE = Color.rgb(42, 122, 176);
-    private static final int CYAN = Color.rgb(42, 154, 240);
+    private static final int BG = Color.rgb(14, 15, 18);
+    private static final int BG_2 = Color.rgb(4, 6, 12);
+    private static final int SURFACE = Color.rgb(28, 30, 36);
+    private static final int SURFACE_2 = Color.rgb(43, 47, 58);
+    private static final int TEXT = Color.rgb(248, 250, 252);
+    private static final int MUTED = Color.rgb(158, 166, 179);
+    private static final int DIM = Color.rgb(92, 100, 116);
+    private static final int BLUE = Color.rgb(37, 99, 235);
+    private static final int CYAN = Color.rgb(34, 211, 238);
     private static final int AMBER = Color.rgb(245, 158, 11);
+    private static final int GLASS = Color.argb(178, 0, 0, 0);
+    private static final String BUILD_MARKER = "Android TV " + BuildConfig.VERSION_NAME + " · " + BuildConfig.GIT_SHA;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Runnable pollRunnable = new Runnable() {
@@ -134,8 +136,7 @@ public class MainActivity extends Activity {
         screen = "splash";
         handler.removeCallbacks(pollRunnable);
 
-        FrameLayout frame = new FrameLayout(this);
-        frame.setBackground(gradient(BG, BG_2));
+        FrameLayout frame = brandedFrame(false);
         setContentView(frame);
 
         LinearLayout box = new LinearLayout(this);
@@ -147,13 +148,20 @@ public class MainActivity extends Activity {
         ImageView logo = new ImageView(this);
         logo.setImageResource(getResources().getIdentifier("cp_logo", "drawable", getPackageName()));
         logo.setAdjustViewBounds(true);
-        box.addView(logo, lp(160, 160));
+        box.addView(logo, lp(360, 124));
 
-        TextView title = text("Central Play Plus", 38, true, TEXT);
+        ImageView mascot = new ImageView(this);
+        mascot.setImageResource(getResources().getIdentifier("mascot_icon", "drawable", getPackageName()));
+        mascot.setAdjustViewBounds(true);
+        LinearLayout.LayoutParams mascotLp = lp(118, 118);
+        mascotLp.setMargins(0, 18, 0, 0);
+        box.addView(mascot, mascotLp);
+
+        TextView title = text("Central Play Plus", 32, true, TEXT);
         title.setGravity(Gravity.CENTER);
         box.addView(title, lp(-1, -2));
 
-        TextView sub = text("Preparando seu catálogo...", 18, false, MUTED);
+        TextView sub = text("Preparando seu catálogo real...", 18, false, MUTED);
         sub.setGravity(Gravity.CENTER);
         box.addView(sub, lp(-1, -2));
 
@@ -181,11 +189,13 @@ public class MainActivity extends Activity {
 
     private void base(String active) {
         handler.removeCallbacks(pollRunnable);
+        FrameLayout frame = brandedFrame(false);
         root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setPadding(44, 28, 44, 32);
-        root.setBackground(gradient(BG, BG_2));
-        setContentView(root);
+        root.setPadding(34, 24, 34, 28);
+        root.setBackgroundColor(Color.TRANSPARENT);
+        frame.addView(root, new FrameLayout.LayoutParams(-1, -1));
+        setContentView(frame);
         addTopbar(active);
         content = new LinearLayout(this);
         content.setOrientation(LinearLayout.VERTICAL);
@@ -201,18 +211,19 @@ public class MainActivity extends Activity {
         ImageView logo = new ImageView(this);
         logo.setImageResource(getResources().getIdentifier("cp_logo", "drawable", getPackageName()));
         logo.setAdjustViewBounds(true);
-        top.addView(logo, lp(54, 54));
+        top.addView(logo, lp(190, 58));
 
-        TextView brand = text("CentralPlay Plus", 25, true, TEXT);
-        brand.setTextColor(TEXT);
-        LinearLayout.LayoutParams brandLp = lp(245, -2);
-        brandLp.setMargins(14, 0, 20, 0);
-        top.addView(brand, brandLp);
+        TextView plan = text("Plano ativado", 13, true, AMBER);
+        plan.setGravity(Gravity.CENTER);
+        plan.setBackground(round(Color.argb(34, 245, 158, 11), Color.argb(120, 245, 158, 11), 1, 14));
+        LinearLayout.LayoutParams planLp = lp(130, 42);
+        planLp.setMargins(12, 0, 20, 0);
+        top.addView(plan, planLp);
 
         String[] tabs = {"Home", "Canais", "Filmes", "Séries", "Categorias", "Favoritos"};
         for (String tab : tabs) {
             Button b = pill(tab, tab.equals(active));
-            top.addView(b, lp(tab.equals("Categorias") ? 164 : tab.equals("Favoritos") ? 150 : 126, 50));
+            top.addView(b, lp(tab.equals("Categorias") ? 145 : tab.equals("Favoritos") ? 135 : tab.equals("Home") ? 110 : 118, 50));
             if ("Home".equals(tab)) b.setOnClickListener(v -> showHome());
             if ("Canais".equals(tab)) b.setOnClickListener(v -> showChannels());
             if ("Filmes".equals(tab)) b.setOnClickListener(v -> showMovies());
@@ -226,36 +237,49 @@ public class MainActivity extends Activity {
         screen = "activation";
         handler.removeCallbacks(pollRunnable);
 
-        FrameLayout frame = new FrameLayout(this);
-        frame.setBackground(gradient(BG, BG_2));
+        FrameLayout frame = brandedFrame(true);
         setContentView(frame);
 
         LinearLayout box = new LinearLayout(this);
         box.setOrientation(LinearLayout.VERTICAL);
-        box.setGravity(Gravity.CENTER_HORIZONTAL);
-        box.setPadding(72, 52, 72, 52);
+        box.setGravity(Gravity.CENTER);
+        box.setPadding(56, 42, 56, 42);
         frame.addView(box, new FrameLayout.LayoutParams(-1, -1));
+
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setGravity(Gravity.CENTER_HORIZONTAL);
+        card.setPadding(44, 34, 44, 34);
+        card.setBackground(gradient(GLASS, Color.argb(210, 7, 10, 18), Color.argb(70, 255, 255, 255), 28));
+        LinearLayout.LayoutParams cardLp = lp(560, -2);
+        box.addView(card, cardLp);
 
         ImageView logo = new ImageView(this);
         logo.setImageResource(getResources().getIdentifier("cp_logo", "drawable", getPackageName()));
         logo.setAdjustViewBounds(true);
-        box.addView(logo, lp(118, 118));
+        card.addView(logo, lp(330, 100));
 
-        TextView title = text("Central Play Plus", 34, true, TEXT);
+        TextView title = text("Ative sua TV", 34, true, TEXT);
         title.setGravity(Gravity.CENTER);
-        box.addView(title, lp(-1, -2));
+        card.addView(title, lp(-1, -2));
 
-        TextView hint = text("Informe esta chave para ativar sua TV.", 24, false, MUTED);
+        TextView hint = text("Informe o código abaixo no painel de ativação.", 17, false, Color.rgb(205, 213, 225));
         hint.setGravity(Gravity.CENTER);
-        box.addView(hint, lp(-1, -2));
+        card.addView(hint, lp(-1, -2));
 
         LinearLayout keyPanel = new LinearLayout(this);
         keyPanel.setGravity(Gravity.CENTER);
-        keyPanel.setPadding(28, 18, 28, 18);
-        keyPanel.setBackground(gradient(SURFACE, Color.rgb(8, 18, 34), CYAN, 18));
-        LinearLayout.LayoutParams keyPanelLp = lp(-1, 178);
-        keyPanelLp.setMargins(90, 34, 90, 18);
-        box.addView(keyPanel, keyPanelLp);
+        keyPanel.setOrientation(LinearLayout.VERTICAL);
+        keyPanel.setPadding(28, 16, 28, 16);
+        keyPanel.setBackground(round(Color.argb(54, 255, 255, 255), Color.argb(42, 255, 255, 255), 1, 18));
+        LinearLayout.LayoutParams keyPanelLp = lp(-1, 142);
+        keyPanelLp.setMargins(0, 26, 0, 16);
+        card.addView(keyPanel, keyPanelLp);
+
+        TextView label = text("DEVICE KEY", 10, true, Color.argb(150, 255, 255, 255));
+        label.setGravity(Gravity.CENTER);
+        label.setLetterSpacing(0.32f);
+        keyPanel.addView(label, lp(-1, -2));
 
         TextView key = text(deviceKey.isEmpty() ? "------" : deviceKey, 66, true, CYAN);
         key.setGravity(Gravity.CENTER);
@@ -264,14 +288,20 @@ public class MainActivity extends Activity {
 
         statusView = text(message, 22, false, MUTED);
         statusView.setGravity(Gravity.CENTER);
-        box.addView(statusView, lp(-1, -2));
+        card.addView(statusView, lp(-1, -2));
 
-        Button verify = primaryButton("Verificar agora");
-        LinearLayout.LayoutParams btnLp = lp(360, 70);
+        Button verify = primaryButton("Verificar ativação");
+        LinearLayout.LayoutParams btnLp = lp(-1, 68);
         btnLp.setMargins(0, 28, 0, 0);
-        box.addView(verify, btnLp);
+        card.addView(verify, btnLp);
         verify.setOnClickListener(v -> checkStatus(false));
         verify.requestFocus();
+
+        TextView build = text(BUILD_MARKER, 12, false, Color.argb(120, 255, 255, 255));
+        build.setGravity(Gravity.RIGHT);
+        FrameLayout.LayoutParams buildLp = new FrameLayout.LayoutParams(-2, -2, Gravity.RIGHT | Gravity.BOTTOM);
+        buildLp.setMargins(0, 0, 28, 18);
+        frame.addView(build, buildLp);
     }
 
     private void showHome() {
@@ -332,8 +362,8 @@ public class MainActivity extends Activity {
     }
 
     private void addPageTitle(String title, String sub) {
-        TextView t = text(title, 32, true, TEXT);
-        TextView s = text(sub, 18, false, MUTED);
+        TextView t = text(title, 36, true, TEXT);
+        TextView s = text(sub, 17, false, MUTED);
         content.addView(t, lp(-1, -2));
         content.addView(s, lp(-1, -2));
     }
@@ -550,13 +580,13 @@ public class MainActivity extends Activity {
 
     private void addHero(JSONObject item) {
         FrameLayout heroFrame = new FrameLayout(this);
-        LinearLayout.LayoutParams heroLp = lp(-1, 230);
-        heroLp.setMargins(0, 14, 0, 16);
+        LinearLayout.LayoutParams heroLp = lp(-1, 318);
+        heroLp.setMargins(0, 8, 0, 18);
         content.addView(heroFrame, heroLp);
 
         ImageView image = new ImageView(this);
         image.setScaleType(ImageView.ScaleType.CENTER_CROP);
-        image.setBackground(gradient(Color.rgb(12, 26, 48), Color.rgb(5, 10, 20), Color.TRANSPARENT, 16));
+        image.setBackground(gradient(Color.rgb(20, 22, 30), Color.rgb(5, 7, 13), Color.TRANSPARENT, 18));
         heroFrame.addView(image, new FrameLayout.LayoutParams(-1, -1));
         if (item != null) {
             String heroUrl = first(item, "backdrop", "poster", "cover", "logo", "stream_icon", "image");
@@ -564,35 +594,47 @@ public class MainActivity extends Activity {
         }
 
         View shade = new View(this);
-        shade.setBackground(gradient(Color.argb(230, 10, 22, 40), Color.argb(130, 5, 8, 14), CYAN, 16));
+        shade.setBackground(gradient(Color.argb(245, 5, 7, 13), Color.argb(120, 5, 7, 13), Color.argb(70, 255, 255, 255), 18));
         heroFrame.addView(shade, new FrameLayout.LayoutParams(-1, -1));
 
         LinearLayout hero = new LinearLayout(this);
         hero.setOrientation(LinearLayout.VERTICAL);
         hero.setGravity(Gravity.BOTTOM);
-        hero.setPadding(34, 28, 34, 28);
+        hero.setPadding(42, 34, 42, 34);
         heroFrame.addView(hero, new FrameLayout.LayoutParams(-1, -1));
 
-        TextView badge = text("DESTAQUE", 14, true, CYAN);
+        TextView badge = text("DESTAQUE", 13, true, CYAN);
+        badge.setBackground(round(Color.argb(38, 37, 99, 235), Color.argb(105, 34, 211, 238), 1, 8));
+        badge.setPadding(12, 4, 12, 4);
         hero.addView(badge, lp(-1, -2));
 
         String title = item == null ? "Central Play Plus" : first(item, "title", "name");
-        TextView h = text(title.isEmpty() ? "Central Play Plus" : title, 42, true, TEXT);
+        TextView h = text(title.isEmpty() ? "Central Play Plus" : title, 50, true, TEXT);
         h.setMaxLines(2);
         hero.addView(h, lp(-1, -2));
 
         String meta = item == null ? "Canais, filmes e séries em um só lugar" : join(first(item, "type"), first(item, "quality"), first(item, "genre", "category"));
-        TextView m = text(meta, 18, false, MUTED);
+        TextView m = text(meta, 18, false, Color.rgb(218, 226, 238));
         hero.addView(m, lp(-1, -2));
 
         LinearLayout actions = new LinearLayout(this);
         actions.setOrientation(LinearLayout.HORIZONTAL);
         hero.addView(actions, lp(-1, -2));
-        Button play = primaryButton("Assistir");
-        actions.addView(play, lp(190, 58));
+        Button play = whiteButton("Assistir");
+        LinearLayout.LayoutParams playLp = lp(202, 60);
+        playLp.setMargins(0, 12, 12, 0);
+        actions.addView(play, playLp);
         play.setOnClickListener(v -> {
             if (item == null) showChannels();
             else openItem(item, "home");
+        });
+        Button more = secondaryButton("Mais informações");
+        LinearLayout.LayoutParams moreLp = lp(250, 60);
+        moreLp.setMargins(0, 12, 0, 0);
+        actions.addView(more, moreLp);
+        more.setOnClickListener(v -> {
+            if (item == null) showMovies();
+            else showDetail(item);
         });
     }
 
@@ -602,9 +644,9 @@ public class MainActivity extends Activity {
         stats.setOrientation(LinearLayout.HORIZONTAL);
         stats.setPadding(0, 0, 0, 0);
         content.addView(stats, lp(-1, 86));
-        stats.addView(statBox("Canais", totalLive), lp(210, 72));
-        stats.addView(statBox("Filmes", totalMovies), lp(210, 72));
-        stats.addView(statBox("Séries", totalSeries), lp(210, 72));
+        stats.addView(statBox("Canais", totalLive), lp(220, 72));
+        stats.addView(statBox("Filmes", totalMovies), lp(220, 72));
+        stats.addView(statBox("Séries", totalSeries), lp(220, 72));
     }
 
     private View statBox(String label, int total) {
@@ -612,11 +654,11 @@ public class MainActivity extends Activity {
         box.setOrientation(LinearLayout.VERTICAL);
         box.setGravity(Gravity.CENTER);
         box.setPadding(12, 8, 12, 8);
-        box.setBackground(round(Color.rgb(16, 28, 48), Color.rgb(51, 94, 130), 1, 12));
+        box.setBackground(round(Color.argb(38, 255, 255, 255), Color.argb(65, 255, 255, 255), 1, 12));
         LinearLayout.LayoutParams boxLp = lp(210, 72);
         boxLp.setMargins(0, 0, 14, 0);
         box.setLayoutParams(boxLp);
-        TextView value = text(String.valueOf(total), 22, true, TEXT);
+        TextView value = text(String.valueOf(total), 24, true, TEXT);
         value.setGravity(Gravity.CENTER);
         TextView name = text(label, 13, false, MUTED);
         name.setGravity(Gravity.CENTER);
@@ -709,11 +751,11 @@ public class MainActivity extends Activity {
         card.setFocusable(true);
         card.setClickable(true);
         card.setPadding(0, 0, 0, 0);
-        card.setBackground(round(SURFACE, Color.TRANSPARENT, 0, 10));
+        card.setBackground(round(SURFACE, Color.TRANSPARENT, 0, 8));
 
         ImageView image = new ImageView(this);
         image.setScaleType(ImageView.ScaleType.CENTER_CROP);
-        image.setBackground(gradient(Color.rgb(15, 30, 53), Color.rgb(9, 19, 34), Color.rgb(26, 46, 72), 10));
+        image.setBackground(gradient(Color.rgb(33, 36, 44), Color.rgb(8, 10, 16), Color.rgb(55, 65, 81), 8));
         card.addView(image, new FrameLayout.LayoutParams(-1, -1));
 
         String imageUrl = first(item, "poster", "cover", "backdrop", "logo", "stream_icon", "image", "icon");
@@ -727,7 +769,7 @@ public class MainActivity extends Activity {
         card.addView(overlay, new FrameLayout.LayoutParams(-1, -1));
 
         TextView titleView = text(compact(title.isEmpty() ? "Sem título" : title, 38), 15, true, TEXT);
-        titleView.setMaxLines(1);
+        titleView.setMaxLines(2);
         overlay.addView(titleView, lp(-1, -2));
         if (!meta.isEmpty()) {
             TextView metaView = text(compact(meta, 42), 11, false, Color.rgb(138, 155, 181));
@@ -738,17 +780,17 @@ public class MainActivity extends Activity {
         if (!quality.isEmpty()) {
             TextView badge = text(quality, 10, true, TEXT);
             badge.setGravity(Gravity.CENTER);
-            badge.setBackground(round(Color.argb(175, 0, 0, 0), Color.TRANSPARENT, 0, 6));
+            badge.setBackground(round(Color.argb(185, 0, 0, 0), Color.TRANSPARENT, 0, 6));
             FrameLayout.LayoutParams badgeLp = new FrameLayout.LayoutParams(58, 28, Gravity.TOP | Gravity.RIGHT);
             badgeLp.setMargins(0, 8, 8, 0);
             card.addView(badge, badgeLp);
         }
 
         card.setOnFocusChangeListener((v, focused) -> {
-            v.setBackground(focused ? round(SURFACE, CYAN, 4, 10) : round(SURFACE, Color.TRANSPARENT, 0, 10));
-            v.setScaleX(focused ? 1.065f : 1f);
-            v.setScaleY(focused ? 1.065f : 1f);
-            v.setElevation(focused ? 16f : 0f);
+            v.setBackground(focused ? round(SURFACE, Color.WHITE, 4, 8) : round(SURFACE, Color.TRANSPARENT, 0, 8));
+            v.setScaleX(focused ? 1.09f : 1f);
+            v.setScaleY(focused ? 1.09f : 1f);
+            v.setElevation(focused ? 22f : 0f);
         });
         card.setOnClickListener(v -> openItem(item, source));
         LinearLayout.LayoutParams lp = lp(w, h);
@@ -941,14 +983,35 @@ public class MainActivity extends Activity {
     private Button primaryButton(String s) {
         Button b = baseButton(s);
         b.setBackground(round(BLUE, CYAN, 2, 12));
-        b.setOnFocusChangeListener((v, focused) -> v.setBackground(round(focused ? Color.rgb(30, 136, 250) : BLUE, CYAN, focused ? 4 : 2, 12)));
+        b.setOnFocusChangeListener((v, focused) -> {
+            v.setBackground(round(focused ? Color.rgb(59, 130, 246) : BLUE, focused ? Color.WHITE : CYAN, focused ? 4 : 2, 12));
+            v.setScaleX(focused ? 1.035f : 1f);
+            v.setScaleY(focused ? 1.035f : 1f);
+        });
+        return b;
+    }
+
+    private Button whiteButton(String s) {
+        Button b = baseButton(s);
+        b.setTextColor(Color.BLACK);
+        b.setBackground(round(Color.WHITE, Color.WHITE, 1, 8));
+        b.setOnFocusChangeListener((v, focused) -> {
+            b.setTextColor(Color.BLACK);
+            v.setBackground(round(focused ? Color.rgb(229, 231, 235) : Color.WHITE, focused ? CYAN : Color.WHITE, focused ? 4 : 1, 8));
+            v.setScaleX(focused ? 1.045f : 1f);
+            v.setScaleY(focused ? 1.045f : 1f);
+        });
         return b;
     }
 
     private Button secondaryButton(String s) {
         Button b = baseButton(s);
-        b.setBackground(round(SURFACE, Color.rgb(64, 86, 116), 1, 12));
-        b.setOnFocusChangeListener((v, focused) -> v.setBackground(round(focused ? SURFACE_2 : SURFACE, focused ? CYAN : Color.rgb(64, 86, 116), focused ? 3 : 1, 12)));
+        b.setBackground(round(Color.argb(38, 255, 255, 255), Color.argb(65, 255, 255, 255), 1, 12));
+        b.setOnFocusChangeListener((v, focused) -> {
+            v.setBackground(round(focused ? Color.argb(64, 255, 255, 255) : Color.argb(38, 255, 255, 255), focused ? Color.WHITE : Color.argb(65, 255, 255, 255), focused ? 3 : 1, 12));
+            v.setScaleX(focused ? 1.035f : 1f);
+            v.setScaleY(focused ? 1.035f : 1f);
+        });
         return b;
     }
 
@@ -976,6 +1039,33 @@ public class MainActivity extends Activity {
         GradientDrawable d = new GradientDrawable(GradientDrawable.Orientation.TL_BR, new int[] { start, end });
         d.setCornerRadius(0);
         return d;
+    }
+
+    private FrameLayout brandedFrame(boolean room) {
+        FrameLayout frame = new FrameLayout(this);
+        frame.setBackground(gradient(BG, BG_2));
+        if (room) {
+            ImageView bg = new ImageView(this);
+            bg.setImageResource(getResources().getIdentifier("login_room", "drawable", getPackageName()));
+            bg.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            bg.setAlpha(0.38f);
+            frame.addView(bg, new FrameLayout.LayoutParams(-1, -1));
+        }
+
+        View dark = new View(this);
+        dark.setBackground(gradient(Color.argb(room ? 170 : 118, 0, 0, 0), Color.argb(238, 4, 6, 12)));
+        frame.addView(dark, new FrameLayout.LayoutParams(-1, -1));
+
+        View glowTop = new View(this);
+        glowTop.setBackground(gradient(Color.argb(72, 37, 99, 235), Color.TRANSPARENT));
+        FrameLayout.LayoutParams topLp = new FrameLayout.LayoutParams(-1, 280, Gravity.TOP);
+        frame.addView(glowTop, topLp);
+
+        View glowBottom = new View(this);
+        glowBottom.setBackground(gradient(Color.TRANSPARENT, Color.argb(54, 34, 211, 238)));
+        FrameLayout.LayoutParams bottomLp = new FrameLayout.LayoutParams(-1, 260, Gravity.BOTTOM);
+        frame.addView(glowBottom, bottomLp);
+        return frame;
     }
 
     private GradientDrawable gradient(int start, int end, int stroke) {
