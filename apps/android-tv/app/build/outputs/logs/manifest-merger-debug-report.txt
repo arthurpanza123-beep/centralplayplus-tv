@@ -1,0 +1,63 @@
+-- Merging decision tree log ---
+manifest
+ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:1:1-23:12
+INJECTED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:1:1-23:12
+INJECTED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:1:1-23:12
+INJECTED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:1:1-23:12
+	package
+		INJECTED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml
+	android:versionName
+		INJECTED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml
+	android:versionCode
+		INJECTED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml
+	xmlns:android
+		ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:1:11-69
+uses-permission#android.permission.INTERNET
+ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:2:5-67
+	android:name
+		ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:2:22-64
+uses-feature#android.software.leanback
+ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:4:5-6:36
+	android:required
+		ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:6:9-33
+	android:name
+		ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:5:9-49
+application
+ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:8:5-22:19
+INJECTED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:8:5-22:19
+	android:extractNativeLibs
+		INJECTED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml
+	android:label
+		ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:10:9-42
+	android:theme
+		ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:9:9-40
+	android:usesCleartextTraffic
+		ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:11:9-44
+activity#br.com.centralplayplus.tv.MainActivity
+ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:13:9-21:20
+	android:exported
+		ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:15:13-36
+	android:name
+		ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:14:13-41
+intent-filter#action:name:android.intent.action.MAIN+category:name:android.intent.category.LAUNCHER+category:name:android.intent.category.LEANBACK_LAUNCHER
+ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:16:13-20:29
+action#android.intent.action.MAIN
+ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:17:17-69
+	android:name
+		ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:17:25-66
+category#android.intent.category.LEANBACK_LAUNCHER
+ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:18:17-86
+	android:name
+		ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:18:27-83
+category#android.intent.category.LAUNCHER
+ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:19:17-77
+	android:name
+		ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:19:27-74
+uses-sdk
+INJECTED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml reason: use-sdk injection requested
+INJECTED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml
+INJECTED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml
+	android:targetSdkVersion
+		INJECTED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml
+	android:minSdkVersion
+		INJECTED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml
