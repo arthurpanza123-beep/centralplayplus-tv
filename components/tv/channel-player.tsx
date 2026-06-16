@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom'
 import type { Channel } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { playCue } from '@/lib/sounds'
+import { getAccessToken } from '@/lib/activation'
 
 interface ChannelPlayerProps {
   channel: Channel | null
@@ -14,6 +15,10 @@ interface ChannelPlayerProps {
 /** Truly fullscreen live player. No buttons or labels — close with Back. */
 export function ChannelPlayer({ channel, onClose }: ChannelPlayerProps) {
   const [showHint, setShowHint] = useState(true)
+  const [playbackUrl, setPlaybackUrl] = useState('')
+  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
+  const [errorCode, setErrorCode] = useState('')
+  const videoRef = useRef<HTMLVideoElement>(null)
   const hintTimer = useRef<number | null>(null)
 
   // Escape / Back closes fullscreen (capture phase, before global nav).
@@ -35,11 +40,56 @@ export function ChannelPlayer({ channel, onClose }: ChannelPlayerProps) {
   useEffect(() => {
     if (!channel) return
     setShowHint(true)
+    setPlaybackUrl('')
+    setStatus('loading')
+    setErrorCode('')
     hintTimer.current = window.setTimeout(() => setShowHint(false), 3000)
     return () => {
       if (hintTimer.current) window.clearTimeout(hintTimer.current)
     }
   }, [channel])
+
+  useEffect(() => {
+    if (!channel) return
+    const channelId = channel.id
+
+    const controller = new AbortController()
+    async function loadPlayback() {
+      try {
+        const token = getAccessToken()
+        const res = await fetch(`/api/tv/channel/${encodeURIComponent(channelId)}/play`, {
+          headers: token ? { authorization: `Bearer ${token}` } : undefined,
+          signal: controller.signal,
+        })
+        const data = await res.json().catch(() => ({}))
+        if (!res.ok || !data?.playback_url) {
+          throw new Error(data?.error?.code || `HTTP_${res.status}`)
+        }
+        setPlaybackUrl(data.playback_url)
+      } catch (error) {
+        if (controller.signal.aborted) return
+        setStatus('error')
+        setErrorCode(error instanceof Error ? error.message : 'PLAY_FAILED')
+      }
+    }
+
+    loadPlayback()
+    return () => controller.abort()
+  }, [channel])
+
+  useEffect(() => {
+    if (!playbackUrl || !videoRef.current) return
+    const video = videoRef.current
+    video.src = playbackUrl
+    video.load()
+    const promise = video.play()
+    if (promise) {
+      promise.catch(() => {
+        setStatus('error')
+        setErrorCode('AUTOPLAY_BLOCKED')
+      })
+    }
+  }, [playbackUrl])
 
   if (!channel || typeof document === 'undefined') return null
 
@@ -51,11 +101,45 @@ export function ChannelPlayer({ channel, onClose }: ChannelPlayerProps) {
       onClick={onClose}
       className="fixed inset-0 z-50 bg-black animate-cp-zoom-in cursor-none"
     >
-      {/* Video surface (simulated) — clean dark feed, focus on the channel */}
-      <div
-        className="absolute inset-0"
-        style={{ background: `radial-gradient(circle at 50% 45%, ${channel.logoColor}14 0%, #04060b 75%)` }}
+      <video
+        ref={videoRef}
+        className="absolute inset-0 h-full w-full object-contain bg-black"
+        autoPlay
+        playsInline
+        controls={false}
+        onCanPlay={() => setStatus('ready')}
+        onPlaying={() => setStatus('ready')}
+        onWaiting={() => setStatus('loading')}
+        onError={() => {
+          setStatus('error')
+          setErrorCode('VIDEO_ERROR')
+        }}
       />
+
+      {status !== 'ready' && (
+        <div
+          className="absolute inset-0"
+          style={{ background: `radial-gradient(circle at 50% 45%, ${channel.logoColor}14 0%, #04060b 75%)` }}
+        />
+      )}
+
+      {status === 'loading' && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-4">
+            <div className="h-12 w-12 rounded-full border-4 border-white/20 border-t-white animate-spin" />
+            <span className="text-white/80 text-sm font-semibold">Carregando canal...</span>
+          </div>
+        </div>
+      )}
+
+      {status === 'error' && (
+        <div className="absolute inset-0 flex items-center justify-center px-8">
+          <div className="rounded-2xl border border-white/10 bg-black/70 px-8 py-6 text-center shadow-2xl">
+            <div className="text-white text-2xl font-black">Canal indisponível agora</div>
+            <div className="mt-2 text-white/55 text-xs font-semibold">{errorCode || 'PLAY_FAILED'}</div>
+          </div>
+        </div>
+      )}
 
       {/* Brief auto-hiding channel hint (bottom-right) — channel name, no A2 bug */}
       <div

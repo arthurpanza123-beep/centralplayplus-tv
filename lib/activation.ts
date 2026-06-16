@@ -78,7 +78,7 @@ export async function registerDevice(): Promise<{ deviceKey: string; status: str
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
       platform: 'android_tv',
-      app_version: '1.0.0',
+      app_version: '1.2.0',
       device_model: typeof navigator !== 'undefined' ? navigator.userAgent.slice(0, 120) : 'Android TV',
       install_id: installId,
     }),
