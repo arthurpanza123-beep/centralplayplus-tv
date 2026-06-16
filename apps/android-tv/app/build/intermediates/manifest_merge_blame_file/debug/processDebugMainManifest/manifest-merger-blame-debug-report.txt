@@ -19,42 +19,51 @@
 15        android:required="false" />
 15-->/opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:6:9-33
 16
-17    <application
-17-->/opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:8:5-25:19
-18        android:debuggable="true"
-19        android:extractNativeLibs="false"
-20        android:label="Central Play Plus"
-20-->/opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:10:9-42
-21        android:theme="@style/AppTheme"
-21-->/opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:9:9-40
-22        android:usesCleartextTraffic="true" >
-22-->/opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:11:9-44
-23        <activity
-23-->/opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:13:9-21:20
-24            android:name="br.com.centralplayplus.tv.MainActivity"
-24-->/opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:14:13-41
-25            android:exported="true" >
-25-->/opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:15:13-36
-26            <intent-filter>
-26-->/opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:16:13-20:29
-27                <action android:name="android.intent.action.MAIN" />
-27-->/opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:17:17-69
-27-->/opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:17:25-66
-28
-29                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
-29-->/opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:18:17-86
-29-->/opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:18:27-83
-30                <category android:name="android.intent.category.LAUNCHER" />
-30-->/opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:19:17-77
-30-->/opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:19:27-74
-31            </intent-filter>
-32        </activity>
-33        <activity
-33-->/opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:22:9-24:40
-34            android:name="br.com.centralplayplus.tv.PlayerActivity"
-34-->/opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:23:13-43
-35            android:exported="false" />
-35-->/opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:24:13-37
-36    </application>
-37
-38</manifest>
+17    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+17-->[androidx.media3:media3-common:1.9.4] /root/.gradle/caches/8.10.2/transforms/d7b58cafc712a80afbd2555c6bb060ab/transformed/media3-common-1.9.4/AndroidManifest.xml:22:5-79
+17-->[androidx.media3:media3-common:1.9.4] /root/.gradle/caches/8.10.2/transforms/d7b58cafc712a80afbd2555c6bb060ab/transformed/media3-common-1.9.4/AndroidManifest.xml:22:22-76
+18    <uses-permission android:name="android.permission.WAKE_LOCK" />
+18-->[androidx.media3:media3-exoplayer:1.9.4] /root/.gradle/caches/8.10.2/transforms/c6678592b86d32a4fa0b9867d851a984/transformed/media3-exoplayer-1.9.4/AndroidManifest.xml:23:5-68
+18-->[androidx.media3:media3-exoplayer:1.9.4] /root/.gradle/caches/8.10.2/transforms/c6678592b86d32a4fa0b9867d851a984/transformed/media3-exoplayer-1.9.4/AndroidManifest.xml:23:22-65
+19
+20    <application
+20-->/opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:8:5-25:19
+21        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+21-->[androidx.core:core:1.8.0] /root/.gradle/caches/8.10.2/transforms/0527c2f415ab652ef253a67c7a09fe8f/transformed/core-1.8.0/AndroidManifest.xml:24:18-86
+22        android:debuggable="true"
+23        android:extractNativeLibs="false"
+24        android:label="Central Play Plus"
+24-->/opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:10:9-42
+25        android:theme="@style/AppTheme"
+25-->/opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:9:9-40
+26        android:usesCleartextTraffic="true" >
+26-->/opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:11:9-44
+27        <activity
+27-->/opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:13:9-21:20
+28            android:name="br.com.centralplayplus.tv.MainActivity"
+28-->/opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:14:13-41
+29            android:exported="true" >
+29-->/opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:15:13-36
+30            <intent-filter>
+30-->/opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:16:13-20:29
+31                <action android:name="android.intent.action.MAIN" />
+31-->/opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:17:17-69
+31-->/opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:17:25-66
+32
+33                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+33-->/opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:18:17-86
+33-->/opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:18:27-83
+34                <category android:name="android.intent.category.LAUNCHER" />
+34-->/opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:19:17-77
+34-->/opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:19:27-74
+35            </intent-filter>
+36        </activity>
+37        <activity
+37-->/opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:22:9-24:40
+38            android:name="br.com.centralplayplus.tv.PlayerActivity"
+38-->/opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:23:13-43
+39            android:exported="false" />
+39-->/opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:24:13-37
+40    </application>
+41
+42</manifest>

@@ -1,7 +1,6 @@
 package br.com.centralplayplus.tv;
 
 import android.app.Activity;
-import android.net.Uri;
 import android.os.Bundle;
 import android.graphics.Color;
 import android.graphics.Typeface;
@@ -9,10 +8,18 @@ import android.graphics.drawable.GradientDrawable;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.VideoView;
+
+import androidx.media3.common.MediaItem;
+import androidx.media3.common.PlaybackException;
+import androidx.media3.common.Player;
+import androidx.media3.exoplayer.ExoPlayer;
+import androidx.media3.ui.PlayerView;
 
 public class PlayerActivity extends Activity {
     private static final int BG = Color.rgb(5, 7, 13);
@@ -21,61 +28,109 @@ public class PlayerActivity extends Activity {
     private static final int ACCENT = Color.rgb(94, 234, 212);
     private static final int GOLD = Color.rgb(245, 158, 11);
 
+    private ExoPlayer player;
     private TextView status;
+    private LinearLayout overlay;
 
     @Override
     protected void onCreate(Bundle b) {
         super.onCreate(b);
+        requestWindowFeature(Window.FEATURE_NO_TITLE);
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
         String title = getIntent().getStringExtra("title");
         String url = getIntent().getStringExtra("url");
         String apiStatus = getIntent().getStringExtra("status");
 
-        LinearLayout root = new LinearLayout(this);
-        root.setOrientation(LinearLayout.VERTICAL);
-        root.setPadding(56, 38, 56, 38);
-        root.setBackgroundColor(BG);
-        setContentView(root);
+        FrameLayout frame = new FrameLayout(this);
+        frame.setBackgroundColor(BG);
+        setContentView(frame);
 
-        TextView heading = text(title == null || title.isEmpty() ? "Player" : title, 32, true, TEXT);
-        root.addView(heading, new LinearLayout.LayoutParams(-1, -2));
+        PlayerView playerView = new PlayerView(this);
+        playerView.setUseController(true);
+        playerView.setFocusable(true);
+        frame.addView(playerView, new FrameLayout.LayoutParams(-1, -1));
 
-        status = text("Loading...", 20, false, MUTED);
-        root.addView(status, new LinearLayout.LayoutParams(-1, -2));
+        overlay = new LinearLayout(this);
+        overlay.setOrientation(LinearLayout.VERTICAL);
+        overlay.setGravity(Gravity.CENTER);
+        overlay.setPadding(56, 38, 56, 38);
+        overlay.setBackgroundColor(Color.argb(210, 5, 7, 13));
+        frame.addView(overlay, new FrameLayout.LayoutParams(-1, -1));
 
-        VideoView video = new VideoView(this);
-        LinearLayout.LayoutParams videoLp = new LinearLayout.LayoutParams(-1, 0, 1);
-        videoLp.setMargins(0, 18, 0, 18);
-        root.addView(video, videoLp);
+        TextView heading = text(title == null || title.isEmpty() ? "Canal" : title, 30, true, TEXT);
+        heading.setGravity(Gravity.CENTER);
+        overlay.addView(heading, new LinearLayout.LayoutParams(-1, -2));
+
+        status = text("Carregando canal...", 21, false, MUTED);
+        status.setGravity(Gravity.CENTER);
+        overlay.addView(status, new LinearLayout.LayoutParams(-1, -2));
 
         Button back = button("Voltar");
+        LinearLayout.LayoutParams backLp = new LinearLayout.LayoutParams(220, 66);
+        backLp.setMargins(0, 26, 0, 0);
         back.setOnClickListener(v -> finish());
-        root.addView(back, new LinearLayout.LayoutParams(220, 66));
-        back.requestFocus();
+        overlay.addView(back, backLp);
 
         if (url == null || url.isEmpty()) {
-            status.setText("Player em desenvolvimento" + (apiStatus == null || apiStatus.isEmpty() ? "" : "\nStatus da API: " + apiStatus));
+            status.setText("Não foi possível iniciar este canal." + (apiStatus == null || apiStatus.isEmpty() ? "" : "\nStatus da API: " + apiStatus));
+            back.requestFocus();
             return;
         }
 
+        player = new ExoPlayer.Builder(this).build();
+        playerView.setPlayer(player);
+        player.addListener(new Player.Listener() {
+            @Override
+            public void onPlaybackStateChanged(int state) {
+                if (state == Player.STATE_READY) {
+                    overlay.setVisibility(View.GONE);
+                    playerView.requestFocus();
+                } else if (state == Player.STATE_BUFFERING) {
+                    overlay.setVisibility(View.VISIBLE);
+                    status.setText("Carregando canal...");
+                }
+            }
+
+            @Override
+            public void onPlayerError(PlaybackException error) {
+                overlay.setVisibility(View.VISIBLE);
+                status.setText("Não foi possível iniciar este canal.");
+                back.requestFocus();
+            }
+        });
+
         try {
-            video.setVideoURI(Uri.parse(url));
-            video.setOnPreparedListener(mp -> {
-                status.setText("Reproduzindo");
-                video.start();
-                video.requestFocus();
-            });
-            video.setOnErrorListener((mp, what, extra) -> {
-                status.setText("Não foi possível reproduzir este canal agora.");
-                return true;
-            });
+            player.setMediaItem(MediaItem.fromUri(url));
+            player.prepare();
+            player.play();
         } catch (Exception e) {
-            status.setText("Não foi possível abrir o player.");
+            status.setText("Não foi possível iniciar este canal.");
+            back.requestFocus();
         }
     }
 
     @Override
+    protected void onStop() {
+        super.onStop();
+        if (player != null) player.pause();
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (player != null) {
+            player.release();
+            player = null;
+        }
+        super.onDestroy();
+    }
+
+    @Override
     public boolean onKeyUp(int keyCode, KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_BACK) {
+            finish();
+            return true;
+        }
         if (keyCode == KeyEvent.KEYCODE_DPAD_CENTER || keyCode == KeyEvent.KEYCODE_ENTER || keyCode == KeyEvent.KEYCODE_NUMPAD_ENTER) {
             View focused = getCurrentFocus();
             if (focused != null && focused.isClickable()) {

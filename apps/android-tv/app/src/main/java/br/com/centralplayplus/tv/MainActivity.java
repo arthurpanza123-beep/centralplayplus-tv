@@ -20,6 +20,7 @@ import android.widget.TextView;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.json.JSONTokener;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -36,6 +37,7 @@ public class MainActivity extends Activity {
     private static final int BG = Color.rgb(5, 7, 13);
     private static final int PANEL = Color.rgb(16, 21, 33);
     private static final int PANEL_FOCUS = Color.rgb(31, 41, 55);
+    private static final int PANEL_DARK = Color.rgb(10, 14, 24);
     private static final int TEXT = Color.WHITE;
     private static final int MUTED = Color.rgb(156, 163, 175);
     private static final int ACCENT = Color.rgb(94, 234, 212);
@@ -108,7 +110,7 @@ public class MainActivity extends Activity {
         root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
         root.setPadding(56, 38, 56, 38);
-        root.setBackgroundColor(BG);
+        root.setBackground(gradient(BG, Color.rgb(9, 18, 32)));
         setContentView(root);
     }
 
@@ -116,7 +118,7 @@ public class MainActivity extends Activity {
         screen = "activation";
         base();
 
-        TextView title = text("Central Play Plus", 36, true, TEXT);
+        TextView title = text("Central Play Plus", 32, true, TEXT);
         title.setGravity(Gravity.CENTER);
         root.addView(title, lp(-1, -2));
 
@@ -150,7 +152,7 @@ public class MainActivity extends Activity {
     private void showHome() {
         screen = "home";
         base();
-        addHeader("Central Play Plus", "Início");
+        addHeader("Central Play Plus", "Catálogo");
 
         LinearLayout nav = new LinearLayout(this);
         nav.setOrientation(LinearLayout.HORIZONTAL);
@@ -269,7 +271,8 @@ public class MainActivity extends Activity {
         new Thread(() -> {
             try {
                 JSONObject json = request("GET", "/api/tv/home", null, token());
-                runOnUiThread(() -> renderHome(json));
+                JSONArray channels = loadChannelPages(false);
+                runOnUiThread(() -> renderHome(json, channels));
             } catch (Exception e) {
                 runOnUiThread(() -> statusView.setText(messageFor(e, "Sem conexão.")));
             }
@@ -279,8 +282,8 @@ public class MainActivity extends Activity {
     private void loadChannels() {
         new Thread(() -> {
             try {
-                JSONObject json = request("GET", "/api/tv/channels", null, token());
-                runOnUiThread(() -> renderGrid(findArray(json), "Nenhum canal encontrado."));
+                JSONArray items = loadChannelPages(true);
+                runOnUiThread(() -> renderGrid(items, "Nenhum canal encontrado.", "channels"));
             } catch (Exception e) {
                 runOnUiThread(() -> statusView.setText(messageFor(e, "Sem conexão.")));
             }
@@ -290,29 +293,49 @@ public class MainActivity extends Activity {
     private void loadCategories() {
         new Thread(() -> {
             try {
-                JSONObject json = request("GET", "/api/tv/categories", null, token());
-                runOnUiThread(() -> renderGrid(findArray(json), "Nenhuma categoria encontrada."));
+                Object json = requestAny("GET", "/api/tv/categories", null, token());
+                runOnUiThread(() -> renderGrid(toArray(json), "Nenhuma categoria encontrada.", "categories"));
             } catch (Exception e) {
                 runOnUiThread(() -> statusView.setText(messageFor(e, "Sem conexão.")));
             }
         }).start();
     }
 
-    private void renderHome(JSONObject json) {
+    private JSONArray loadChannelPages(boolean paged) throws Exception {
+        JSONArray all = new JSONArray();
+        boolean hasMore = true;
+        for (int page = 1; page <= 3 && hasMore && all.length() < 100; page++) {
+            String path = paged ? "/api/tv/channels?page=" + page : "/api/tv/channels" + (page == 1 ? "" : "?page=" + page);
+            Object response = requestAny("GET", path, null, token());
+            JSONArray items = toArray(response);
+            for (int i = 0; i < items.length() && all.length() < 100; i++) all.put(items.opt(i));
+
+            hasMore = response instanceof JSONObject && ((JSONObject) response).optBoolean("has_more", ((JSONObject) response).optBoolean("hasMore", false));
+            if (!paged && page == 1 && !hasMore) break;
+        }
+        return all;
+    }
+
+    private void renderHome(JSONObject json, JSONArray channels) {
         root.removeView(statusView);
         JSONArray sections = json.optJSONArray("sections");
         if (sections == null) sections = json.optJSONArray("rows");
         if (sections == null) {
             JSONArray items = findArray(json);
-            if (items.length() == 0) {
+            if (channels.length() > 0) addRow("Canais ao vivo", channels, "home");
+            if (items.length() == 0 && channels.length() == 0) {
                 root.addView(text("Nenhum conteúdo encontrado.", 22, false, MUTED), lp(-1, -2));
                 return;
             }
-            addRow("Catálogo", items);
+            addSmartRows(items);
             return;
         }
 
         boolean hasContent = false;
+        if (channels.length() > 0) {
+            hasContent = true;
+            addRow("Canais ao vivo", channels, "home");
+        }
         for (int i = 0; i < sections.length(); i++) {
             JSONObject section = sections.optJSONObject(i);
             if (section == null) continue;
@@ -320,12 +343,29 @@ public class MainActivity extends Activity {
             if (items == null) items = section.optJSONArray("contents");
             if (items == null || items.length() == 0) continue;
             hasContent = true;
-            addRow(section.optString("title", section.optString("name", "Catálogo")), items);
+            addRow(section.optString("title", section.optString("name", "Catálogo")), items, "home");
         }
         if (!hasContent) root.addView(text("Nenhum conteúdo encontrado.", 22, false, MUTED), lp(-1, -2));
     }
 
-    private void renderGrid(JSONArray items, String empty) {
+    private void addSmartRows(JSONArray items) {
+        JSONArray movies = new JSONArray();
+        JSONArray series = new JSONArray();
+        JSONArray other = new JSONArray();
+        for (int i = 0; i < items.length(); i++) {
+            JSONObject item = items.optJSONObject(i);
+            if (item == null) continue;
+            String type = first(item, "type", "content_type", "kind").toLowerCase();
+            if (type.contains("movie") || type.contains("filme")) movies.put(item);
+            else if (type.contains("series") || type.contains("serie")) series.put(item);
+            else other.put(item);
+        }
+        if (movies.length() > 0) addRow("Filmes em destaque", movies, "home");
+        if (series.length() > 0) addRow("Séries em destaque", series, "home");
+        if (other.length() > 0) addRow("Destaques", other, "home");
+    }
+
+    private void renderGrid(JSONArray items, String empty, String source) {
         root.removeView(statusView);
         if (items.length() == 0) {
             root.addView(text(empty, 22, false, MUTED), lp(-1, -2));
@@ -339,20 +379,20 @@ public class MainActivity extends Activity {
 
         LinearLayout row = null;
         for (int i = 0; i < items.length(); i++) {
-            if (i % 4 == 0) {
+            if (i % 5 == 0) {
                 row = new LinearLayout(this);
                 row.setOrientation(LinearLayout.HORIZONTAL);
                 grid.addView(row, lp(-1, -2));
             }
             JSONObject item = items.optJSONObject(i);
             if (item == null) continue;
-            row.addView(card(item, "channels"), lp(250, 150));
+            row.addView(card(item, source), lp(220, 142));
         }
         root.addView(scroll, lp(-1, 0, 1));
     }
 
-    private void addRow(String title, JSONArray items) {
-        TextView rowTitle = text(title, 24, true, TEXT);
+    private void addRow(String title, JSONArray items, String source) {
+        TextView rowTitle = text(title, 23, true, TEXT);
         LinearLayout.LayoutParams titleLp = lp(-1, -2);
         titleLp.setMargins(0, 22, 0, 8);
         root.addView(rowTitle, titleLp);
@@ -366,9 +406,9 @@ public class MainActivity extends Activity {
         for (int i = 0; i < items.length(); i++) {
             JSONObject item = items.optJSONObject(i);
             if (item == null) continue;
-            row.addView(card(item, "home"), lp(260, 160));
+            row.addView(card(item, source), lp(290, 170));
         }
-        root.addView(scroll, lp(-1, 180));
+        root.addView(scroll, lp(-1, 194));
     }
 
     private TextView card(JSONObject item, String source) {
@@ -378,28 +418,33 @@ public class MainActivity extends Activity {
         String genre = first(item, "genre", "category_name");
         String meta = join(type, quality, genre);
 
-        TextView card = text(title.isEmpty() ? "Sem título" : title, 19, true, TEXT);
+        TextView card = text(compact(title.isEmpty() ? "Sem título" : title), 18, true, TEXT);
         if (!meta.isEmpty()) card.setText(card.getText() + "\n" + meta);
         card.setTextColor(TEXT);
         card.setGravity(Gravity.BOTTOM | Gravity.LEFT);
-        card.setPadding(18, 18, 18, 18);
+        card.setPadding(20, 18, 20, 18);
         card.setFocusable(true);
         card.setClickable(true);
-        card.setBackground(bg(PANEL, ACCENT, 1));
+        card.setMaxLines(2);
+        card.setBackground(bg(PANEL_DARK, ACCENT, 1));
         card.setOnFocusChangeListener((v, focused) -> {
-            v.setBackground(bg(focused ? PANEL_FOCUS : PANEL, focused ? GOLD : ACCENT, focused ? 4 : 1));
-            v.setScaleX(focused ? 1.04f : 1f);
-            v.setScaleY(focused ? 1.04f : 1f);
+            v.setBackground(bg(focused ? PANEL_FOCUS : PANEL_DARK, focused ? ACCENT : Color.rgb(45, 61, 82), focused ? 4 : 1));
+            v.setScaleX(focused ? 1.045f : 1f);
+            v.setScaleY(focused ? 1.045f : 1f);
         });
         card.setOnClickListener(v -> openItem(item, source));
-        LinearLayout.LayoutParams margins = lp(260, 160);
-        margins.setMargins(0, 0, 18, 18);
+        LinearLayout.LayoutParams margins = lp(290, 170);
+        margins.setMargins(0, 0, 20, 18);
         card.setLayoutParams(margins);
         return card;
     }
 
     private void openItem(JSONObject item, String source) {
         String type = first(item, "type", "content_type", "kind");
+        if ("categories".equals(source)) {
+            showCategoryDetail(item);
+            return;
+        }
         if ("channels".equals(source) || isLive(type)) {
             openPlayback(item);
             return;
@@ -424,9 +469,9 @@ public class MainActivity extends Activity {
                 JSONObject json = request("GET", "/api/tv/channel/" + id + "/play", null, token());
                 String url = findPlaybackUrl(json);
                 String status = first(json, "status", "message", "error");
-                runOnUiThread(() -> openPlayer(title, url, status.isEmpty() ? "OK" : status));
+                runOnUiThread(() -> openPlayer(title, absoluteUrl(url), status.isEmpty() ? "OK" : status));
             } catch (Exception e) {
-                runOnUiThread(() -> openPlayer(title, "", messageFor(e, "Player em desenvolvimento")));
+                runOnUiThread(() -> openPlayer(title, "", messageFor(e, "Não foi possível iniciar este canal.")));
             }
         }).start();
     }
@@ -459,6 +504,23 @@ public class MainActivity extends Activity {
         back.requestFocus();
     }
 
+    private void showCategoryDetail(JSONObject item) {
+        screen = "detail";
+        base();
+        addHeader(first(item, "title", "name", "category", "genre"), "Categoria");
+        LinearLayout box = panel();
+        box.addView(text("Filtro de categoria em desenvolvimento", 24, true, ACCENT), lp(-1, -2));
+        box.addView(text("Volte para escolher outra seção.", 20, false, MUTED), lp(-1, -2));
+        root.addView(box, lp(-1, -2));
+
+        Button back = button("Voltar");
+        back.setOnClickListener(v -> showHome());
+        LinearLayout.LayoutParams backLp = lp(220, 66);
+        backLp.setMargins(0, 28, 0, 0);
+        root.addView(back, backLp);
+        back.requestFocus();
+    }
+
     private String valueOrDash(String value) {
         return value == null || value.isEmpty() ? "-" : value;
     }
@@ -470,6 +532,7 @@ public class MainActivity extends Activity {
         t.setTextSize(size);
         t.setPadding(0, 8, 0, 8);
         t.setIncludeFontPadding(true);
+        t.setLineSpacing(0, 1.02f);
         if (bold) t.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         return t;
     }
@@ -503,6 +566,12 @@ public class MainActivity extends Activity {
         return d;
     }
 
+    private GradientDrawable gradient(int start, int end) {
+        GradientDrawable d = new GradientDrawable(GradientDrawable.Orientation.TL_BR, new int[] { start, end });
+        d.setCornerRadius(0);
+        return d;
+    }
+
     private String token() {
         if (accessToken.isEmpty()) accessToken = prefs.getString("access_token", "");
         return accessToken;
@@ -527,6 +596,12 @@ public class MainActivity extends Activity {
         return new JSONArray();
     }
 
+    private JSONArray toArray(Object value) {
+        if (value instanceof JSONArray) return (JSONArray) value;
+        if (value instanceof JSONObject) return findArray((JSONObject) value);
+        return new JSONArray();
+    }
+
     private String first(JSONObject obj, String... keys) {
         for (String key : keys) {
             String value = obj.optString(key, "");
@@ -536,7 +611,7 @@ public class MainActivity extends Activity {
     }
 
     private String findPlaybackUrl(JSONObject obj) {
-        String direct = first(obj, "stream_url", "streamUrl", "playback_url", "playbackUrl", "url", "hls", "m3u8");
+        String direct = first(obj, "stream_url", "streamUrl", "playback_url", "playbackUrl", "url", "proxy_url", "proxyUrl", "hls", "m3u8");
         if (!direct.isEmpty()) return direct;
         String[] nestedKeys = {"data", "playback", "stream", "channel"};
         for (String key : nestedKeys) {
@@ -547,6 +622,18 @@ public class MainActivity extends Activity {
             }
         }
         return "";
+    }
+
+    private String absoluteUrl(String url) {
+        if (url == null || url.isEmpty()) return "";
+        if (url.startsWith("http://") || url.startsWith("https://")) return url;
+        if (url.startsWith("/")) return API + url;
+        return API + "/" + url;
+    }
+
+    private String compact(String value) {
+        if (value == null) return "";
+        return value.length() > 44 ? value.substring(0, 41) + "..." : value;
     }
 
     private String join(String a, String b, String c) {
@@ -573,6 +660,14 @@ public class MainActivity extends Activity {
     }
 
     private JSONObject request(String method, String path, JSONObject body, String token) throws Exception {
+        Object value = requestAny(method, path, body, token);
+        if (value instanceof JSONObject) return (JSONObject) value;
+        JSONObject wrapped = new JSONObject();
+        wrapped.put("items", value);
+        return wrapped;
+    }
+
+    private Object requestAny(String method, String path, JSONObject body, String token) throws Exception {
         URL url = new URL(API + path);
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setRequestMethod(method);
@@ -595,6 +690,6 @@ public class MainActivity extends Activity {
         while ((line = br.readLine()) != null) sb.append(line);
         br.close();
         if (code < 200 || code >= 300) throw new Exception("HTTP " + code);
-        return new JSONObject(sb.toString());
+        return new JSONTokener(sb.toString()).nextValue();
     }
 }
