@@ -2,112 +2,186 @@ package br.com.centralplayplus.tv;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.content.SharedPreferences;
 import android.graphics.Color;
-import android.widget.*;
-import android.text.method.ScrollingMovementMethod;
+import android.graphics.Typeface;
+import android.graphics.drawable.GradientDrawable;
+import android.view.Gravity;
+import android.view.KeyEvent;
+import android.view.View;
+import android.widget.Button;
+import android.widget.HorizontalScrollView;
+import android.widget.LinearLayout;
+import android.widget.ScrollView;
+import android.widget.TextView;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Iterator;
 import java.util.UUID;
 
 public class MainActivity extends Activity {
     private static final String API = "https://device.centralplayplus.com.br";
+    private static final String PLATFORM = "android_tv";
+    private static final int BG = Color.rgb(5, 7, 13);
+    private static final int PANEL = Color.rgb(16, 21, 33);
+    private static final int PANEL_FOCUS = Color.rgb(31, 41, 55);
+    private static final int TEXT = Color.WHITE;
+    private static final int MUTED = Color.rgb(156, 163, 175);
+    private static final int ACCENT = Color.rgb(94, 234, 212);
+    private static final int GOLD = Color.rgb(245, 158, 11);
 
-    private TextView keyView;
-    private TextView statusView;
-    private TextView catalogView;
+    private final Handler handler = new Handler(Looper.getMainLooper());
+    private final Runnable pollRunnable = new Runnable() {
+        @Override public void run() {
+            if (!"home".equals(screen)) {
+                checkStatus(true);
+                handler.postDelayed(this, 5000);
+            }
+        }
+    };
 
     private SharedPreferences prefs;
+    private LinearLayout root;
+    private TextView statusView;
+    private String screen = "activation";
     private String deviceKey = "";
     private String accessToken = "";
 
     @Override
     protected void onCreate(Bundle b) {
         super.onCreate(b);
-
         prefs = getSharedPreferences("centralplayplus", MODE_PRIVATE);
         deviceKey = prefs.getString("device_key", "");
         accessToken = prefs.getString("access_token", "");
 
-        LinearLayout root = new LinearLayout(this);
-        root.setOrientation(LinearLayout.VERTICAL);
-        root.setPadding(48, 48, 48, 48);
-        root.setBackgroundColor(Color.rgb(5, 7, 13));
-
-        TextView title = text("Central Play Plus TV", 34, true);
-        root.addView(title);
-
-        LinearLayout buttons = new LinearLayout(this);
-        buttons.setOrientation(LinearLayout.HORIZONTAL);
-
-        Button register = button("Registrar TV");
-        Button status = button("Verificar status");
-        Button catalog = button("Carregar catálogo");
-
-        buttons.addView(register);
-        buttons.addView(status);
-        buttons.addView(catalog);
-        root.addView(buttons);
-
-        root.addView(text("Device Key", 24, true));
-        keyView = text(deviceKey.isEmpty() ? "---" : deviceKey, 44, true);
-        keyView.setTextColor(Color.rgb(94, 234, 212));
-        root.addView(keyView);
-
-        root.addView(text("Status", 24, true));
-        statusView = box("Aguardando...");
-        root.addView(statusView);
-
-        root.addView(text("Catálogo", 24, true));
-        catalogView = box("Aguardando...");
-        catalogView.setMinHeight(420);
-        catalogView.setMovementMethod(new ScrollingMovementMethod());
-        root.addView(catalogView);
-
-        setContentView(root);
-
-        register.setOnClickListener(v -> registerDevice());
-        status.setOnClickListener(v -> checkStatus());
-        catalog.setOnClickListener(v -> loadCatalog());
-
-        if (!deviceKey.isEmpty()) {
-            checkStatus();
+        if (deviceKey.isEmpty()) {
+            showActivation("Registrando TV...");
+            registerDevice();
+        } else if (!accessToken.isEmpty()) {
+            showHome();
+        } else {
+            showActivation("Aguardando ativação...");
+            startPolling();
         }
     }
 
-    private TextView text(String s, int size, boolean bold) {
-        TextView t = new TextView(this);
-        t.setText(s);
-        t.setTextColor(Color.WHITE);
-        t.setTextSize(size);
-        t.setPadding(0, 16, 0, 16);
-        if (bold) t.setTypeface(null, 1);
-        return t;
+    @Override
+    protected void onDestroy() {
+        handler.removeCallbacks(pollRunnable);
+        super.onDestroy();
     }
 
-    private TextView box(String s) {
-        TextView t = text(s, 16, false);
-        t.setBackgroundColor(Color.rgb(16, 21, 33));
-        t.setPadding(22, 22, 22, 22);
-        return t;
+    @Override
+    public void onBackPressed() {
+        if ("channels".equals(screen) || "categories".equals(screen)) {
+            showHome();
+            return;
+        }
+        super.onBackPressed();
     }
 
-    private Button button(String s) {
-        Button b = new Button(this);
-        b.setText(s);
-        b.setTextSize(16);
-        b.setFocusable(true);
-        b.setAllCaps(false);
-        b.setPadding(24, 12, 24, 12);
-        return b;
+    private void base() {
+        handler.removeCallbacks(pollRunnable);
+        root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setPadding(56, 38, 56, 38);
+        root.setBackgroundColor(BG);
+        setContentView(root);
+    }
+
+    private void showActivation(String message) {
+        screen = "activation";
+        base();
+
+        TextView title = text("Central Play Plus", 36, true, TEXT);
+        title.setGravity(Gravity.CENTER);
+        root.addView(title, lp(-1, -2));
+
+        TextView hint = text("Informe esta chave para ativar sua TV.", 22, false, MUTED);
+        hint.setGravity(Gravity.CENTER);
+        root.addView(hint, lp(-1, -2));
+
+        TextView key = text(deviceKey.isEmpty() ? "------" : deviceKey, 68, true, ACCENT);
+        key.setGravity(Gravity.CENTER);
+        key.setLetterSpacing(0.08f);
+        LinearLayout keyBox = panel();
+        keyBox.setGravity(Gravity.CENTER);
+        keyBox.addView(key, lp(-1, -2));
+        LinearLayout.LayoutParams keyLp = lp(-1, 180);
+        keyLp.setMargins(0, 34, 0, 22);
+        root.addView(keyBox, keyLp);
+
+        statusView = text(message, 22, false, MUTED);
+        statusView.setGravity(Gravity.CENTER);
+        root.addView(statusView, lp(-1, -2));
+
+        Button verify = button("Verificar agora");
+        LinearLayout.LayoutParams btnLp = lp(360, 72);
+        btnLp.gravity = Gravity.CENTER_HORIZONTAL;
+        btnLp.setMargins(0, 28, 0, 0);
+        root.addView(verify, btnLp);
+        verify.setOnClickListener(v -> checkStatus(false));
+        verify.requestFocus();
+    }
+
+    private void showHome() {
+        screen = "home";
+        base();
+        addHeader("Central Play Plus", "Início");
+
+        LinearLayout nav = new LinearLayout(this);
+        nav.setOrientation(LinearLayout.HORIZONTAL);
+        nav.addView(button("Home"), lp(170, 62));
+        Button channels = button("Canais");
+        Button categories = button("Categorias");
+        nav.addView(channels, lp(190, 62));
+        nav.addView(categories, lp(230, 62));
+        root.addView(nav, lp(-1, -2));
+
+        statusView = text("Carregando...", 20, false, MUTED);
+        root.addView(statusView, lp(-1, -2));
+
+        channels.setOnClickListener(v -> showChannels());
+        categories.setOnClickListener(v -> showCategories());
+        loadHome();
+    }
+
+    private void showChannels() {
+        screen = "channels";
+        base();
+        addHeader("Canais", "Ao vivo");
+        statusView = text("Carregando canais...", 20, false, MUTED);
+        root.addView(statusView, lp(-1, -2));
+        loadChannels();
+    }
+
+    private void showCategories() {
+        screen = "categories";
+        base();
+        addHeader("Categorias", "Catálogo");
+        statusView = text("Carregando categorias...", 20, false, MUTED);
+        root.addView(statusView, lp(-1, -2));
+        loadCategories();
+    }
+
+    private void addHeader(String title, String subtitle) {
+        TextView t = text(title, 34, true, TEXT);
+        TextView s = text(subtitle, 18, false, MUTED);
+        root.addView(t, lp(-1, -2));
+        root.addView(s, lp(-1, -2));
     }
 
     private void registerDevice() {
-        statusView.setText("Registrando...");
         new Thread(() -> {
             try {
                 String installId = prefs.getString("install_id", "");
@@ -118,94 +192,297 @@ public class MainActivity extends Activity {
 
                 JSONObject body = new JSONObject();
                 body.put("install_id", installId);
-                body.put("platform", "android_tv");
+                body.put("platform", PLATFORM);
 
                 JSONObject json = request("POST", "/api/tv/register", body, null);
                 deviceKey = json.optString("deviceKey", json.optString("device_key", ""));
                 prefs.edit().putString("device_key", deviceKey).apply();
-
                 runOnUiThread(() -> {
-                    keyView.setText(deviceKey.isEmpty() ? "---" : deviceKey);
-                    statusView.setText(json.toString());
+                    showActivation("Aguardando ativação...");
+                    startPolling();
                 });
             } catch (Exception e) {
-                runOnUiThread(() -> statusView.setText("Erro ao registrar: " + e.getMessage()));
+                runOnUiThread(() -> showActivation(messageFor(e, "Erro ao registrar TV.")));
             }
         }).start();
     }
 
-    private void checkStatus() {
+    private void startPolling() {
+        handler.removeCallbacks(pollRunnable);
+        handler.postDelayed(pollRunnable, 500);
+    }
+
+    private void checkStatus(boolean silent) {
         if (deviceKey.isEmpty()) {
-            statusView.setText("Registre a TV primeiro.");
+            registerDevice();
             return;
         }
+        if (!silent && statusView != null) statusView.setText("Verificando...");
 
         new Thread(() -> {
             try {
                 JSONObject json = request("GET", "/api/tv/status/" + deviceKey, null, null);
+                String status = json.optString("status", "pending");
 
-                accessToken = json.optString("access_token", "");
-                String refreshToken = json.optString("refresh_token", "");
-
-                if (!accessToken.isEmpty()) {
-                    prefs.edit()
-                        .putString("access_token", accessToken)
-                        .putString("refresh_token", refreshToken)
-                        .apply();
+                if ("active".equalsIgnoreCase(status)) {
+                    accessToken = json.optString("access_token", "");
+                    String refreshToken = json.optString("refresh_token", "");
+                    if (!accessToken.isEmpty()) {
+                        prefs.edit()
+                            .putString("access_token", accessToken)
+                            .putString("refresh_token", refreshToken)
+                            .apply();
+                        runOnUiThread(this::showHome);
+                        return;
+                    }
                 }
 
-                JSONObject safe = new JSONObject();
-                safe.put("status", json.optString("status"));
-                safe.put("has_access_token", !accessToken.isEmpty());
-                safe.put("has_refresh_token", !refreshToken.isEmpty());
-                safe.put("expires_at", json.optString("expires_at"));
-
-                runOnUiThread(() -> statusView.setText(safe.toString()));
+                runOnUiThread(() -> {
+                    if ("expired".equalsIgnoreCase(status) || "blocked".equalsIgnoreCase(status)) {
+                        statusView.setText("Acesso expirado ou bloqueado. Fale com o suporte.");
+                    } else {
+                        statusView.setText("Aguardando ativação...");
+                    }
+                });
             } catch (Exception e) {
-                runOnUiThread(() -> statusView.setText("Erro status: " + e.getMessage()));
+                runOnUiThread(() -> statusView.setText(messageFor(e, "Sem conexão.")));
             }
         }).start();
     }
 
-    private void loadCatalog() {
-        if (accessToken.isEmpty()) {
-            accessToken = prefs.getString("access_token", "");
-        }
+    private void loadHome() {
+        new Thread(() -> {
+            try {
+                JSONObject json = request("GET", "/api/tv/home", null, token());
+                runOnUiThread(() -> renderHome(json));
+            } catch (Exception e) {
+                runOnUiThread(() -> statusView.setText(messageFor(e, "Sem conexão.")));
+            }
+        }).start();
+    }
 
-        if (accessToken.isEmpty()) {
-            catalogView.setText("Sem token. Ative a Device Key primeiro.");
+    private void loadChannels() {
+        new Thread(() -> {
+            try {
+                JSONObject json = request("GET", "/api/tv/channels", null, token());
+                runOnUiThread(() -> renderGrid(findArray(json), "Nenhum canal encontrado."));
+            } catch (Exception e) {
+                runOnUiThread(() -> statusView.setText(messageFor(e, "Sem conexão.")));
+            }
+        }).start();
+    }
+
+    private void loadCategories() {
+        new Thread(() -> {
+            try {
+                JSONObject json = request("GET", "/api/tv/categories", null, token());
+                runOnUiThread(() -> renderGrid(findArray(json), "Nenhuma categoria encontrada."));
+            } catch (Exception e) {
+                runOnUiThread(() -> statusView.setText(messageFor(e, "Sem conexão.")));
+            }
+        }).start();
+    }
+
+    private void renderHome(JSONObject json) {
+        root.removeView(statusView);
+        JSONArray sections = json.optJSONArray("sections");
+        if (sections == null) sections = json.optJSONArray("rows");
+        if (sections == null) {
+            JSONArray items = findArray(json);
+            if (items.length() == 0) {
+                root.addView(text("Nenhum conteúdo encontrado.", 22, false, MUTED), lp(-1, -2));
+                return;
+            }
+            addRow("Catálogo", items);
             return;
         }
 
-        catalogView.setText("Carregando catálogo...");
+        boolean hasContent = false;
+        for (int i = 0; i < sections.length(); i++) {
+            JSONObject section = sections.optJSONObject(i);
+            if (section == null) continue;
+            JSONArray items = section.optJSONArray("items");
+            if (items == null) items = section.optJSONArray("contents");
+            if (items == null || items.length() == 0) continue;
+            hasContent = true;
+            addRow(section.optString("title", section.optString("name", "Catálogo")), items);
+        }
+        if (!hasContent) root.addView(text("Nenhum conteúdo encontrado.", 22, false, MUTED), lp(-1, -2));
+    }
 
-        new Thread(() -> {
-            try {
-                JSONObject result = new JSONObject();
-                result.put("home", request("GET", "/api/tv/home", null, accessToken));
-                result.put("channels", request("GET", "/api/tv/channels", null, accessToken));
-                result.put("categories", request("GET", "/api/tv/categories", null, accessToken));
+    private void renderGrid(JSONArray items, String empty) {
+        root.removeView(statusView);
+        if (items.length() == 0) {
+            root.addView(text(empty, 22, false, MUTED), lp(-1, -2));
+            return;
+        }
 
-                runOnUiThread(() -> catalogView.setText(result.toString()));
-            } catch (Exception e) {
-                runOnUiThread(() -> catalogView.setText("Erro catálogo: " + e.getMessage()));
+        ScrollView scroll = new ScrollView(this);
+        LinearLayout grid = new LinearLayout(this);
+        grid.setOrientation(LinearLayout.VERTICAL);
+        scroll.addView(grid);
+
+        LinearLayout row = null;
+        for (int i = 0; i < items.length(); i++) {
+            if (i % 4 == 0) {
+                row = new LinearLayout(this);
+                row.setOrientation(LinearLayout.HORIZONTAL);
+                grid.addView(row, lp(-1, -2));
             }
-        }).start();
+            JSONObject item = items.optJSONObject(i);
+            if (item == null) continue;
+            row.addView(card(item), lp(250, 150));
+        }
+        root.addView(scroll, lp(-1, 0, 1));
+    }
+
+    private void addRow(String title, JSONArray items) {
+        TextView rowTitle = text(title, 24, true, TEXT);
+        LinearLayout.LayoutParams titleLp = lp(-1, -2);
+        titleLp.setMargins(0, 22, 0, 8);
+        root.addView(rowTitle, titleLp);
+
+        HorizontalScrollView scroll = new HorizontalScrollView(this);
+        scroll.setHorizontalScrollBarEnabled(false);
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        scroll.addView(row);
+
+        for (int i = 0; i < items.length(); i++) {
+            JSONObject item = items.optJSONObject(i);
+            if (item == null) continue;
+            row.addView(card(item), lp(260, 160));
+        }
+        root.addView(scroll, lp(-1, 180));
+    }
+
+    private TextView card(JSONObject item) {
+        String title = first(item, "title", "name", "category", "genre");
+        String type = first(item, "type", "content_type", "kind");
+        String quality = first(item, "quality", "resolution");
+        String genre = first(item, "genre", "category_name");
+        String meta = join(type, quality, genre);
+
+        TextView card = text(title.isEmpty() ? "Sem título" : title, 19, true, TEXT);
+        if (!meta.isEmpty()) card.setText(card.getText() + "\n" + meta);
+        card.setTextColor(TEXT);
+        card.setGravity(Gravity.BOTTOM | Gravity.LEFT);
+        card.setPadding(18, 18, 18, 18);
+        card.setFocusable(true);
+        card.setBackground(bg(PANEL, ACCENT, 1));
+        card.setOnFocusChangeListener((v, focused) -> {
+            v.setBackground(bg(focused ? PANEL_FOCUS : PANEL, focused ? GOLD : ACCENT, focused ? 4 : 1));
+            v.setScaleX(focused ? 1.04f : 1f);
+            v.setScaleY(focused ? 1.04f : 1f);
+        });
+        LinearLayout.LayoutParams margins = lp(260, 160);
+        margins.setMargins(0, 0, 18, 18);
+        card.setLayoutParams(margins);
+        return card;
+    }
+
+    private TextView text(String s, int size, boolean bold, int color) {
+        TextView t = new TextView(this);
+        t.setText(s);
+        t.setTextColor(color);
+        t.setTextSize(size);
+        t.setPadding(0, 8, 0, 8);
+        t.setIncludeFontPadding(true);
+        if (bold) t.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        return t;
+    }
+
+    private LinearLayout panel() {
+        LinearLayout l = new LinearLayout(this);
+        l.setOrientation(LinearLayout.VERTICAL);
+        l.setPadding(26, 26, 26, 26);
+        l.setBackground(bg(PANEL, ACCENT, 1));
+        return l;
+    }
+
+    private Button button(String s) {
+        Button b = new Button(this);
+        b.setText(s);
+        b.setTextSize(18);
+        b.setAllCaps(false);
+        b.setFocusable(true);
+        b.setTextColor(TEXT);
+        b.setBackground(bg(Color.rgb(20, 28, 43), ACCENT, 1));
+        b.setOnFocusChangeListener((v, focused) -> v.setBackground(bg(focused ? PANEL_FOCUS : Color.rgb(20, 28, 43), focused ? GOLD : ACCENT, focused ? 4 : 1)));
+        return b;
+    }
+
+    private GradientDrawable bg(int color, int stroke, int width) {
+        GradientDrawable d = new GradientDrawable();
+        d.setColor(color);
+        d.setCornerRadius(10);
+        d.setStroke(width, stroke);
+        return d;
+    }
+
+    private String token() {
+        if (accessToken.isEmpty()) accessToken = prefs.getString("access_token", "");
+        return accessToken;
+    }
+
+    private JSONArray findArray(JSONObject json) {
+        String[] keys = {"items", "channels", "categories", "data", "results", "contents"};
+        for (String key : keys) {
+            JSONArray arr = json.optJSONArray(key);
+            if (arr != null) return arr;
+            JSONObject nested = json.optJSONObject(key);
+            if (nested != null) {
+                JSONArray found = findArray(nested);
+                if (found.length() > 0) return found;
+            }
+        }
+        Iterator<String> it = json.keys();
+        while (it.hasNext()) {
+            Object value = json.opt(it.next());
+            if (value instanceof JSONArray) return (JSONArray) value;
+        }
+        return new JSONArray();
+    }
+
+    private String first(JSONObject obj, String... keys) {
+        for (String key : keys) {
+            String value = obj.optString(key, "");
+            if (!value.isEmpty() && !"null".equalsIgnoreCase(value)) return value;
+        }
+        return "";
+    }
+
+    private String join(String a, String b, String c) {
+        String out = "";
+        if (!a.isEmpty()) out = a;
+        if (!b.isEmpty()) out += out.isEmpty() ? b : " • " + b;
+        if (!c.isEmpty()) out += out.isEmpty() ? c : " • " + c;
+        return out;
+    }
+
+    private String messageFor(Exception e, String fallback) {
+        String msg = e.getMessage() == null ? "" : e.getMessage().toLowerCase();
+        if (msg.contains("unknownhost") || msg.contains("timeout") || msg.contains("failed to connect")) return "Sem conexão.";
+        if (msg.contains("401") || msg.contains("403")) return "Acesso expirado ou bloqueado. Fale com o suporte.";
+        return fallback;
+    }
+
+    private LinearLayout.LayoutParams lp(int w, int h) {
+        return new LinearLayout.LayoutParams(w, h);
+    }
+
+    private LinearLayout.LayoutParams lp(int w, int h, float weight) {
+        return new LinearLayout.LayoutParams(w, h, weight);
     }
 
     private JSONObject request(String method, String path, JSONObject body, String token) throws Exception {
         URL url = new URL(API + path);
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-
         conn.setRequestMethod(method);
         conn.setConnectTimeout(15000);
         conn.setReadTimeout(30000);
         conn.setRequestProperty("Content-Type", "application/json");
-
-        if (token != null && !token.isEmpty()) {
-            conn.setRequestProperty("Authorization", "Bearer " + token);
-        }
-
+        if (token != null && !token.isEmpty()) conn.setRequestProperty("Authorization", "Bearer " + token);
         if (body != null) {
             conn.setDoOutput(true);
             OutputStream os = conn.getOutputStream();
@@ -215,21 +492,12 @@ public class MainActivity extends Activity {
 
         int code = conn.getResponseCode();
         InputStream is = code >= 200 && code < 300 ? conn.getInputStream() : conn.getErrorStream();
-
         BufferedReader br = new BufferedReader(new InputStreamReader(is));
         StringBuilder sb = new StringBuilder();
         String line;
-
-        while ((line = br.readLine()) != null) {
-            sb.append(line);
-        }
-
+        while ((line = br.readLine()) != null) sb.append(line);
         br.close();
-
-        if (code < 200 || code >= 300) {
-            throw new Exception("HTTP " + code + ": " + sb.toString());
-        }
-
+        if (code < 200 || code >= 300) throw new Exception("HTTP " + code);
         return new JSONObject(sb.toString());
     }
 }
