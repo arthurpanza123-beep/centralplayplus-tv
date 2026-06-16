@@ -469,18 +469,20 @@ public class MainActivity extends Activity {
                 JSONObject json = request("GET", "/api/tv/channel/" + id + "/play", null, token());
                 String url = findPlaybackUrl(json);
                 String status = first(json, "status", "message", "error");
-                runOnUiThread(() -> openPlayer(title, absoluteUrl(url), status.isEmpty() ? "OK" : status));
+                String mimeType = first(json, "mime_type", "mimeType", "content_type", "contentType");
+                runOnUiThread(() -> openPlayer(title, absoluteUrl(url), status.isEmpty() ? "OK" : status, mimeType));
             } catch (Exception e) {
-                runOnUiThread(() -> openPlayer(title, "", messageFor(e, "Não foi possível iniciar este canal.")));
+                runOnUiThread(() -> openPlayer(title, "", messageFor(e, "Não foi possível iniciar este canal."), ""));
             }
         }).start();
     }
 
-    private void openPlayer(String title, String url, String status) {
+    private void openPlayer(String title, String url, String status, String mimeType) {
         Intent intent = new Intent(this, PlayerActivity.class);
         intent.putExtra("title", title == null || title.isEmpty() ? "Canal" : title);
         intent.putExtra("url", url == null ? "" : url);
         intent.putExtra("status", status == null || status.isEmpty() ? "Player em desenvolvimento" : status);
+        intent.putExtra("mime_type", mimeType == null ? "" : mimeType);
         startActivity(intent);
     }
 

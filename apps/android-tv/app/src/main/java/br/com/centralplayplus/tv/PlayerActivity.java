@@ -17,9 +17,12 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.media3.common.MediaItem;
+import androidx.media3.common.MimeTypes;
 import androidx.media3.common.PlaybackException;
 import androidx.media3.common.Player;
+import androidx.media3.datasource.DefaultHttpDataSource;
 import androidx.media3.exoplayer.ExoPlayer;
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory;
 import androidx.media3.ui.PlayerView;
 
 public class PlayerActivity extends Activity {
@@ -43,6 +46,7 @@ public class PlayerActivity extends Activity {
         String title = getIntent().getStringExtra("title");
         String url = getIntent().getStringExtra("url");
         String apiStatus = getIntent().getStringExtra("status");
+        String mimeType = getIntent().getStringExtra("mime_type");
 
         FrameLayout frame = new FrameLayout(this);
         frame.setBackgroundColor(BG);
@@ -80,7 +84,12 @@ public class PlayerActivity extends Activity {
             return;
         }
 
-        player = new ExoPlayer.Builder(this).build();
+        DefaultHttpDataSource.Factory httpFactory = new DefaultHttpDataSource.Factory()
+            .setUserAgent("CentralPlayPlusTV/1.0 AndroidTV")
+            .setAllowCrossProtocolRedirects(true);
+        player = new ExoPlayer.Builder(this)
+            .setMediaSourceFactory(new DefaultMediaSourceFactory(httpFactory))
+            .build();
         playerView.setPlayer(player);
         player.addListener(new Player.Listener() {
             @Override
@@ -96,20 +105,23 @@ public class PlayerActivity extends Activity {
 
             @Override
             public void onPlayerError(PlaybackException error) {
-                Log.e(TAG, "player_error_code=" + error.errorCode + " player_error_message=" + error.getMessage());
+                String code = error.getErrorCodeName();
+                Log.e(TAG, "player_error_code=" + code + " player_error_message=" + error.getMessage());
                 overlay.setVisibility(View.VISIBLE);
-                status.setText("Não foi possível iniciar este canal.");
+                status.setText("Não foi possível iniciar este canal.\nCódigo: " + code);
                 back.requestFocus();
             }
         });
 
         try {
-            player.setMediaItem(MediaItem.fromUri(url));
+            MediaItem.Builder item = new MediaItem.Builder().setUri(url);
+            if (isHls(url, mimeType)) item.setMimeType(MimeTypes.APPLICATION_M3U8);
+            player.setMediaItem(item.build());
             player.prepare();
             player.play();
         } catch (Exception e) {
             Log.e(TAG, "player_error_message=" + e.getMessage());
-            status.setText("Não foi possível iniciar este canal.");
+            status.setText("Não foi possível iniciar este canal.\nCódigo: INIT_ERROR");
             back.requestFocus();
         }
     }
@@ -153,6 +165,12 @@ public class PlayerActivity extends Activity {
         t.setPadding(0, 8, 0, 8);
         if (bold) t.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         return t;
+    }
+
+    private boolean isHls(String url, String mimeType) {
+        String mime = mimeType == null ? "" : mimeType.toLowerCase();
+        String value = url == null ? "" : url.toLowerCase();
+        return mime.contains("mpegurl") || mime.contains("m3u8") || value.contains(".m3u8");
     }
 
     private Button button(String s) {
