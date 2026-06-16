@@ -1,0 +1,26 @@
+[
+    {
+        "merged": "br.com.centralplayplus.tv.app-debug-4:/drawable_cp_logo.png.flat",
+        "source": "br.com.centralplayplus.tv.app-main-6:/drawable/cp_logo.png"
+    },
+    {
+        "merged": "br.com.centralplayplus.tv.app-debug-4:/mipmap-hdpi_ic_launcher_round.png.flat",
+        "source": "br.com.centralplayplus.tv.app-main-6:/mipmap-hdpi/ic_launcher_round.png"
+    },
+    {
+        "merged": "br.com.centralplayplus.tv.app-debug-4:/mipmap-mdpi_ic_launcher.png.flat",
+        "source": "br.com.centralplayplus.tv.app-main-6:/mipmap-mdpi/ic_launcher.png"
+    },
+    {
+        "merged": "br.com.centralplayplus.tv.app-debug-4:/drawable_tv_banner.png.flat",
+        "source": "br.com.centralplayplus.tv.app-main-6:/drawable/tv_banner.png"
+    },
+    {
+        "merged": "br.com.centralplayplus.tv.app-debug-4:/mipmap-mdpi_ic_launcher_round.png.flat",
+        "source": "br.com.centralplayplus.tv.app-main-6:/mipmap-mdpi/ic_launcher_round.png"
+    },
+    {
+        "merged": "br.com.centralplayplus.tv.app-debug-4:/mipmap-hdpi_ic_launcher.png.flat",
+        "source": "br.com.centralplayplus.tv.app-main-6:/mipmap-hdpi/ic_launcher.png"
+    }
+]

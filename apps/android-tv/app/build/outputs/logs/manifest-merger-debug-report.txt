@@ -1,9 +1,9 @@
 -- Merging decision tree log ---
 manifest
-ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:1:1-26:12
-INJECTED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:1:1-26:12
-INJECTED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:1:1-26:12
-INJECTED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:1:1-26:12
+ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:1:1-29:12
+INJECTED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:1:1-29:12
+INJECTED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:1:1-29:12
+INJECTED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:1:1-29:12
 MERGED from [androidx.media3:media3-ui:1.9.4] /root/.gradle/caches/8.10.2/transforms/342b7d06c6f6a2bab0d5b472436fbb4c/transformed/media3-ui-1.9.4/AndroidManifest.xml:17:1-22:12
 MERGED from [androidx.media3:media3-extractor:1.9.4] /root/.gradle/caches/8.10.2/transforms/939bcd7c7f89360a01d2434b4cc6a3bb/transformed/media3-extractor-1.9.4/AndroidManifest.xml:17:1-22:12
 MERGED from [androidx.media3:media3-container:1.9.4] /root/.gradle/caches/8.10.2/transforms/e1e53effc980e1b202e94ba2c05b735d/transformed/media3-container-1.9.4/AndroidManifest.xml:17:1-22:12
@@ -42,8 +42,8 @@ ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.
 	android:name
 		ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:5:9-49
 application
-ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:8:5-25:19
-INJECTED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:8:5-25:19
+ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:8:5-28:19
+INJECTED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:8:5-28:19
 MERGED from [androidx.core:core:1.8.0] /root/.gradle/caches/8.10.2/transforms/0527c2f415ab652ef253a67c7a09fe8f/transformed/core-1.8.0/AndroidManifest.xml:24:5-89
 MERGED from [androidx.core:core:1.8.0] /root/.gradle/caches/8.10.2/transforms/0527c2f415ab652ef253a67c7a09fe8f/transformed/core-1.8.0/AndroidManifest.xml:24:5-89
 MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] /root/.gradle/caches/8.10.2/transforms/674a4dbf70b94751004bd496b5bd3b19/transformed/versionedparcelable-1.1.1/AndroidManifest.xml:24:5-25:19
@@ -54,36 +54,42 @@ MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] /root/.grad
 		ADDED from [androidx.core:core:1.8.0] /root/.gradle/caches/8.10.2/transforms/0527c2f415ab652ef253a67c7a09fe8f/transformed/core-1.8.0/AndroidManifest.xml:24:18-86
 	android:label
 		ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:10:9-42
+	android:roundIcon
+		ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:12:9-54
+	android:icon
+		ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:11:9-43
+	android:banner
+		ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:13:9-45
 	android:theme
 		ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:9:9-40
 	android:usesCleartextTraffic
-		ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:11:9-44
+		ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:14:9-44
 activity#br.com.centralplayplus.tv.MainActivity
-ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:13:9-21:20
+ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:16:9-24:20
 	android:exported
-		ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:15:13-36
+		ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:18:13-36
 	android:name
-		ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:14:13-41
+		ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:17:13-41
 intent-filter#action:name:android.intent.action.MAIN+category:name:android.intent.category.LAUNCHER+category:name:android.intent.category.LEANBACK_LAUNCHER
-ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:16:13-20:29
+ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:19:13-23:29
 action#android.intent.action.MAIN
-ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:17:17-69
+ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:20:17-69
 	android:name
-		ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:17:25-66
+		ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:20:25-66
 category#android.intent.category.LEANBACK_LAUNCHER
-ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:18:17-86
+ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:21:17-86
 	android:name
-		ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:18:27-83
+		ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:21:27-83
 category#android.intent.category.LAUNCHER
-ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:19:17-77
+ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:22:17-77
 	android:name
-		ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:19:27-74
+		ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:22:27-74
 activity#br.com.centralplayplus.tv.PlayerActivity
-ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:22:9-24:40
+ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:25:9-27:40
 	android:exported
-		ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:24:13-37
+		ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:27:13-37
 	android:name
-		ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:23:13-43
+		ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:26:13-43
 uses-sdk
 INJECTED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml reason: use-sdk injection requested
 INJECTED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml

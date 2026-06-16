@@ -62,7 +62,7 @@ public class PlayerActivity extends Activity {
         overlay.setOrientation(LinearLayout.VERTICAL);
         overlay.setGravity(Gravity.CENTER);
         overlay.setPadding(56, 38, 56, 38);
-        overlay.setBackgroundColor(Color.argb(210, 5, 7, 13));
+        overlay.setBackgroundColor(Color.argb(220, 5, 7, 13));
         frame.addView(overlay, new FrameLayout.LayoutParams(-1, -1));
 
         TextView heading = text(title == null || title.isEmpty() ? "Canal" : title, 30, true, TEXT);
@@ -72,6 +72,10 @@ public class PlayerActivity extends Activity {
         status = text("Carregando canal...", 21, false, MUTED);
         status.setGravity(Gravity.CENTER);
         overlay.addView(status, new LinearLayout.LayoutParams(-1, -2));
+
+        TextView hint = text("Preparando reprodução segura", 15, false, ACCENT);
+        hint.setGravity(Gravity.CENTER);
+        overlay.addView(hint, new LinearLayout.LayoutParams(-1, -2));
 
         Button back = button("Voltar");
         LinearLayout.LayoutParams backLp = new LinearLayout.LayoutParams(220, 66);

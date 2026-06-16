@@ -8,6 +8,9 @@
     <application
         android:theme="@style/AppTheme"
         android:label="Central Play Plus"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:banner="@drawable/tv_banner"
         android:usesCleartextTraffic="true">
 
         <activity
