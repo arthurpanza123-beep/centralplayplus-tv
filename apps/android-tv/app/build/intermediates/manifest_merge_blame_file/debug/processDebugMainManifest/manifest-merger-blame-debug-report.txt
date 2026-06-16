@@ -20,7 +20,7 @@
 15-->/opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:6:9-33
 16
 17    <application
-17-->/opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:8:5-22:19
+17-->/opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:8:5-25:19
 18        android:debuggable="true"
 19        android:extractNativeLibs="false"
 20        android:label="Central Play Plus"
@@ -49,6 +49,12 @@
 30-->/opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:19:27-74
 31            </intent-filter>
 32        </activity>
-33    </application>
-34
-35</manifest>
+33        <activity
+33-->/opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:22:9-24:40
+34            android:name="br.com.centralplayplus.tv.PlayerActivity"
+34-->/opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:23:13-43
+35            android:exported="false" />
+35-->/opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:24:13-37
+36    </application>
+37
+38</manifest>

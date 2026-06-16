@@ -1,6 +1,7 @@
 package br.com.centralplayplus.tv;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -83,11 +84,23 @@ public class MainActivity extends Activity {
 
     @Override
     public void onBackPressed() {
-        if ("channels".equals(screen) || "categories".equals(screen)) {
+        if ("channels".equals(screen) || "categories".equals(screen) || "detail".equals(screen)) {
             showHome();
             return;
         }
         super.onBackPressed();
+    }
+
+    @Override
+    public boolean onKeyUp(int keyCode, KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_DPAD_CENTER || keyCode == KeyEvent.KEYCODE_ENTER || keyCode == KeyEvent.KEYCODE_NUMPAD_ENTER) {
+            View focused = getCurrentFocus();
+            if (focused != null && focused.isClickable()) {
+                focused.performClick();
+                return true;
+            }
+        }
+        return super.onKeyUp(keyCode, event);
     }
 
     private void base() {
@@ -141,7 +154,8 @@ public class MainActivity extends Activity {
 
         LinearLayout nav = new LinearLayout(this);
         nav.setOrientation(LinearLayout.HORIZONTAL);
-        nav.addView(button("Home"), lp(170, 62));
+        Button home = button("Home");
+        nav.addView(home, lp(170, 62));
         Button channels = button("Canais");
         Button categories = button("Categorias");
         nav.addView(channels, lp(190, 62));
@@ -151,6 +165,7 @@ public class MainActivity extends Activity {
         statusView = text("Carregando...", 20, false, MUTED);
         root.addView(statusView, lp(-1, -2));
 
+        home.setOnClickListener(v -> showHome());
         channels.setOnClickListener(v -> showChannels());
         categories.setOnClickListener(v -> showCategories());
         loadHome();
@@ -331,7 +346,7 @@ public class MainActivity extends Activity {
             }
             JSONObject item = items.optJSONObject(i);
             if (item == null) continue;
-            row.addView(card(item), lp(250, 150));
+            row.addView(card(item, "channels"), lp(250, 150));
         }
         root.addView(scroll, lp(-1, 0, 1));
     }
@@ -351,12 +366,12 @@ public class MainActivity extends Activity {
         for (int i = 0; i < items.length(); i++) {
             JSONObject item = items.optJSONObject(i);
             if (item == null) continue;
-            row.addView(card(item), lp(260, 160));
+            row.addView(card(item, "home"), lp(260, 160));
         }
         root.addView(scroll, lp(-1, 180));
     }
 
-    private TextView card(JSONObject item) {
+    private TextView card(JSONObject item, String source) {
         String title = first(item, "title", "name", "category", "genre");
         String type = first(item, "type", "content_type", "kind");
         String quality = first(item, "quality", "resolution");
@@ -369,16 +384,83 @@ public class MainActivity extends Activity {
         card.setGravity(Gravity.BOTTOM | Gravity.LEFT);
         card.setPadding(18, 18, 18, 18);
         card.setFocusable(true);
+        card.setClickable(true);
         card.setBackground(bg(PANEL, ACCENT, 1));
         card.setOnFocusChangeListener((v, focused) -> {
             v.setBackground(bg(focused ? PANEL_FOCUS : PANEL, focused ? GOLD : ACCENT, focused ? 4 : 1));
             v.setScaleX(focused ? 1.04f : 1f);
             v.setScaleY(focused ? 1.04f : 1f);
         });
+        card.setOnClickListener(v -> openItem(item, source));
         LinearLayout.LayoutParams margins = lp(260, 160);
         margins.setMargins(0, 0, 18, 18);
         card.setLayoutParams(margins);
         return card;
+    }
+
+    private void openItem(JSONObject item, String source) {
+        String type = first(item, "type", "content_type", "kind");
+        if ("channels".equals(source) || isLive(type)) {
+            openPlayback(item);
+            return;
+        }
+        showDetail(item);
+    }
+
+    private boolean isLive(String type) {
+        String t = type == null ? "" : type.toLowerCase();
+        return t.contains("live") || t.contains("channel") || t.contains("canal") || t.contains("tv");
+    }
+
+    private void openPlayback(JSONObject item) {
+        String id = first(item, "id", "channel_id", "channelId", "stream_id", "streamId");
+        if (id.isEmpty()) {
+            showDetail(item);
+            return;
+        }
+        String title = first(item, "title", "name");
+        new Thread(() -> {
+            try {
+                JSONObject json = request("GET", "/api/tv/channel/" + id + "/play", null, token());
+                String url = findPlaybackUrl(json);
+                String status = first(json, "status", "message", "error");
+                runOnUiThread(() -> openPlayer(title, url, status.isEmpty() ? "OK" : status));
+            } catch (Exception e) {
+                runOnUiThread(() -> openPlayer(title, "", messageFor(e, "Player em desenvolvimento")));
+            }
+        }).start();
+    }
+
+    private void openPlayer(String title, String url, String status) {
+        Intent intent = new Intent(this, PlayerActivity.class);
+        intent.putExtra("title", title == null || title.isEmpty() ? "Canal" : title);
+        intent.putExtra("url", url == null ? "" : url);
+        intent.putExtra("status", status == null || status.isEmpty() ? "Player em desenvolvimento" : status);
+        startActivity(intent);
+    }
+
+    private void showDetail(JSONObject item) {
+        screen = "detail";
+        base();
+        addHeader(first(item, "title", "name", "category", "genre"), "Detalhes");
+
+        LinearLayout box = panel();
+        box.addView(text("Tipo: " + valueOrDash(first(item, "type", "content_type", "kind")), 22, false, TEXT), lp(-1, -2));
+        box.addView(text("Qualidade: " + valueOrDash(first(item, "quality", "resolution")), 22, false, TEXT), lp(-1, -2));
+        box.addView(text("Gênero: " + valueOrDash(first(item, "genre", "category_name")), 22, false, TEXT), lp(-1, -2));
+        box.addView(text("Player em desenvolvimento", 22, true, ACCENT), lp(-1, -2));
+        root.addView(box, lp(-1, -2));
+
+        Button back = button("Voltar");
+        back.setOnClickListener(v -> showHome());
+        LinearLayout.LayoutParams backLp = lp(220, 66);
+        backLp.setMargins(0, 28, 0, 0);
+        root.addView(back, backLp);
+        back.requestFocus();
+    }
+
+    private String valueOrDash(String value) {
+        return value == null || value.isEmpty() ? "-" : value;
     }
 
     private TextView text(String s, int size, boolean bold, int color) {
@@ -406,6 +488,7 @@ public class MainActivity extends Activity {
         b.setTextSize(18);
         b.setAllCaps(false);
         b.setFocusable(true);
+        b.setClickable(true);
         b.setTextColor(TEXT);
         b.setBackground(bg(Color.rgb(20, 28, 43), ACCENT, 1));
         b.setOnFocusChangeListener((v, focused) -> v.setBackground(bg(focused ? PANEL_FOCUS : Color.rgb(20, 28, 43), focused ? GOLD : ACCENT, focused ? 4 : 1)));
@@ -448,6 +531,20 @@ public class MainActivity extends Activity {
         for (String key : keys) {
             String value = obj.optString(key, "");
             if (!value.isEmpty() && !"null".equalsIgnoreCase(value)) return value;
+        }
+        return "";
+    }
+
+    private String findPlaybackUrl(JSONObject obj) {
+        String direct = first(obj, "stream_url", "streamUrl", "playback_url", "playbackUrl", "url", "hls", "m3u8");
+        if (!direct.isEmpty()) return direct;
+        String[] nestedKeys = {"data", "playback", "stream", "channel"};
+        for (String key : nestedKeys) {
+            JSONObject nested = obj.optJSONObject(key);
+            if (nested != null) {
+                String found = findPlaybackUrl(nested);
+                if (!found.isEmpty()) return found;
+            }
         }
         return "";
     }

@@ -1,9 +1,9 @@
 -- Merging decision tree log ---
 manifest
-ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:1:1-23:12
-INJECTED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:1:1-23:12
-INJECTED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:1:1-23:12
-INJECTED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:1:1-23:12
+ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:1:1-26:12
+INJECTED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:1:1-26:12
+INJECTED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:1:1-26:12
+INJECTED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:1:1-26:12
 	package
 		INJECTED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml
 	android:versionName
@@ -23,8 +23,8 @@ ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.
 	android:name
 		ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:5:9-49
 application
-ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:8:5-22:19
-INJECTED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:8:5-22:19
+ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:8:5-25:19
+INJECTED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:8:5-25:19
 	android:extractNativeLibs
 		INJECTED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml
 	android:label
@@ -53,6 +53,12 @@ category#android.intent.category.LAUNCHER
 ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:19:17-77
 	android:name
 		ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:19:27-74
+activity#br.com.centralplayplus.tv.PlayerActivity
+ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:22:9-24:40
+	android:exported
+		ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:24:13-37
+	android:name
+		ADDED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml:23:13-43
 uses-sdk
 INJECTED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml reason: use-sdk injection requested
 INJECTED from /opt/centralplayplus-tv/apps/android-tv/app/src/main/AndroidManifest.xml
