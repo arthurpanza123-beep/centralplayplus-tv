@@ -235,6 +235,42 @@ function accountFromYellow(data: Record<string, unknown> | null, fallback: Provi
   }
 }
 
+function yellowBoxPlaceholderServer(id = 'yellowbox') {
+  return {
+    id,
+    name: 'Yellow Box',
+    kind: 'xtream',
+    base_url: '',
+    username: null,
+    password: null,
+    api_key: null,
+    m3u_url: null,
+  } as const
+}
+
+async function getOrCreateYellowBoxServer() {
+  if (!isDatabaseConfigured) return yellowBoxPlaceholderServer()
+
+  const existing = (await sql`
+    select id, name, kind, base_url, username, password, api_key, m3u_url
+    from provider_servers
+    where name = 'Yellow Box'
+      and kind = 'xtream'
+    order by created_at asc
+    limit 1
+  `) as unknown as any[]
+
+  if (existing[0]) return existing[0]
+
+  const inserted = (await sql`
+    insert into provider_servers (name, kind, base_url, status)
+    values ('Yellow Box', 'xtream', '', 'active')
+    returning id, name, kind, base_url, username, password, api_key, m3u_url
+  `) as unknown as any[]
+
+  return inserted[0]
+}
+
 export async function activateDevice(input: {
   device_key: string
   client_id?: string
@@ -250,16 +286,9 @@ export async function activateDevice(input: {
   const plan = input.plan_ref || input.plan || 'Mensal'
   const days = planDays(plan, input.days)
   const expiresAt = addDaysIso(days)
-  const server = process.env.YELLOW_BOX_FULL_API_URL ? ({
-    id: 'yellowbox',
-    name: 'Yellow Box',
-    kind: 'xtream',
-    base_url: '',
-    username: null,
-    password: null,
-    api_key: null,
-    m3u_url: null,
-  } as const) : await getDefaultServer()
+  const server = process.env.YELLOW_BOX_FULL_API_URL
+    ? await getOrCreateYellowBoxServer()
+    : await getDefaultServer()
   const credentials = credentialsFromServer(server)
   const fallbackAccount = providerAccountFromCredentials(credentials, {
     expires_at: expiresAt,
@@ -281,7 +310,7 @@ export async function activateDevice(input: {
     : []
   const clientId = clientRows[0]?.id || ((await sql`
     insert into clients (name, note)
-    values (${input.client_name || input.client_id || device.device_key}, ${`Ativado via Device Key ${device.device_key}`})
+    values (${clientName}, ${`Ativado via Device Key ${device.device_key}`})
     returning id
   `) as unknown as { id: string }[])[0].id
 

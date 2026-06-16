@@ -1,25 +1,108 @@
-import { neon } from '@neondatabase/serverless'
+import { Pool } from 'pg'
 
 /**
- * Cliente SQL do Neon (Postgres serverless).
+ * Cliente SQL Postgres local/remoto via node-postgres.
  *
- * Use `sql` como template tag — os parâmetros são SEMPRE escapados
- * (proteção contra SQL injection):
+ * Mantém o mesmo uso como template tag:
  *
  *   const rows = await sql`SELECT * FROM tv_devices WHERE device_key = ${key}`
  *
- * O schema das tabelas de negócio está em scripts/001_schema.sql.
- * (O schema neon_auth/Better Auth é gerenciado pela integração e usado
- *  apenas para autenticar o painel /admin.)
+ * Os valores interpolados viram parâmetros $1, $2, ...
+ * Isso mantém proteção contra SQL injection.
  */
 export const isDatabaseConfigured = Boolean(process.env.DATABASE_URL)
 
-type NeonSql = ReturnType<typeof neon>
+type SqlRow = Record<string, unknown>
 
-function missingDatabase(): NeonSql {
-  return (async () => {
-    throw new Error('DATABASE_URL não configurado.')
-  }) as unknown as NeonSql
+export type SqlClient = {
+  <T extends SqlRow = SqlRow>(
+    strings: TemplateStringsArray,
+    ...values: unknown[]
+  ): Promise<T[]>
+
+  query<T extends SqlRow = SqlRow>(
+    text: string,
+    params?: unknown[]
+  ): Promise<T[]>
+
+  execute<T extends SqlRow = SqlRow>(
+    text: string,
+    params?: unknown[]
+  ): Promise<T[]>
 }
 
-export const sql: NeonSql = isDatabaseConfigured ? neon(process.env.DATABASE_URL!) : missingDatabase()
+let pool: Pool | null = null
+
+function getPool(): Pool {
+  if (!process.env.DATABASE_URL) {
+    throw new Error('DATABASE_URL não configurado.')
+  }
+
+  if (!pool) {
+    pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      max: 10,
+      idleTimeoutMillis: 30_000,
+      connectionTimeoutMillis: 10_000,
+    })
+  }
+
+  return pool
+}
+
+function buildParameterizedQuery(
+  strings: TemplateStringsArray,
+  values: unknown[]
+): { text: string; params: unknown[] } {
+  let text = ''
+
+  for (let i = 0; i < strings.length; i += 1) {
+    text += strings[i]
+
+    if (i < values.length) {
+      text += `$${i + 1}`
+    }
+  }
+
+  return {
+    text,
+    params: values,
+  }
+}
+
+function missingDatabase(): SqlClient {
+  const fn = async () => {
+    throw new Error('DATABASE_URL não configurado.')
+  }
+
+  return Object.assign(fn, {
+    query: fn,
+    execute: fn,
+  }) as unknown as SqlClient
+}
+
+function createSqlClient(): SqlClient {
+  const tag = async <T extends SqlRow = SqlRow>(
+    strings: TemplateStringsArray,
+    ...values: unknown[]
+  ): Promise<T[]> => {
+    const { text, params } = buildParameterizedQuery(strings, values)
+    const result = await getPool().query<T>(text, params)
+    return result.rows
+  }
+
+  const query = async <T extends SqlRow = SqlRow>(
+    text: string,
+    params: unknown[] = []
+  ): Promise<T[]> => {
+    const result = await getPool().query<T>(text, params)
+    return result.rows
+  }
+
+  return Object.assign(tag, {
+    query,
+    execute: query,
+  }) as SqlClient
+}
+
+export const sql: SqlClient = isDatabaseConfigured ? createSqlClient() : missingDatabase()

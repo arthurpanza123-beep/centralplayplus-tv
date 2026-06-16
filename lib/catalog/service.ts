@@ -68,6 +68,40 @@ export function slugId(prefix: string, text: string) {
   return `${prefix}-${slug}-${hash}`
 }
 
+async function getOrCreateYellowBoxCatalogServer(): Promise<ProviderServerRow> {
+  if (!isDatabaseConfigured) {
+    return {
+      id: 'yellowbox',
+      name: 'Yellow Box',
+      kind: 'xtream',
+      base_url: process.env.YELLOW_BOX_XTREAM_URL || '',
+      username: process.env.YELLOW_BOX_XTREAM_USER || null,
+      password: process.env.YELLOW_BOX_XTREAM_PASS || null,
+      api_key: null,
+      m3u_url: null,
+    }
+  }
+
+  const existing = (await sql`
+    select id, name, kind, base_url, username, password, api_key, m3u_url
+    from provider_servers
+    where name = 'Yellow Box'
+      and kind = 'xtream'
+    order by created_at asc
+    limit 1
+  `) as unknown as ProviderServerRow[]
+
+  if (existing[0]) return existing[0]
+
+  const inserted = (await sql`
+    insert into provider_servers (name, kind, base_url, status)
+    values ('Yellow Box', 'xtream', ${process.env.YELLOW_BOX_XTREAM_URL || ''}, 'active')
+    returning id, name, kind, base_url, username, password, api_key, m3u_url
+  `) as unknown as ProviderServerRow[]
+
+  return inserted[0]
+}
+
 export async function getDefaultServer(): Promise<ProviderServerRow> {
   if (isDatabaseConfigured) {
     const rows = (await sql`
@@ -81,33 +115,16 @@ export async function getDefaultServer(): Promise<ProviderServerRow> {
     if (rows[0] && rows[0].base_url) return rows[0]
   }
 
-  // Yellow Box configured: build real Xtream credentials from env
+  // Yellow Box configured: use DB-backed UUID server in production
   if (process.env.YELLOW_BOX_FULL_API_URL && process.env.YELLOW_BOX_XTREAM_URL) {
-    return {
-      id: 'yellowbox',
-      name: 'Yellow Box',
-      kind: 'xtream',
-      base_url: process.env.YELLOW_BOX_XTREAM_URL,
-      username: process.env.YELLOW_BOX_XTREAM_USER || null,
-      password: process.env.YELLOW_BOX_XTREAM_PASS || null,
-      api_key: null,
-      m3u_url: null,
-    }
+    return getOrCreateYellowBoxCatalogServer()
   }
 
   if (!isCatalogProviderConfigured()) {
-    // Allow placeholder operation with Yellow Box when only its provisioning URL is set
+    // Allow placeholder operation with Yellow Box when only its provisioning URL is set.
+    // In DB mode this must still return a real UUID from provider_servers.
     if (process.env.YELLOW_BOX_FULL_API_URL) {
-      return {
-        id: 'yellowbox',
-        name: 'Yellow Box',
-        kind: 'xtream',
-        base_url: '',
-        username: null,
-        password: null,
-        api_key: null,
-        m3u_url: null,
-      }
+      return getOrCreateYellowBoxCatalogServer()
     }
     // Neither Xtream nor Yellow Box configured
     throw new Error('XTREAM_BASE_URL ausente. Defina XTREAM_BASE_URL, XTREAM_USERNAME e XTREAM_PASSWORD.')
