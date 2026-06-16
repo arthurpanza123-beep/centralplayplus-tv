@@ -12,11 +12,11 @@ export async function GET(req: Request) {
   const device = await requireActiveDevice(req)
   if (device instanceof Response) return device
   const { searchParams } = new URL(req.url)
-  const type = (searchParams.get('type') as ContentType | null) ?? 'live'
+  const type = searchParams.get('type') as ContentType | null
 
   try {
     const catalog = await getCatalog()
-    const res: Category[] = catalog.categories.filter((category) => category.type === type)
+    const res: Category[] = type ? catalog.categories.filter((category) => category.type === type) : catalog.categories
     return json(res)
   } catch (error) {
     return apiError('categories_unavailable', error instanceof Error ? error.message : 'Categorias indisponíveis.', 503)

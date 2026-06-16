@@ -10,6 +10,7 @@ import android.view.KeyEvent;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.util.Log;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
@@ -22,6 +23,7 @@ import androidx.media3.exoplayer.ExoPlayer;
 import androidx.media3.ui.PlayerView;
 
 public class PlayerActivity extends Activity {
+    private static final String TAG = "CentralPlayer";
     private static final int BG = Color.rgb(5, 7, 13);
     private static final int TEXT = Color.WHITE;
     private static final int MUTED = Color.rgb(156, 163, 175);
@@ -94,6 +96,7 @@ public class PlayerActivity extends Activity {
 
             @Override
             public void onPlayerError(PlaybackException error) {
+                Log.e(TAG, "player_error_code=" + error.errorCode + " player_error_message=" + error.getMessage());
                 overlay.setVisibility(View.VISIBLE);
                 status.setText("Não foi possível iniciar este canal.");
                 back.requestFocus();
@@ -105,6 +108,7 @@ public class PlayerActivity extends Activity {
             player.prepare();
             player.play();
         } catch (Exception e) {
+            Log.e(TAG, "player_error_message=" + e.getMessage());
             status.setText("Não foi possível iniciar este canal.");
             back.requestFocus();
         }

@@ -223,7 +223,7 @@ function catalogItemFromStream(stream: RawStream, categories: RawCategory[]): Ca
     id: slugId('vod', stream.provider_ref),
     title: stripTitle(stream.name),
     poster: stream.logo || '',
-    type: 'vod',
+    type: 'movie',
     quality: stream.quality,
     year,
     rating: ratingFromUnknown((stream as RawStream & { rating?: unknown }).rating),
@@ -372,9 +372,10 @@ async function persistCatalog(
 async function loadFromDatabase(): Promise<CatalogPayload | null> {
   if (!isDatabaseConfigured) return null
   const server = await getDefaultServer()
-  const [channelRows, variantRows, vodRows, seriesRows] = await Promise.all([
+  const [channelRows, variantRows, liveRows, vodRows, seriesRows] = await Promise.all([
     sql`select id, name, logo, category, type from channels where server_id = ${server.id} and type = 'live' order by sort_order asc, name asc`.then((r) => r as unknown as ChannelRow[]),
     sql`select id, channel_id, quality, provider_ref, health_score, status from channel_variants where status = 'active' order by channel_id asc, health_score desc`.then((r) => r as unknown as VariantRow[]),
+    sql`select payload, version from provider_catalog_cache where server_id = ${server.id} and type = 'live' order by fetched_at desc limit 1`.then((r) => r as unknown as CatalogCacheRow[]),
     sql`select payload, version from provider_catalog_cache where server_id = ${server.id} and type = 'vod' order by fetched_at desc limit 1`.then((r) => r as unknown as CatalogCacheRow[]),
     sql`select payload, version from provider_catalog_cache where server_id = ${server.id} and type = 'series' order by fetched_at desc limit 1`.then((r) => r as unknown as CatalogCacheRow[]),
   ])
@@ -396,7 +397,8 @@ async function loadFromDatabase(): Promise<CatalogPayload | null> {
     type: 'live',
     variants: (variantsByChannel.get(channel.id) || []).map((variant) => publicVariant(variant.id, variant.quality)),
   }))
-  const categories = Array.from(new Set(channels.map((channel) => channel.category))).map((name, order) => ({
+  const cachedCategories = (liveRows[0]?.payload as unknown as { categories?: Category[] } | null)?.categories || []
+  const categories = cachedCategories.length ? cachedCategories : Array.from(new Set(channels.map((channel) => channel.category))).map((name, order) => ({
     id: slugId('cat-live', name),
     name,
     type: 'live' as const,
@@ -404,7 +406,7 @@ async function loadFromDatabase(): Promise<CatalogPayload | null> {
   }))
   return {
     serverId: server.id,
-    version: vodRows[0]?.version || seriesRows[0]?.version || CATALOG_VERSION,
+    version: liveRows[0]?.version || vodRows[0]?.version || seriesRows[0]?.version || CATALOG_VERSION,
     categories,
     channels,
     movies: vodRows[0]?.payload || [],
@@ -428,7 +430,7 @@ export async function getHome(): Promise<HomeResponse> {
     catalog_version: catalog.version,
     rows: [
       { id: 'live-featured', title: 'Canais ao vivo', type: 'live' as const, items: catalog.channels.slice(0, 20).map(channelToItem) },
-      { id: 'movies-featured', title: 'Filmes em destaque', type: 'vod' as const, items: catalog.movies.slice(0, 30) },
+      { id: 'movies-featured', title: 'Filmes em destaque', type: 'movie' as const, items: catalog.movies.slice(0, 50) },
       { id: 'series-featured', title: 'Séries em destaque', type: 'series' as const, items: catalog.series.slice(0, 30) },
       { id: 'kids-featured', title: 'Kids', type: 'vod' as const, items: catalog.movies.filter((item) => /kids|infantil|desenho|anima/i.test(item.genre || item.title)).slice(0, 20) },
     ].filter((row) => row.items.length),

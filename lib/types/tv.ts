@@ -82,7 +82,7 @@ export interface RemoteConfig {
 // ──────────────────────────────────────────────────────────────────
 // Catálogo normalizado (o que a TV recebe)
 // ──────────────────────────────────────────────────────────────────
-export type ContentType = 'live' | 'vod' | 'series'
+export type ContentType = 'live' | 'movie' | 'vod' | 'series'
 export type StreamQuality = 'SD' | 'HD' | 'FHD' | '4K' | 'ALT'
 
 /** Uma rota/stream de um canal. provider_ref NUNCA vai para a TV. */
@@ -143,6 +143,11 @@ export interface PlayableVariant {
 
 /** GET /api/tv/channel/:id/play */
 export interface ChannelPlayResponse {
+  ok?: boolean
+  type?: ContentType
+  title?: string
+  playback_url?: string
+  mime_type?: string
   channel_id: string
   selected_variant: PlayableVariant
   fallback_variants: PlayableVariant[]

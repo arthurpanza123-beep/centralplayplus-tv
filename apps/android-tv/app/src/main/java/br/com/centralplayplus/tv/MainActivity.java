@@ -356,7 +356,7 @@ public class MainActivity extends Activity {
             JSONObject item = items.optJSONObject(i);
             if (item == null) continue;
             String type = first(item, "type", "content_type", "kind").toLowerCase();
-            if (type.contains("movie") || type.contains("filme")) movies.put(item);
+            if (type.contains("movie") || type.contains("filme") || type.contains("vod")) movies.put(item);
             else if (type.contains("series") || type.contains("serie")) series.put(item);
             else other.put(item);
         }
@@ -611,9 +611,9 @@ public class MainActivity extends Activity {
     }
 
     private String findPlaybackUrl(JSONObject obj) {
-        String direct = first(obj, "stream_url", "streamUrl", "playback_url", "playbackUrl", "url", "proxy_url", "proxyUrl", "hls", "m3u8");
+        String direct = first(obj, "playback_url", "playbackUrl", "stream_url", "streamUrl", "url", "proxy_url", "proxyUrl", "hls", "m3u8");
         if (!direct.isEmpty()) return direct;
-        String[] nestedKeys = {"data", "playback", "stream", "channel"};
+        String[] nestedKeys = {"data", "playback", "stream", "channel", "selected_variant", "selectedVariant"};
         for (String key : nestedKeys) {
             JSONObject nested = obj.optJSONObject(key);
             if (nested != null) {

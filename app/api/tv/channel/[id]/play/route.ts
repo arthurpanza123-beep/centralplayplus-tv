@@ -5,7 +5,7 @@
  * Backend implementado pelo Codex.
  */
 import { apiError, json } from '@/lib/api/helpers'
-import { credentialsFromServer, getDefaultServer, loadChannelVariants } from '@/lib/catalog/service'
+import { credentialsFromServer, getCatalog, getDefaultServer, loadChannelVariants } from '@/lib/catalog/service'
 import { findActiveProviderAccount, requireActiveDevice } from '@/lib/devices/service'
 import { issueStreamToken } from '@/lib/security/tokens'
 import { rankVariants } from '@/lib/streaming/variant-health'
@@ -29,6 +29,8 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
     const server = await getDefaultServer()
     const account = await findActiveProviderAccount(device)
     if (!account) return apiError('provider_account_missing', 'Conta do fornecedor não vinculada ao aparelho.', 403)
+    const catalog = await getCatalog()
+    const channel = catalog.channels.find((item) => item.id === id)
     const base = process.env.PUBLIC_API_BASE_URL || new URL(req.url).origin
     const streamUrl = (variant: typeof primary) => {
       const token = issueStreamToken({
@@ -37,13 +39,18 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
         channel_id: id,
         variant_id: variant.id,
         provider_ref: variant.providerRef,
-        type: 'live' as ContentType,
+        type: 'live',
       })
       return `${base}/api/tv/stream/${encodeURIComponent(token)}`
     }
 
     void credentialsFromServer(server)
     const res: ChannelPlayResponse = {
+      ok: true,
+      type: 'live' as ContentType,
+      title: channel?.name || 'Canal',
+      playback_url: streamUrl(primary),
+      mime_type: 'application/x-mpegURL',
       channel_id: id,
       selected_variant: { id: primary.id, quality: primary.quality, stream_url: streamUrl(primary) },
       fallback_variants: fallbacks.map((variant) => ({ id: variant.id, quality: variant.quality, stream_url: streamUrl(variant) })),
