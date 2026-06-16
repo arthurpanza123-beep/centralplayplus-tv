@@ -12,7 +12,7 @@ import { playIntroMusic } from '@/lib/sounds'
 export function LoadingScreen({ onDone }: { onDone: () => void }) {
   useEffect(() => {
     playIntroMusic()
-    const t = setTimeout(onDone, 2200)
+    const t = setTimeout(onDone, 700)
     return () => clearTimeout(t)
   }, [onDone])
 

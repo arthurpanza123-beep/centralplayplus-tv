@@ -53,7 +53,7 @@ export function ActivationPanel({ onActivate, busy }: Props) {
         <div className="grid sm:grid-cols-2 gap-4">
           <label className="flex flex-col gap-1.5">
             <span className="text-xs font-semibold text-muted-foreground">Device Key</span>
-            <input value={deviceKey} onChange={(e) => setDeviceKey(e.target.value)} placeholder="CP-XXXX-XXX" className={`${inputCls} font-mono uppercase`} />
+            <input value={deviceKey} onChange={(e) => setDeviceKey(e.target.value.toUpperCase())} placeholder="A4B6" className={`${inputCls} font-mono uppercase`} />
           </label>
           <label className="flex flex-col gap-1.5">
             <span className="text-xs font-semibold text-muted-foreground">Cliente</span>

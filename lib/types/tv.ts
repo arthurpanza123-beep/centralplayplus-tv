@@ -31,7 +31,7 @@ export interface RegisterDeviceRequest {
 
 /** POST /api/tv/register — resposta */
 export interface RegisterDeviceResponse {
-  device_key: string // ex: "CP-482913"
+  device_key: string // ex: "A4B6"
   status: DeviceStatus
   poll_interval_seconds: number
 }

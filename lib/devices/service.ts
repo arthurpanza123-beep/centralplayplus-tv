@@ -45,19 +45,38 @@ type ProviderAccountRow = {
   expires_at: string | null
 }
 
+type ProviderServerLike = {
+  id: string
+  name: string
+  kind: 'xtream' | 'm3u' | 'custom' | 'yellowbox' | 'yellow_box' | 'yellow-box'
+  base_url: string
+  username: string | null
+  password: string | null
+  api_key: string | null
+  m3u_url: string | null
+}
+
 const memoryDevices = new Map<string, DeviceRow>()
 const memoryByInstall = new Map<string, string>()
+const DEVICE_KEY_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+
+function pendingDeviceTtlMs() {
+  return Number(process.env.TV_DEVICE_KEY_TTL_MINUTES || 30) * 60_000
+}
 
 export function normalizeDeviceKey(value: string) {
   const clean = value.toUpperCase().replace(/[^A-Z0-9]/g, '')
   if (clean.startsWith('CP')) return `CP-${clean.slice(2, 8)}`
-  return `CP-${clean.slice(0, 6)}`
+  return clean.slice(0, 4)
 }
 
 function generateDeviceKey() {
-  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
-  const code = Array.from({ length: 6 }, () => alphabet[Math.floor(Math.random() * alphabet.length)]).join('')
-  return `CP-${code}`
+  return Array.from({ length: 4 }, () => DEVICE_KEY_ALPHABET[Math.floor(Math.random() * DEVICE_KEY_ALPHABET.length)]).join('')
+}
+
+function isPendingKeyExpired(device: DeviceRow) {
+  if (device.status !== 'pending') return false
+  return Date.now() - new Date(device.created_at).getTime() > pendingDeviceTtlMs()
 }
 
 function addDaysIso(days: number) {
@@ -76,7 +95,12 @@ function planDays(plan: string, days?: number) {
 export async function registerDevice(input: RegisterDeviceRequest): Promise<DeviceRow> {
   if (!isDatabaseConfigured) {
     const existingKey = memoryByInstall.get(input.install_id)
-    if (existingKey) return memoryDevices.get(existingKey)!
+    const existing = existingKey ? memoryDevices.get(existingKey) : null
+    if (existing && !isPendingKeyExpired(existing)) return existing
+    if (existingKey) {
+      memoryDevices.delete(existingKey)
+      memoryByInstall.delete(input.install_id)
+    }
     const device_key = generateDeviceKey()
     const row: DeviceRow = {
       id: crypto.randomUUID(),
@@ -104,7 +128,28 @@ export async function registerDevice(input: RegisterDeviceRequest): Promise<Devi
     order by created_at desc
     limit 1
   `) as unknown as DeviceRow[]
-  if (existing[0]) return existing[0]
+  if (existing[0] && !isPendingKeyExpired(existing[0])) return existing[0]
+  if (existing[0]?.status === 'pending') {
+    for (let attempt = 0; attempt < 8; attempt++) {
+      const deviceKey = generateDeviceKey()
+      try {
+        const rows = (await sql`
+          update tv_devices
+          set device_key = ${deviceKey},
+              platform = ${input.platform},
+              device_model = ${input.device_model || null},
+              app_version = ${input.app_version || null},
+              created_at = now()
+          where id = ${existing[0].id}
+          returning *
+        `) as unknown as DeviceRow[]
+        return rows[0]
+      } catch (error) {
+        if (!String(error).includes('duplicate')) throw error
+      }
+    }
+    throw new Error('Não foi possível renovar uma Device Key única.')
+  }
 
   for (let attempt = 0; attempt < 8; attempt++) {
     const deviceKey = generateDeviceKey()
@@ -240,6 +285,66 @@ function baseUrlFromYellow(data: Record<string, unknown> | null) {
   return extractXtreamBaseUrl(data)
 }
 
+async function looksPlayable(url: string) {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 7000)
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      redirect: 'follow',
+      signal: controller.signal,
+      headers: {
+        range: 'bytes=0-255',
+        'user-agent': 'CentralPlayPlusTV/1.3 ActivationCheck',
+        accept: '*/*',
+      },
+    })
+    let head = ''
+    const reader = response.body?.getReader()
+    if (reader) {
+      const first = await reader.read()
+      if (first.value) head = Buffer.from(first.value).toString('utf8', 0, 256)
+      await reader.cancel().catch(() => {})
+    }
+    const looksHtml = /<html|<!doctype|xtream codes|not found|forbidden|unauthorized|error/i.test(head)
+    return response.ok && !looksHtml
+  } catch {
+    return false
+  } finally {
+    clearTimeout(timeout)
+  }
+}
+
+async function validateProviderBeforeActivation(server: ProviderServerLike, account: ProviderAccount) {
+  const adapter = getProviderAdapter(credentialsFromServer({
+    ...server,
+    username: account.username,
+    password: account.password,
+  }))
+
+  const [status, liveCategories, liveStreams, vodStreams, series] = await Promise.all([
+    adapter.getUserStatus(account.account_id),
+    adapter.getLiveCategories(),
+    adapter.getLiveStreams(),
+    adapter.getVodStreams(),
+    adapter.getSeries(),
+  ])
+  if (status.status !== 'active') throw new Error('Conta do fornecedor não está ativa.')
+  if (!Array.isArray(liveCategories) || liveCategories.length === 0) throw new Error('Categorias ao vivo indisponíveis no fornecedor.')
+  if (!Array.isArray(liveStreams) || liveStreams.length === 0) throw new Error('Canais ao vivo indisponíveis no fornecedor.')
+  if (!Array.isArray(vodStreams)) throw new Error('Filmes indisponíveis no fornecedor.')
+  if (!Array.isArray(series)) throw new Error('Séries indisponíveis no fornecedor.')
+
+  const sample = liveStreams.slice(0, 3)
+  let ok = 0
+  for (const stream of sample) {
+    const raw = await adapter.getStreamUrl({ account, provider_ref: stream.provider_ref, type: 'live' })
+    if (await looksPlayable(raw.url)) ok++
+  }
+  if (sample.length && ok === 0) throw new Error('Playback indisponível no fornecedor.')
+  return { playbackOk: ok, playbackTotal: sample.length }
+}
+
 function yellowBoxPlaceholderServer(id = 'yellowbox') {
   return {
     id,
@@ -304,6 +409,8 @@ export async function activateDevice(input: {
   const yellow = await callYellowBox({ deviceKey: device.device_key, clientName, plan, days })
   const providerAccount = accountFromYellow(yellow, fallbackAccount)
   const yellowBaseUrl = baseUrlFromYellow(yellow)
+  const validationServer = yellowBaseUrl ? { ...server, base_url: yellowBaseUrl } : server
+  await validateProviderBeforeActivation(validationServer, providerAccount)
 
   if (!isDatabaseConfigured) {
     const next = { ...device, status: 'active' as DeviceStatus, server_id: server.id, activated_at: new Date().toISOString(), expires_at: expiresAt }

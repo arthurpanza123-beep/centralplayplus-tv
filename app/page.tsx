@@ -16,7 +16,6 @@ import { ChannelPlayer } from '@/components/tv/channel-player'
 import { MascotVideo } from '@/components/tv/mascot-video'
 import { VirtualKeyboard } from '@/components/tv/virtual-keyboard'
 import { LoginScreen } from '@/components/tv/login-screen'
-import { IntroVideo } from '@/components/tv/intro-video'
 import { LoadingScreen } from '@/components/tv/loading-screen'
 import { useTvNavigation } from '@/hooks/use-tv-navigation'
 import { playCue } from '@/lib/sounds'
@@ -1111,11 +1110,15 @@ function FavoritosTab() {
 // ─── ROOT SHELL ────────────────────────────��─────────────���────────────────────
 const TABS: TabId[] = ['home', 'canais', 'filmes', 'series', 'kids', 'buscar', 'favoritos', 'configuracoes']
 
-type AppStage = 'intro' | 'login' | 'loading' | 'app'
+type AppStage = 'boot' | 'login' | 'loading' | 'app'
 
 export default function AppShell() {
   const [active, setActive] = useState<TabId>('home')
-  const [stage, setStage] = useState<AppStage>('intro')
+  const [stage, setStage] = useState<AppStage>('boot')
+
+  useEffect(() => {
+    setStage(isDeviceActivated() ? 'app' : 'login')
+  }, [])
 
   // TV-remote-style spatial navigation. Re-focuses when the active tab changes.
   // "Back" returns to Home (the modal handles its own Escape via capture phase).
@@ -1129,8 +1132,7 @@ export default function AppShell() {
     if (stage === 'app') playCue('open')
   }, [stage])
 
-  if (stage === 'intro')
-    return <IntroVideo onDone={() => setStage(isDeviceActivated() ? 'loading' : 'login')} />
+  if (stage === 'boot') return <div className="h-screen w-screen bg-background" />
   if (stage === 'login') return <LoginScreen onLogin={() => setStage('loading')} />
   if (stage === 'loading') return <LoadingScreen onDone={() => setStage('app')} />
 

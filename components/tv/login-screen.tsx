@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
+import QRCode from 'qrcode'
 import { RefreshCw, Loader2, CheckCircle2, XCircle } from 'lucide-react'
 import { unlockAudio } from '@/lib/sounds'
 import { markDeviceActivated, getDeviceKey, registerDevice } from '@/lib/activation'
@@ -12,6 +13,7 @@ export function LoginScreen({ onLogin }: { onLogin: () => void }) {
   const [shake, setShake] = useState(false)
   const [state, setState] = useState<CheckState>('idle')
   const [deviceKey, setDeviceKey] = useState('····')
+  const [qrCode, setQrCode] = useState('')
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
@@ -29,6 +31,17 @@ export function LoginScreen({ onLogin }: { onLogin: () => void }) {
     return () => { alive = false }
   }, [])
 
+  useEffect(() => {
+    if (!deviceKey || deviceKey === '····' || typeof window === 'undefined') return
+    const activationUrl = `${window.location.origin}/ativar?key=${encodeURIComponent(deviceKey)}`
+    QRCode.toDataURL(activationUrl, {
+      margin: 1,
+      width: 320,
+      color: { dark: '#020617', light: '#ffffff' },
+      errorCorrectionLevel: 'M',
+    }).then(setQrCode).catch(() => setQrCode(''))
+  }, [deviceKey])
+
   /**
    * Consulta o backend de ativação. O operador ativa a Device Key no painel /admin;
    * enquanto isso o status volta 'pending' (não ativado). Quando ativar, volta 'active'.
@@ -36,7 +49,7 @@ export function LoginScreen({ onLogin }: { onLogin: () => void }) {
   const checkActivation = useCallback(
     async (opts: { manual?: boolean } = {}) => {
       let key = getDeviceKey()
-      if (key === 'CP-000000') {
+      if (key === '----' || key === 'CP-000000') {
         const registered = await registerDevice()
         key = registered.deviceKey
         setDeviceKey(key)
@@ -121,7 +134,7 @@ export function LoginScreen({ onLogin }: { onLogin: () => void }) {
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_30%,rgba(0,0,0,0.65)_100%)]" />
 
       {/* ── Centered activation card ── */}
-      <div className="relative z-10 w-full max-w-md mx-4 flex flex-col items-center text-center rounded-[1.75rem] bg-black/55 backdrop-blur-xl border border-white/15 ring-1 ring-white/5 shadow-2xl shadow-black/70 px-10 py-12 animate-cp-fade-up overflow-hidden">
+      <div className="relative z-10 w-full max-w-xl mx-4 flex flex-col items-center text-center rounded-[1.75rem] bg-black/55 backdrop-blur-xl border border-white/15 ring-1 ring-white/5 shadow-2xl shadow-black/70 px-10 py-12 animate-cp-fade-up overflow-hidden">
         {/* Subtle top sheen */}
         <div aria-hidden className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent" />
         <div aria-hidden className="absolute -top-24 left-1/2 -translate-x-1/2 w-72 h-48 rounded-full bg-primary/15 blur-3xl" />
@@ -134,16 +147,26 @@ export function LoginScreen({ onLogin }: { onLogin: () => void }) {
         <h1 className="text-3xl font-black tracking-tight text-white text-balance leading-tight drop-shadow-lg">
           Ative sua TV
         </h1>
-        <p className="mt-2.5 text-sm text-white/65 leading-relaxed max-w-[16rem]">
-          Informe o código abaixo no painel de ativação para liberar todo o catálogo.
+        <p className="mt-2.5 text-sm text-white/65 leading-relaxed max-w-[18rem]">
+          Escaneie o QR Code para ativar ou informe a chave curta no celular.
         </p>
 
-        {/* Device key */}
-        <div className="mt-7 w-full rounded-2xl bg-white/[0.04] border border-white/10 px-6 py-5">
-          <p className="text-[10px] font-bold tracking-[0.4em] text-white/45">DEVICE KEY</p>
-          <p className="mt-2 text-5xl font-black tracking-[0.2em] text-white tabular-nums whitespace-nowrap drop-shadow-[0_0_18px_rgba(96,165,250,0.35)]">
+        <div className="mt-7 grid w-full grid-cols-[1fr_10rem] gap-5 items-center">
+          {/* Device key */}
+          <div className="rounded-2xl bg-white/[0.04] border border-white/10 px-6 py-5 min-w-0">
+            <p className="text-[10px] font-bold tracking-[0.34em] text-white/45">DEVICE KEY</p>
+            <p className="mt-2 text-6xl font-black tracking-[0.18em] text-white tabular-nums whitespace-nowrap drop-shadow-[0_0_18px_rgba(96,165,250,0.35)]">
             {deviceKey}
-          </p>
+            </p>
+          </div>
+
+          <div className="flex h-40 w-40 items-center justify-center rounded-2xl border border-white/15 bg-white p-2 shadow-2xl shadow-black/40">
+            {qrCode ? (
+              <Image src={qrCode} alt="QR Code para ativar" width={144} height={144} className="h-full w-full object-contain" unoptimized />
+            ) : (
+              <Loader2 className="h-8 w-8 animate-spin text-slate-900" />
+            )}
+          </div>
         </div>
 
         {/* Status */}

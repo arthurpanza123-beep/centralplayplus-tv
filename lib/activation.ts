@@ -45,13 +45,12 @@ export function getInstallId(): string {
   return installId
 }
 
-/** Characters used for the temporary offline fallback key (no ambiguous 0/O/1/I). */
+/** Characters used for the temporary offline fallback key (no ambiguous 0/O/1/I/L). */
 const KEY_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
 
 /** Generate a temporary fallback device key while the backend is unreachable. */
 function generateDeviceKey(): string {
-  const code = Array.from({ length: 6 }, () => KEY_ALPHABET[Math.floor(Math.random() * KEY_ALPHABET.length)]).join('')
-  return `CP-${code}`
+  return Array.from({ length: 4 }, () => KEY_ALPHABET[Math.floor(Math.random() * KEY_ALPHABET.length)]).join('')
 }
 
 /**
@@ -59,18 +58,18 @@ function generateDeviceKey(): string {
  * The same key is reused for the lifetime of the install (until reset).
  */
 export function getDeviceKey(): string {
-  if (typeof window === 'undefined') return 'CP-000000'
+  if (typeof window === 'undefined') return '----'
   try {
-    return window.localStorage.getItem(DEVICE_KEY) || 'CP-000000'
+    return window.localStorage.getItem(DEVICE_KEY) || '----'
   } catch {
-    return 'CP-000000'
+    return '----'
   }
 }
 
 export async function registerDevice(): Promise<{ deviceKey: string; status: string; pollIntervalSeconds: number }> {
   const installId = getInstallId()
   const stored = getDeviceKey()
-  if (stored && stored !== 'CP-000000') {
+  if (stored && stored !== '----' && stored !== 'CP-000000') {
     return { deviceKey: stored, status: 'pending', pollIntervalSeconds: 5 }
   }
   const res = await fetch('/api/tv/register', {
@@ -78,7 +77,7 @@ export async function registerDevice(): Promise<{ deviceKey: string; status: str
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
       platform: 'android_tv',
-      app_version: '1.2.0',
+      app_version: '1.3.0',
       device_model: typeof navigator !== 'undefined' ? navigator.userAgent.slice(0, 120) : 'Android TV',
       install_id: installId,
     }),
