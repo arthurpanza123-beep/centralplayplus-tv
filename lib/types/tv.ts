@@ -148,6 +148,7 @@ export interface ChannelPlayResponse {
   title?: string
   playback_url?: string
   mime_type?: string
+  stream_format?: 'hls' | 'ts' | 'mp4' | 'unknown'
   channel_id: string
   selected_variant: PlayableVariant
   fallback_variants: PlayableVariant[]

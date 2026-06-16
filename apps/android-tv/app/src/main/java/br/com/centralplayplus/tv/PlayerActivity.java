@@ -47,6 +47,7 @@ public class PlayerActivity extends Activity {
         String url = getIntent().getStringExtra("url");
         String apiStatus = getIntent().getStringExtra("status");
         String mimeType = getIntent().getStringExtra("mime_type");
+        String streamFormat = getIntent().getStringExtra("stream_format");
 
         FrameLayout frame = new FrameLayout(this);
         frame.setBackgroundColor(BG);
@@ -115,7 +116,7 @@ public class PlayerActivity extends Activity {
 
         try {
             MediaItem.Builder item = new MediaItem.Builder().setUri(url);
-            if (isHls(url, mimeType)) item.setMimeType(MimeTypes.APPLICATION_M3U8);
+            if (isHls(mimeType, streamFormat)) item.setMimeType(MimeTypes.APPLICATION_M3U8);
             player.setMediaItem(item.build());
             player.prepare();
             player.play();
@@ -167,10 +168,10 @@ public class PlayerActivity extends Activity {
         return t;
     }
 
-    private boolean isHls(String url, String mimeType) {
+    private boolean isHls(String mimeType, String streamFormat) {
         String mime = mimeType == null ? "" : mimeType.toLowerCase();
-        String value = url == null ? "" : url.toLowerCase();
-        return mime.contains("mpegurl") || mime.contains("m3u8") || value.contains(".m3u8");
+        String format = streamFormat == null ? "" : streamFormat.toLowerCase();
+        return "hls".equals(format) || mime.contains("mpegurl") || mime.contains("m3u8");
     }
 
     private Button button(String s) {
