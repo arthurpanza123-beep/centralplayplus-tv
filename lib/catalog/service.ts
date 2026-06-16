@@ -4,7 +4,7 @@ import { cached } from '@/lib/cache/catalog-cache'
 import { sql, isDatabaseConfigured } from '@/lib/db/client'
 import { getProviderAdapter } from '@/lib/providers/provider-adapter'
 import type { ProviderAccount, ProviderCredentials, RawCategory, RawSeries, RawStream } from '@/lib/providers/types'
-import type { CatalogItem, Category, Channel, ChannelVariantPublic, ContentType, HomeResponse, StreamQuality } from '@/lib/types/tv'
+import type { CatalogCounts, CatalogItem, Category, Channel, ChannelVariantPublic, ContentType, HomeResponse, StreamQuality } from '@/lib/types/tv'
 import type { StreamVariant } from '@/lib/streaming/variant-health'
 
 export type CatalogPayload = {
@@ -14,6 +14,9 @@ export type CatalogPayload = {
   channels: Channel[]
   movies: CatalogItem[]
   series: CatalogItem[]
+  counts: CatalogCounts
+  generatedAt: string
+  loadTimeMs?: number
 }
 
 type ProviderServerRow = {
@@ -49,7 +52,7 @@ type CatalogCacheRow = {
   version: string
 }
 
-const CATALOG_VERSION = 'real-v1'
+const CATALOG_VERSION = 'real-v2'
 const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/w500'
 
 export function isCatalogProviderConfigured() {
@@ -251,7 +254,18 @@ async function enrichPosters(items: CatalogItem[], type: 'movie' | 'series') {
     const poster = await tmdbPoster(item.title, type, item.year)
     return { ...item, poster: poster || '' }
   }))
-  return [...enriched, ...items.slice(limited.length)].filter((item) => item.poster)
+  return [...enriched, ...items.slice(limited.length)]
+}
+
+function catalogCounts(categories: Category[], channels: Channel[], movies: CatalogItem[], series: CatalogItem[]): CatalogCounts {
+  return {
+    total_live_channels: channels.length,
+    total_movies: movies.length,
+    total_series: series.length,
+    total_live_categories: categories.filter((category) => category.type === 'live').length,
+    total_vod_categories: categories.filter((category) => category.type === 'vod' || category.type === 'movie').length,
+    total_series_categories: categories.filter((category) => category.type === 'series').length,
+  }
 }
 
 function mapLiveChannels(liveCategories: RawCategory[], liveStreams: RawStream[]): { channels: Channel[]; variants: VariantRow[] } {
@@ -293,6 +307,7 @@ function mapLiveChannels(liveCategories: RawCategory[], liveStreams: RawStream[]
 }
 
 export async function syncCatalog(): Promise<CatalogPayload> {
+  const startedAt = Date.now()
   const server = await getDefaultServer()
   const credentials = credentialsFromServer(server)
 
@@ -325,7 +340,17 @@ export async function syncCatalog(): Promise<CatalogPayload> {
     await persistCatalog(server.id, categories, channels, variants, movies, series)
   }
 
-  return { serverId: server.id, version: `${CATALOG_VERSION}-${Date.now()}`, categories, channels, movies, series }
+  return {
+    serverId: server.id,
+    version: `${CATALOG_VERSION}-${Date.now()}`,
+    categories,
+    channels,
+    movies,
+    series,
+    counts: catalogCounts(categories, channels, movies, series),
+    generatedAt: new Date().toISOString(),
+    loadTimeMs: Date.now() - startedAt,
+  }
 }
 
 async function persistCatalog(
@@ -369,7 +394,7 @@ async function persistCatalog(
   `
 }
 
-async function loadFromDatabase(): Promise<CatalogPayload | null> {
+async function loadFromDatabase(allowStaleVersion = false): Promise<CatalogPayload | null> {
   if (!isDatabaseConfigured) return null
   const server = await getDefaultServer()
   const [channelRows, variantRows, liveRows, vodRows, seriesRows] = await Promise.all([
@@ -381,6 +406,11 @@ async function loadFromDatabase(): Promise<CatalogPayload | null> {
   ])
 
   if (!channelRows.length && !vodRows[0]?.payload?.length && !seriesRows[0]?.payload?.length) return null
+  if (!allowStaleVersion && (
+    (liveRows[0]?.version && liveRows[0].version !== CATALOG_VERSION)
+    || (vodRows[0]?.version && vodRows[0].version !== CATALOG_VERSION)
+    || (seriesRows[0]?.version && seriesRows[0].version !== CATALOG_VERSION)
+  )) return null
 
   const variantsByChannel = new Map<string, VariantRow[]>()
   for (const variant of variantRows) {
@@ -411,6 +441,8 @@ async function loadFromDatabase(): Promise<CatalogPayload | null> {
     channels,
     movies: vodRows[0]?.payload || [],
     series: seriesRows[0]?.payload || [],
+    counts: catalogCounts(categories, channels, vodRows[0]?.payload || [], seriesRows[0]?.payload || []),
+    generatedAt: new Date().toISOString(),
   }
 }
 
@@ -420,7 +452,13 @@ export async function getCatalog(forceSync = false): Promise<CatalogPayload> {
       const fromDb = await loadFromDatabase()
       if (fromDb) return fromDb
     }
-    return syncCatalog()
+    try {
+      return await syncCatalog()
+    } catch (error) {
+      const stale = await loadFromDatabase(true)
+      if (stale) return { ...stale, loadTimeMs: undefined }
+      throw error
+    }
   }, Number(process.env.CATALOG_CACHE_TTL_SECONDS || 300))
 }
 
@@ -428,6 +466,12 @@ export async function getHome(): Promise<HomeResponse> {
   const catalog = await getCatalog()
   return {
     catalog_version: catalog.version,
+    counts: catalog.counts,
+    cache: {
+      generated_at: catalog.generatedAt,
+      ttl_seconds: Number(process.env.CATALOG_CACHE_TTL_SECONDS || 300),
+      load_time_ms: catalog.loadTimeMs,
+    },
     rows: [
       { id: 'live-featured', title: 'Canais ao vivo', type: 'live' as const, items: catalog.channels.slice(0, 20).map(channelToItem) },
       { id: 'movies-featured', title: 'Filmes em destaque', type: 'movie' as const, items: catalog.movies.slice(0, 50) },

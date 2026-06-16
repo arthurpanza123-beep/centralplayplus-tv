@@ -130,6 +130,23 @@ export interface CatalogItem {
 export interface HomeResponse {
   rows: HomeRow[]
   catalog_version: string
+  counts?: CatalogCounts
+  cache?: CatalogCacheInfo
+}
+
+export interface CatalogCounts {
+  total_live_channels: number
+  total_movies: number
+  total_series: number
+  total_live_categories: number
+  total_vod_categories: number
+  total_series_categories: number
+}
+
+export interface CatalogCacheInfo {
+  generated_at: string
+  ttl_seconds: number
+  load_time_ms?: number
 }
 
 // ──────────────────────────────────────────────────────────────────

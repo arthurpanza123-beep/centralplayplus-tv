@@ -76,6 +76,18 @@ public class MainActivity extends Activity {
     private JSONArray movies = new JSONArray();
     private JSONArray series = new JSONArray();
     private JSONArray categories = new JSONArray();
+    private int channelsPage = 0;
+    private int moviesPage = 0;
+    private int seriesPage = 0;
+    private boolean channelsHasMore = false;
+    private boolean moviesHasMore = false;
+    private boolean seriesHasMore = false;
+    private int totalLive = 0;
+    private int totalMovies = 0;
+    private int totalSeries = 0;
+    private int totalLiveCategories = 0;
+    private int totalVodCategories = 0;
+    private int totalSeriesCategories = 0;
 
     @Override
     protected void onCreate(Bundle b) {
@@ -276,21 +288,31 @@ public class MainActivity extends Activity {
         addPageTitle("Canais ao vivo", "Escolha um canal para assistir agora");
         statusView = muted("Carregando canais...");
         content.addView(statusView, lp(-1, -2));
-        loadChannels(() -> renderGrid(channels, "channels", "Nenhum canal encontrado."));
+        channels = new JSONArray();
+        channelsPage = 0;
+        loadMoreChannels();
     }
 
     private void showMovies() {
         screen = "movies";
         base("Filmes");
-        addPageTitle("Filmes", "Destaques do catálogo");
-        ensureCatalog(() -> renderGrid(movies, "movies", "Nenhum filme encontrado."));
+        addPageTitle("Filmes", "Catálogo completo com carregamento incremental");
+        statusView = muted("Carregando filmes...");
+        content.addView(statusView, lp(-1, -2));
+        movies = new JSONArray();
+        moviesPage = 0;
+        loadMoreMovies();
     }
 
     private void showSeries() {
         screen = "series";
         base("Séries");
-        addPageTitle("Séries", "Temporadas e coleções em destaque");
-        ensureCatalog(() -> renderGrid(series, "series", "Nenhuma série encontrada."));
+        addPageTitle("Séries", "Catálogo completo com carregamento incremental");
+        statusView = muted("Carregando séries...");
+        content.addView(statusView, lp(-1, -2));
+        series = new JSONArray();
+        seriesPage = 0;
+        loadMoreSeries();
     }
 
     private void showCategories() {
@@ -396,7 +418,11 @@ public class MainActivity extends Activity {
             try {
                 JSONObject home = request("GET", "/api/tv/home", null, token());
                 parseHome(home);
-                channels = loadChannelPages();
+                JSONObject firstChannels = loadPage("/api/tv/channels", 1);
+                channels = toArray(firstChannels);
+                channelsPage = 1;
+                channelsHasMore = firstChannels.optBoolean("has_more", false);
+                readCounts(firstChannels);
                 runOnUiThread(() -> renderHome(home));
             } catch (Exception e) {
                 runOnUiThread(() -> statusView.setText(messageFor(e, "Sem conexão.")));
@@ -404,11 +430,48 @@ public class MainActivity extends Activity {
         }).start();
     }
 
-    private void loadChannels(Runnable done) {
+    private void loadMoreChannels() {
+        if (statusView != null) statusView.setText(channelsPage == 0 ? "Carregando canais..." : "Carregando mais canais...");
         new Thread(() -> {
             try {
-                channels = loadChannelPages();
-                runOnUiThread(done);
+                JSONObject page = loadPage("/api/tv/channels", channelsPage + 1);
+                appendItems(channels, toArray(page));
+                channelsPage = page.optInt("page", channelsPage + 1);
+                channelsHasMore = page.optBoolean("has_more", false);
+                readCounts(page);
+                runOnUiThread(() -> renderGrid(channels, "channels", "Nenhum canal encontrado."));
+            } catch (Exception e) {
+                runOnUiThread(() -> statusView.setText(messageFor(e, "Sem conexão.")));
+            }
+        }).start();
+    }
+
+    private void loadMoreMovies() {
+        if (statusView != null) statusView.setText(moviesPage == 0 ? "Carregando filmes..." : "Carregando mais filmes...");
+        new Thread(() -> {
+            try {
+                JSONObject page = loadPage("/api/tv/movies", moviesPage + 1);
+                appendItems(movies, toArray(page));
+                moviesPage = page.optInt("page", moviesPage + 1);
+                moviesHasMore = page.optBoolean("has_more", false);
+                readCounts(page);
+                runOnUiThread(() -> renderGrid(movies, "movies", "Nenhum filme encontrado."));
+            } catch (Exception e) {
+                runOnUiThread(() -> statusView.setText(messageFor(e, "Sem conexão.")));
+            }
+        }).start();
+    }
+
+    private void loadMoreSeries() {
+        if (statusView != null) statusView.setText(seriesPage == 0 ? "Carregando séries..." : "Carregando mais séries...");
+        new Thread(() -> {
+            try {
+                JSONObject page = loadPage("/api/tv/series", seriesPage + 1);
+                appendItems(series, toArray(page));
+                seriesPage = page.optInt("page", seriesPage + 1);
+                seriesHasMore = page.optBoolean("has_more", false);
+                readCounts(page);
+                runOnUiThread(() -> renderGrid(series, "series", "Nenhuma série encontrada."));
             } catch (Exception e) {
                 runOnUiThread(() -> statusView.setText(messageFor(e, "Sem conexão.")));
             }
@@ -427,19 +490,22 @@ public class MainActivity extends Activity {
         }).start();
     }
 
-    private JSONArray loadChannelPages() throws Exception {
-        JSONArray all = new JSONArray();
-        boolean hasMore = true;
-        for (int page = 1; page <= 3 && hasMore && all.length() < 100; page++) {
-            Object response = requestAny("GET", "/api/tv/channels?page=" + page + "&page_size=80", null, token());
-            JSONArray items = toArray(response);
-            for (int i = 0; i < items.length() && all.length() < 100; i++) all.put(items.opt(i));
-            hasMore = response instanceof JSONObject && ((JSONObject) response).optBoolean("has_more", ((JSONObject) response).optBoolean("hasMore", false));
-        }
-        return all;
+    private JSONObject loadPage(String endpoint, int page) throws Exception {
+        Object response = requestAny("GET", endpoint + "?page=" + page + "&limit=100", null, token());
+        if (response instanceof JSONObject) return (JSONObject) response;
+        JSONObject wrapped = new JSONObject();
+        wrapped.put("items", response);
+        wrapped.put("page", page);
+        wrapped.put("has_more", false);
+        return wrapped;
+    }
+
+    private void appendItems(JSONArray target, JSONArray items) {
+        for (int i = 0; i < items.length(); i++) target.put(items.opt(i));
     }
 
     private void parseHome(JSONObject home) {
+        readCounts(home);
         homeRows = home.optJSONArray("rows");
         if (homeRows == null) homeRows = home.optJSONArray("sections");
         if (homeRows == null) homeRows = new JSONArray();
@@ -466,6 +532,7 @@ public class MainActivity extends Activity {
         content.removeAllViews();
         JSONObject featured = firstFeatured();
         addHero(featured);
+        addStats();
         if (channels.length() > 0) addRow("Canais ao vivo", channels, "home", 22);
         if (movies.length() > 0) addRow("Filmes em destaque", movies, "movies", 24);
         if (series.length() > 0) addRow("Séries em destaque", series, "series", 24);
@@ -529,6 +596,35 @@ public class MainActivity extends Activity {
         });
     }
 
+    private void addStats() {
+        if (totalLive <= 0 && totalMovies <= 0 && totalSeries <= 0) return;
+        LinearLayout stats = new LinearLayout(this);
+        stats.setOrientation(LinearLayout.HORIZONTAL);
+        stats.setPadding(0, 0, 0, 0);
+        content.addView(stats, lp(-1, 86));
+        stats.addView(statBox("Canais", totalLive), lp(210, 72));
+        stats.addView(statBox("Filmes", totalMovies), lp(210, 72));
+        stats.addView(statBox("Séries", totalSeries), lp(210, 72));
+    }
+
+    private View statBox(String label, int total) {
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setGravity(Gravity.CENTER);
+        box.setPadding(12, 8, 12, 8);
+        box.setBackground(round(Color.rgb(16, 28, 48), Color.rgb(51, 94, 130), 1, 12));
+        LinearLayout.LayoutParams boxLp = lp(210, 72);
+        boxLp.setMargins(0, 0, 14, 0);
+        box.setLayoutParams(boxLp);
+        TextView value = text(String.valueOf(total), 22, true, TEXT);
+        value.setGravity(Gravity.CENTER);
+        TextView name = text(label, 13, false, MUTED);
+        name.setGravity(Gravity.CENTER);
+        box.addView(value, lp(-1, -2));
+        box.addView(name, lp(-1, -2));
+        return box;
+    }
+
     private void addRow(String title, JSONArray items, String source, int limit) {
         TextView t = text(title, 24, true, TEXT);
         LinearLayout.LayoutParams titleLp = lp(-1, -2);
@@ -551,6 +647,9 @@ public class MainActivity extends Activity {
     }
 
     private void renderGrid(JSONArray items, String source, String empty) {
+        if (content.getChildCount() > 2) {
+            while (content.getChildCount() > 2) content.removeViewAt(2);
+        }
         if (statusView != null) content.removeView(statusView);
         if (items.length() == 0) {
             content.addView(muted(empty), lp(-1, -2));
@@ -575,7 +674,28 @@ public class MainActivity extends Activity {
             boolean poster = "movies".equals(source) || "series".equals(source) || "favorites".equals(source);
             row.addView(card(item, source, "categories".equals(source) ? 260 : poster ? 172 : 224, "categories".equals(source) ? 122 : poster ? 258 : 150));
         }
+        if (hasMore(source)) {
+            if (items.length() % columns == 0 || row == null) {
+                row = new LinearLayout(this);
+                row.setOrientation(LinearLayout.HORIZONTAL);
+                grid.addView(row, lp(-1, -2));
+            }
+            JSONObject more = new JSONObject();
+            try {
+                more.put("title", "Carregar mais");
+                more.put("type", "action");
+                more.put("genre", "Mais itens do catálogo");
+            } catch (Exception ignored) {}
+            row.addView(card(more, source, "categories".equals(source) ? 260 : 224, "categories".equals(source) ? 122 : 150));
+        }
         content.addView(scroll, lp(-1, 0, 1));
+    }
+
+    private boolean hasMore(String source) {
+        if ("channels".equals(source)) return channelsHasMore;
+        if ("movies".equals(source)) return moviesHasMore;
+        if ("series".equals(source)) return seriesHasMore;
+        return false;
     }
 
     private View card(JSONObject item, String source, int w, int h) {
@@ -639,9 +759,15 @@ public class MainActivity extends Activity {
 
     private void openItem(JSONObject item, String source) {
         String type = first(item, "type", "content_type", "kind");
+        if ("action".equals(type) && "Carregar mais".equals(first(item, "title", "name"))) {
+            if ("channels".equals(source)) loadMoreChannels();
+            else if ("movies".equals(source)) loadMoreMovies();
+            else if ("series".equals(source)) loadMoreSeries();
+            return;
+        }
         if ("categories".equals(source)) {
             showCategoryItems(item);
-        } else if ("channels".equals(source) || "home".equals(source) && isLive(type)) {
+        } else if ("channels".equals(source) || ("home".equals(source) && isLive(type))) {
             openPlayback(item);
         } else {
             showDetail(item);
@@ -917,6 +1043,18 @@ public class MainActivity extends Activity {
             if (value instanceof JSONArray) return (JSONArray) value;
         }
         return new JSONArray();
+    }
+
+    private void readCounts(JSONObject json) {
+        if (json == null) return;
+        JSONObject counts = json.optJSONObject("counts");
+        if (counts == null) return;
+        totalLive = counts.optInt("total_live_channels", totalLive);
+        totalMovies = counts.optInt("total_movies", totalMovies);
+        totalSeries = counts.optInt("total_series", totalSeries);
+        totalLiveCategories = counts.optInt("total_live_categories", totalLiveCategories);
+        totalVodCategories = counts.optInt("total_vod_categories", totalVodCategories);
+        totalSeriesCategories = counts.optInt("total_series_categories", totalSeriesCategories);
     }
 
     private String first(JSONObject obj, String... keys) {

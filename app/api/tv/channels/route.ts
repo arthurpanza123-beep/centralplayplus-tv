@@ -14,14 +14,22 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
   const category = searchParams.get('category')
   const page = Math.max(Number(searchParams.get('page') ?? '1'), 1)
-  const pageSize = Math.min(Math.max(Number(searchParams.get('page_size') || 80), 1), 200)
+  const pageSize = Math.min(Math.max(Number(searchParams.get('limit') || searchParams.get('page_size') || 80), 1), 500)
 
   try {
     const catalog = await getCatalog()
     const filtered = category ? catalog.channels.filter((channel) => channel.category === category || channel.id === category) : catalog.channels
     const start = (page - 1) * pageSize
     const items: Channel[] = filtered.slice(start, start + pageSize)
-    return json({ items, page, has_more: start + pageSize < filtered.length })
+    return json({
+      items,
+      page,
+      limit: pageSize,
+      total: filtered.length,
+      total_pages: Math.ceil(filtered.length / pageSize),
+      has_more: start + pageSize < filtered.length,
+      counts: catalog.counts,
+    })
   } catch (error) {
     return apiError('channels_unavailable', error instanceof Error ? error.message : 'Canais indisponíveis.', 503)
   }

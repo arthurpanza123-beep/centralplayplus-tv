@@ -22,3 +22,8 @@ node_modules
 .env.local.bak*
 *.tsbuildinfo
 validate_https.sh
+
+# Android local build/cache output
+apps/android-tv/.gradle/
+apps/android-tv/app/build/intermediates/
+apps/android-tv/app/build/tmp/

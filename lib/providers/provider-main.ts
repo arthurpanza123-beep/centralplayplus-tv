@@ -186,7 +186,11 @@ type XtreamSeries = XtreamStream & {
 }
 
 function normalizeBaseUrl(value: string) {
-  const clean = String(value || '').trim().replace(/\/+$/, '')
+  const clean = String(value || '')
+    .trim()
+    .replace(/[?#].*$/, '')
+    .replace(/\/player_api\.php$/i, '')
+    .replace(/\/+$/, '')
   if (!clean) throw new Error('XTREAM_BASE_URL ausente.')
   return /^https?:\/\//i.test(clean) ? clean : `http://${clean}`
 }
