@@ -67,6 +67,17 @@ export class ActivationProviderError extends Error {
   }
 }
 
+export type FreshXtreamActivationValidation = {
+  ok: boolean
+  playerApiStatus: number
+  liveStreamsCount: number
+  vodStreamsCount?: number
+  seriesCount?: number
+  playbackSampleOk: number
+  playbackSampleTotal: number
+  safeReason?: string
+}
+
 const memoryDevices = new Map<string, DeviceRow>()
 const memoryByInstall = new Map<string, string>()
 const DEVICE_KEY_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
@@ -343,46 +354,150 @@ async function looksPlayable(url: string) {
   }
 }
 
-async function validateProviderBeforeActivation(server: ProviderServerLike, account: ProviderAccount) {
-  if (!server.base_url || !account.username || !account.password) {
-    throw new ActivationProviderError('provider_validation_failed', 'Provider Xtream incompleto.')
+function activationValidationResult(input: Partial<FreshXtreamActivationValidation> & { safeReason?: string }): FreshXtreamActivationValidation {
+  return {
+    ok: false,
+    playerApiStatus: 0,
+    liveStreamsCount: 0,
+    playbackSampleOk: 0,
+    playbackSampleTotal: 0,
+    ...input,
   }
-  const adapter = getProviderAdapter(credentialsFromServer({
-    ...server,
+}
+
+async function fetchXtreamJson<T>(input: {
+  baseUrl: string
+  username: string
+  password: string
+  action?: string
+}): Promise<{ status: number; json: T | null }> {
+  const url = new URL(`${input.baseUrl}/player_api.php`)
+  url.searchParams.set('username', input.username)
+  url.searchParams.set('password', input.password)
+  if (input.action) url.searchParams.set('action', input.action)
+
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), Number(process.env.XTREAM_TIMEOUT_MS || 15_000))
+  try {
+    const response = await fetch(url, {
+      signal: controller.signal,
+      headers: {
+        accept: 'application/json',
+        'user-agent': 'CentralPlayPlusTV/1.3 ActivationCheck',
+      },
+    })
+    const text = await response.text()
+    if (!response.ok) return { status: response.status, json: null }
+    try {
+      return { status: response.status, json: JSON.parse(text) as T }
+    } catch {
+      return { status: response.status, json: null }
+    }
+  } finally {
+    clearTimeout(timeout)
+  }
+}
+
+function safePlayerApiReason(status: number) {
+  return status ? `xtream_player_api_${status}` : 'xtream_player_api_failed'
+}
+
+export async function validateFreshXtreamAccountForActivation(input: {
+  baseUrl: string
+  username: string
+  password: string
+}): Promise<FreshXtreamActivationValidation> {
+  const baseUrl = normalizeXtreamBaseUrl(input.baseUrl)
+  if (!baseUrl || !input.username || !input.password) {
+    return activationValidationResult({ safeReason: 'yellow_parse_failed' })
+  }
+
+  const playerApi = await fetchXtreamJson<unknown>({
+    baseUrl,
+    username: input.username,
+    password: input.password,
+  }).catch(() => ({ status: 0, json: null }))
+  if (playerApi.status !== 200 || !playerApi.json || typeof playerApi.json !== 'object') {
+    return activationValidationResult({ playerApiStatus: playerApi.status, safeReason: safePlayerApiReason(playerApi.status) })
+  }
+
+  const [liveStreamsResponse, vodStreamsResponse, seriesResponse] = await Promise.all([
+    fetchXtreamJson<unknown[]>({ baseUrl, username: input.username, password: input.password, action: 'get_live_streams' }).catch(() => ({ status: 0, json: null })),
+    fetchXtreamJson<unknown[]>({ baseUrl, username: input.username, password: input.password, action: 'get_vod_streams' }).catch(() => ({ status: 0, json: null })),
+    fetchXtreamJson<unknown[]>({ baseUrl, username: input.username, password: input.password, action: 'get_series' }).catch(() => ({ status: 0, json: null })),
+  ])
+
+  const liveStreamsRaw = Array.isArray(liveStreamsResponse.json) ? liveStreamsResponse.json : []
+  const vodStreams = Array.isArray(vodStreamsResponse.json) ? vodStreamsResponse.json : []
+  const series = Array.isArray(seriesResponse.json) ? seriesResponse.json : []
+  if (liveStreamsResponse.status !== 200 || !Array.isArray(liveStreamsResponse.json)) {
+    return activationValidationResult({
+      playerApiStatus: playerApi.status,
+      vodStreamsCount: vodStreams.length,
+      seriesCount: series.length,
+      safeReason: liveStreamsResponse.status ? `xtream_live_streams_${liveStreamsResponse.status}` : 'xtream_live_streams_failed',
+    })
+  }
+
+  const sample = liveStreamsRaw
+    .map((item) => String((item as { stream_id?: string | number }).stream_id || '').trim())
+    .filter(Boolean)
+    .slice(0, 5)
+  if (!sample.length) {
+    return activationValidationResult({
+      playerApiStatus: playerApi.status,
+      liveStreamsCount: liveStreamsRaw.length,
+      vodStreamsCount: vodStreams.length,
+      seriesCount: series.length,
+      safeReason: 'xtream_live_streams_empty',
+    })
+  }
+
+  const account: ProviderAccount = {
+    account_id: input.username,
+    username: input.username,
+    password: input.password,
+    expires_at: null,
+    max_connections: 1,
+    status: 'active',
+  }
+  const adapter = getProviderAdapter({
+    server_id: 'activation-validation',
+    kind: 'xtream',
+    base_url: baseUrl,
+    username: input.username,
+    password: input.password,
+  })
+
+  let playbackSampleOk = 0
+  for (const providerRef of sample) {
+    const raw = await adapter.getStreamUrl({ account, provider_ref: providerRef, type: 'live' })
+    if (await looksPlayable(raw.url)) playbackSampleOk++
+  }
+
+  const result = activationValidationResult({
+    ok: playbackSampleOk > 0,
+    playerApiStatus: playerApi.status,
+    liveStreamsCount: liveStreamsRaw.length,
+    vodStreamsCount: vodStreams.length,
+    seriesCount: series.length,
+    playbackSampleOk,
+    playbackSampleTotal: sample.length,
+    safeReason: playbackSampleOk > 0 ? undefined : 'playback_sample_failed',
+  })
+  return result
+}
+
+async function validateProviderBeforeActivation(server: ProviderServerLike, account: ProviderAccount) {
+  const result = await validateFreshXtreamAccountForActivation({
+    baseUrl: server.base_url,
     username: account.username,
     password: account.password,
-  }))
-
-  let status
-  let liveCategories
-  let liveStreams
-  let vodStreams
-  let series
-  try {
-    ;[status, liveCategories, liveStreams, vodStreams, series] = await Promise.all([
-      adapter.getUserStatus(account.account_id),
-      adapter.getLiveCategories(),
-      adapter.getLiveStreams(),
-      adapter.getVodStreams(),
-      adapter.getSeries(),
-    ])
-  } catch {
-    throw new ActivationProviderError('provider_validation_failed', 'Provider Xtream nao respondeu JSON valido.')
+  })
+  if (!result.ok) {
+    throw new ActivationProviderError(result.safeReason || 'provider_validation_failed', 'Provider Xtream falhou na validacao segura de ativacao.')
   }
-  if (status.status !== 'active') throw new ActivationProviderError('provider_validation_failed', 'Conta do fornecedor nao esta ativa.')
-  if (!Array.isArray(liveCategories) || liveCategories.length === 0) throw new ActivationProviderError('provider_validation_failed', 'Categorias ao vivo indisponiveis.')
-  if (!Array.isArray(liveStreams) || liveStreams.length === 0) throw new ActivationProviderError('provider_validation_failed', 'Canais ao vivo indisponiveis.')
-  if (!Array.isArray(vodStreams)) throw new ActivationProviderError('provider_validation_failed', 'Filmes indisponiveis.')
-  if (!Array.isArray(series)) throw new ActivationProviderError('provider_validation_failed', 'Series indisponiveis.')
-
-  const sample = liveStreams.slice(0, 3)
-  let ok = 0
-  for (const stream of sample) {
-    const raw = await adapter.getStreamUrl({ account, provider_ref: stream.provider_ref, type: 'live' })
-    if (await looksPlayable(raw.url)) ok++
-  }
-  if (sample.length && ok === 0) throw new ActivationProviderError('provider_validation_failed', 'Playback indisponivel no fornecedor.')
-  return { playbackOk: ok, playbackTotal: sample.length }
+  return result
 }
 
 function yellowBoxPlaceholderServer(id = 'yellowbox') {
@@ -455,6 +570,7 @@ export async function activateDevice(input: {
   const yellowBaseUrl = parsedYellow.xtreamBaseUrl
   const validationServer = yellowBaseUrl ? { ...server, base_url: yellowBaseUrl, username: providerAccount.username, password: providerAccount.password, m3u_url: parsedYellow.m3uUrl || null } : server
   await validateProviderBeforeActivation(validationServer, providerAccount)
+  providerAccount.server_id = server.id
 
   if (!isDatabaseConfigured) {
     const next = { ...device, status: 'active' as DeviceStatus, server_id: server.id, activated_at: new Date().toISOString(), expires_at: expiresAt }

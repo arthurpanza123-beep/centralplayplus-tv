@@ -84,10 +84,11 @@ export async function POST(req: Request) {
     await logAttempt({ deviceKey, ip, success: true })
     return json({ ok: true, status: device.status, message: 'TV ativada com sucesso' })
   } catch (error) {
-    await logAttempt({ deviceKey, ip, success: false, reason: 'activation_failed' })
     if (error instanceof ActivationProviderError) {
+      await logAttempt({ deviceKey, ip, success: false, reason: error.code })
       return apiError(error.code, 'Falha segura ao validar provider de playback.', 502)
     }
+    await logAttempt({ deviceKey, ip, success: false, reason: 'activation_failed' })
     return apiError('activation_failed', error instanceof Error ? error.message : 'Falha ao ativar TV.', 500)
   }
 }

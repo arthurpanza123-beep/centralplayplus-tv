@@ -33,8 +33,12 @@ export function parseYellowActivationResponse(raw: unknown): YellowActivationPar
 
   const username = firstValue(candidates, isUsernameLabel) || extractLooseCredential(text, 'username')
   const password = firstValue(candidates, isPasswordLabel) || extractLooseCredential(text, 'password')
-  const m3uUrl = firstUrl(candidates, isM3uLabel) || firstUrlFromText(text, /get\.php|type=m3u|output=ts/i)
-  const hlsUrl = firstUrl(candidates, isHlsLabel) || firstUrlFromText(text, /\.m3u8|output=hls|type=hls/i)
+  const m3uUrl = firstXtreamPlaylistUrl(candidates, /output=(?:mpegts|ts)|type=m3u/i)
+    || firstUrl(candidates, isM3uLabel)
+    || firstUrlFromText(text, /get\.php|type=m3u|output=(?:mpegts|ts)/i)
+  const hlsUrl = firstXtreamPlaylistUrl(candidates, /output=hls|type=hls|\.m3u8/i)
+    || firstUrl(candidates, isHlsLabel)
+    || firstUrlFromText(text, /\.m3u8|output=hls|type=hls/i)
   const dnsBase = firstBase(candidates, isPrimaryDnsLabel)
   const fallbackBase = normalizeXtreamBaseUrl(m3uUrl) || normalizeXtreamBaseUrl(hlsUrl)
   const expiresAt = firstExpiry(candidates) || extractExpiryFromText(text)
@@ -43,7 +47,7 @@ export function parseYellowActivationResponse(raw: unknown): YellowActivationPar
     ...EMPTY_PARSED,
     username,
     password,
-    xtreamBaseUrl: dnsBase || fallbackBase,
+    xtreamBaseUrl: fallbackBase || dnsBase,
     m3uUrl,
     hlsUrl,
     expiresAt,
@@ -100,7 +104,9 @@ function isPasswordLabel(label: string) {
 
 function isPrimaryDnsLabel(label: string) {
   const clean = normalizeLabel(label)
-  return !isIgnoredLabel(label) && /\b(dns|servidor|server|host|url|base)\b/.test(clean) && !/\bm3u|hls|lista|playlist|link\b/.test(clean)
+  return !isIgnoredLabel(label)
+    && /\b(dns|servidor|server|host|xtream|painel)\b/.test(clean)
+    && !/\bm3u|hls|lista|playlist|link\b/.test(clean)
 }
 
 function isM3uLabel(label: string) {
@@ -136,17 +142,38 @@ function firstUrl(candidates: Candidate[], predicate: (label: string) => boolean
   return ''
 }
 
+function firstXtreamPlaylistUrl(candidates: Candidate[], hint: RegExp) {
+  for (const candidate of candidates) {
+    const urls = extractUrls(candidate.value)
+    const url = urls.find((item) => {
+      if (isIgnoredUrl(item)) return false
+      if (!/get\.php/i.test(item)) return false
+      if (!/[?&]username=/i.test(item) || !/[?&]password=/i.test(item)) return false
+      return hint.test(item)
+    })
+    if (url) return url
+  }
+  return ''
+}
+
 function firstUrlFromText(text: string, hint: RegExp) {
-  const urls = text.match(/https?:\/\/[^\s"'<>]+|(?:[a-z0-9.-]+\.[a-z]{2,}:\d{2,5}\/[^\s"'<>]+)/gi) || []
+  const urls = extractUrls(text)
   return urls.find((url) => hint.test(url) && !isIgnoredUrl(url)) || ''
 }
 
 function extractUrl(value: string) {
-  const match = value.match(/https?:\/\/[^\s"'<>]+|(?:[a-z0-9.-]+\.[a-z]{2,}:\d{2,5}\/[^\s"'<>]+)/i)
-  return match && !isIgnoredUrl(match[0]) ? match[0] : ''
+  const match = extractUrls(value)[0]
+  return match && !isIgnoredUrl(match) ? match : ''
+}
+
+function extractUrls(value: string) {
+  return (value.match(/https?:\/\/[^\s"'<>]+|(?:[a-z0-9.-]+\.[a-z]{2,}:\d{2,5}\/[^\s"'<>]+)/gi) || [])
+    .map((url) => stripDecorations(url).replace(/\\n.*$/i, '').replace(/\\+$/, ''))
+    .filter(Boolean)
 }
 
 function isIgnoredUrl(value: string) {
+  if (/player_api\.php|get\.php|xmltv\.php/i.test(value) && /[?&](username|password)=/i.test(value)) return false
   return /smart|webplayer|web-player|checkout|ssiptv|playsim|blessed/i.test(value)
 }
 
