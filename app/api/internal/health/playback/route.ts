@@ -1,5 +1,5 @@
 import { apiError, isAdmin, json } from '@/lib/api/helpers'
-import { credentialsFromServer, getCatalog, getDefaultServer, loadChannelVariants } from '@/lib/catalog/service'
+import { credentialsFromServer, getCatalog, getProviderServerById, loadChannelVariants } from '@/lib/catalog/service'
 import { isDatabaseConfigured, sql } from '@/lib/db/client'
 import { notifyIncident } from '@/lib/notifications/evolution'
 import { getProviderAdapter } from '@/lib/providers/provider-adapter'
@@ -8,13 +8,14 @@ import type { ProviderAccount } from '@/lib/providers/types'
 async function getHealthAccount(): Promise<ProviderAccount | null> {
   if (!isDatabaseConfigured) return null
   const rows = (await sql`
-    select account_ref, username, password, max_conns, status, expires_at
+    select account_ref, server_id, username, password, max_conns, status, expires_at
     from provider_accounts
     where status = 'active'
     order by created_at desc
     limit 1
   `) as unknown as Array<{
     account_ref: string
+    server_id: string
     username: string
     password: string
     max_conns: number
@@ -25,6 +26,7 @@ async function getHealthAccount(): Promise<ProviderAccount | null> {
   if (!account) return null
   return {
     account_id: account.account_ref,
+    server_id: account.server_id,
     username: account.username,
     password: account.password,
     max_connections: account.max_conns,
@@ -43,6 +45,8 @@ async function looksPlayable(url: string) {
       signal: controller.signal,
       headers: { range: 'bytes=0-255', accept: '*/*', 'user-agent': 'CentralPlayPlusTV/1.3 HealthCheck' },
     })
+    const contentType = response.headers.get('content-type')?.toLowerCase() || ''
+    if (response.ok && /video|mpegurl|mp2t|octet-stream/.test(contentType)) return true
     let head = ''
     const reader = response.body?.getReader()
     if (reader) {
@@ -50,7 +54,7 @@ async function looksPlayable(url: string) {
       if (first.value) head = Buffer.from(first.value).toString('utf8', 0, 256)
       await reader.cancel().catch(() => {})
     }
-    return response.ok && !/<html|<!doctype|not found|forbidden|unauthorized|error/i.test(head)
+    return response.ok && !/<html|<!doctype|not found|forbidden|unauthorized/i.test(head)
   } catch {
     return false
   } finally {
@@ -63,9 +67,10 @@ export async function GET(req: Request) {
 
   const sampleSize = Math.max(3, Math.min(Number(new URL(req.url).searchParams.get('sample') || 20), 50))
   try {
-    const server = await getDefaultServer()
     const account = await getHealthAccount()
     if (!account) return apiError('provider_account_missing', 'Conta ativa do provider não encontrada.', 503)
+    const server = account.server_id ? await getProviderServerById(account.server_id) : null
+    if (!server?.base_url) return apiError('provider_server_missing', 'Servidor ativo do provider não encontrado.', 503)
     const adapter = getProviderAdapter(credentialsFromServer({ ...server, username: account.username, password: account.password }))
 
     const [status, catalog] = await Promise.all([

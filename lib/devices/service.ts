@@ -1,10 +1,11 @@
 import crypto from 'crypto'
 
 import { apiError } from '@/lib/api/helpers'
-import { getDefaultServer, credentialsFromServer, providerAccountFromCredentials } from '@/lib/catalog/service'
+import { getDefaultServer, getProviderServerById, credentialsFromServer, providerAccountFromCredentials } from '@/lib/catalog/service'
 import { sql, isDatabaseConfigured } from '@/lib/db/client'
 import { getProviderAdapter } from '@/lib/providers/provider-adapter'
-import { extractXtreamBaseUrl, normalizeXtreamBaseUrl } from '@/lib/providers/xtream-url'
+import { normalizeXtreamBaseUrl } from '@/lib/providers/xtream-url'
+import { parseYellowActivationResponse, type YellowActivationParsed } from '@/lib/providers/yellow-parser'
 import type { ProviderAccount } from '@/lib/providers/types'
 import {
   accessTokenExpiresAt,
@@ -54,6 +55,16 @@ type ProviderServerLike = {
   password: string | null
   api_key: string | null
   m3u_url: string | null
+}
+
+export class ActivationProviderError extends Error {
+  readonly code: string
+
+  constructor(code: string, message = code) {
+    super(message)
+    this.name = 'ActivationProviderError'
+    this.code = code
+  }
 }
 
 const memoryDevices = new Map<string, DeviceRow>()
@@ -192,12 +203,21 @@ export async function findActiveProviderAccount(device: DeviceRow): Promise<Prov
   if (!account) return null
   return {
     account_id: account.account_ref,
+    server_id: account.server_id,
     username: account.username,
     password: account.password,
     expires_at: account.expires_at,
     max_connections: account.max_conns,
     status: account.status,
   }
+}
+
+export async function getProviderServerForAccount(account: ProviderAccount) {
+  if (account.server_id) {
+    const server = await getProviderServerById(account.server_id)
+    if (server?.base_url) return server
+  }
+  return getDefaultServer()
 }
 
 export async function issueDeviceTokens(device: DeviceRow) {
@@ -263,26 +283,32 @@ async function callYellowBox(input: { deviceKey: string; clientName: string; pla
       days: input.days,
     }),
   })
-  if (!response.ok) throw new Error(`Yellow Box HTTP ${response.status}`)
-  return await response.json().catch(() => null) as Record<string, unknown> | null
+  const text = await response.text()
+  if (!response.ok) throw new ActivationProviderError('yellow_api_failed', `Yellow Box HTTP ${response.status}`)
+  try {
+    return JSON.parse(text) as unknown
+  } catch {
+    return text
+  }
 }
 
-function accountFromYellow(data: Record<string, unknown> | null, fallback: ProviderAccount): ProviderAccount {
-  if (!data) return fallback
-  const username = String(data.username || data.user || data.login || data.xtream_username || fallback.username || '').trim()
-  const password = String(data.password || data.pass || data.xtream_password || fallback.password || '').trim()
+function accountFromYellow(parsed: YellowActivationParsed, fallback: ProviderAccount): ProviderAccount {
+  const username = parsed.username || fallback.username || ''
+  const password = parsed.password || fallback.password || ''
   return {
-    account_id: String(data.account_id || data.order_id || username || fallback.account_id),
+    account_id: username || fallback.account_id,
     username,
     password,
-    expires_at: typeof data.expires_at === 'string' ? data.expires_at : fallback.expires_at,
-    max_connections: Number(data.max_connections || data.max_conns || fallback.max_connections || 1),
+    expires_at: parsed.expiresAt || fallback.expires_at,
+    max_connections: fallback.max_connections || 1,
     status: 'active',
   }
 }
 
-function baseUrlFromYellow(data: Record<string, unknown> | null) {
-  return extractXtreamBaseUrl(data)
+function assertYellowProvisioning(parsed: YellowActivationParsed) {
+  if (!parsed.username) throw new ActivationProviderError('provider_validation_failed', 'Username Xtream ausente no retorno Yellow.')
+  if (!parsed.password) throw new ActivationProviderError('provider_validation_failed', 'Password Xtream ausente no retorno Yellow.')
+  if (!parsed.xtreamBaseUrl) throw new ActivationProviderError('provider_validation_failed', 'DNS Xtream ausente no retorno Yellow.')
 }
 
 async function looksPlayable(url: string) {
@@ -299,6 +325,8 @@ async function looksPlayable(url: string) {
         accept: '*/*',
       },
     })
+    const contentType = response.headers.get('content-type')?.toLowerCase() || ''
+    if (response.ok && /video|mpegurl|mp2t|octet-stream/.test(contentType)) return true
     let head = ''
     const reader = response.body?.getReader()
     if (reader) {
@@ -306,7 +334,7 @@ async function looksPlayable(url: string) {
       if (first.value) head = Buffer.from(first.value).toString('utf8', 0, 256)
       await reader.cancel().catch(() => {})
     }
-    const looksHtml = /<html|<!doctype|xtream codes|not found|forbidden|unauthorized|error/i.test(head)
+    const looksHtml = /<html|<!doctype|xtream codes|not found|forbidden|unauthorized/i.test(head)
     return response.ok && !looksHtml
   } catch {
     return false
@@ -316,24 +344,36 @@ async function looksPlayable(url: string) {
 }
 
 async function validateProviderBeforeActivation(server: ProviderServerLike, account: ProviderAccount) {
+  if (!server.base_url || !account.username || !account.password) {
+    throw new ActivationProviderError('provider_validation_failed', 'Provider Xtream incompleto.')
+  }
   const adapter = getProviderAdapter(credentialsFromServer({
     ...server,
     username: account.username,
     password: account.password,
   }))
 
-  const [status, liveCategories, liveStreams, vodStreams, series] = await Promise.all([
-    adapter.getUserStatus(account.account_id),
-    adapter.getLiveCategories(),
-    adapter.getLiveStreams(),
-    adapter.getVodStreams(),
-    adapter.getSeries(),
-  ])
-  if (status.status !== 'active') throw new Error('Conta do fornecedor não está ativa.')
-  if (!Array.isArray(liveCategories) || liveCategories.length === 0) throw new Error('Categorias ao vivo indisponíveis no fornecedor.')
-  if (!Array.isArray(liveStreams) || liveStreams.length === 0) throw new Error('Canais ao vivo indisponíveis no fornecedor.')
-  if (!Array.isArray(vodStreams)) throw new Error('Filmes indisponíveis no fornecedor.')
-  if (!Array.isArray(series)) throw new Error('Séries indisponíveis no fornecedor.')
+  let status
+  let liveCategories
+  let liveStreams
+  let vodStreams
+  let series
+  try {
+    ;[status, liveCategories, liveStreams, vodStreams, series] = await Promise.all([
+      adapter.getUserStatus(account.account_id),
+      adapter.getLiveCategories(),
+      adapter.getLiveStreams(),
+      adapter.getVodStreams(),
+      adapter.getSeries(),
+    ])
+  } catch {
+    throw new ActivationProviderError('provider_validation_failed', 'Provider Xtream nao respondeu JSON valido.')
+  }
+  if (status.status !== 'active') throw new ActivationProviderError('provider_validation_failed', 'Conta do fornecedor nao esta ativa.')
+  if (!Array.isArray(liveCategories) || liveCategories.length === 0) throw new ActivationProviderError('provider_validation_failed', 'Categorias ao vivo indisponiveis.')
+  if (!Array.isArray(liveStreams) || liveStreams.length === 0) throw new ActivationProviderError('provider_validation_failed', 'Canais ao vivo indisponiveis.')
+  if (!Array.isArray(vodStreams)) throw new ActivationProviderError('provider_validation_failed', 'Filmes indisponiveis.')
+  if (!Array.isArray(series)) throw new ActivationProviderError('provider_validation_failed', 'Series indisponiveis.')
 
   const sample = liveStreams.slice(0, 3)
   let ok = 0
@@ -341,7 +381,7 @@ async function validateProviderBeforeActivation(server: ProviderServerLike, acco
     const raw = await adapter.getStreamUrl({ account, provider_ref: stream.provider_ref, type: 'live' })
     if (await looksPlayable(raw.url)) ok++
   }
-  if (sample.length && ok === 0) throw new Error('Playback indisponível no fornecedor.')
+  if (sample.length && ok === 0) throw new ActivationProviderError('provider_validation_failed', 'Playback indisponivel no fornecedor.')
   return { playbackOk: ok, playbackTotal: sample.length }
 }
 
@@ -407,9 +447,13 @@ export async function activateDevice(input: {
   })
   const clientName = input.client_name || (input as any).clientName || input.client_id || process.env.DEFAULT_YELLOWBOX_CLIENT || "Arthur";
   const yellow = await callYellowBox({ deviceKey: device.device_key, clientName, plan, days })
-  const providerAccount = accountFromYellow(yellow, fallbackAccount)
-  const yellowBaseUrl = baseUrlFromYellow(yellow)
-  const validationServer = yellowBaseUrl ? { ...server, base_url: yellowBaseUrl } : server
+  const parsedYellow = parseYellowActivationResponse(yellow)
+  if (process.env.YELLOWBOX_API_URL || process.env.YELLOW_BOX_API_URL || process.env.YELLOW_BOX_FULL_API_URL) {
+    assertYellowProvisioning(parsedYellow)
+  }
+  const providerAccount = accountFromYellow(parsedYellow, fallbackAccount)
+  const yellowBaseUrl = parsedYellow.xtreamBaseUrl
+  const validationServer = yellowBaseUrl ? { ...server, base_url: yellowBaseUrl, username: providerAccount.username, password: providerAccount.password, m3u_url: parsedYellow.m3uUrl || null } : server
   await validateProviderBeforeActivation(validationServer, providerAccount)
 
   if (!isDatabaseConfigured) {
@@ -429,7 +473,10 @@ export async function activateDevice(input: {
 
   await sql`
     update provider_servers
-    set base_url = ${yellowBaseUrl}
+    set base_url = ${yellowBaseUrl},
+        username = ${providerAccount.username},
+        password = ${providerAccount.password},
+        m3u_url = ${parsedYellow.m3uUrl || parsedYellow.hlsUrl || null}
     where id = ${server.id}
       and ${yellowBaseUrl} <> ''
   `

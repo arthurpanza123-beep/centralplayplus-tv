@@ -5,8 +5,8 @@
  * Backend implementado pelo Codex.
  */
 import { apiError, json } from '@/lib/api/helpers'
-import { credentialsFromServer, getCatalog, getDefaultServer, loadChannelVariants } from '@/lib/catalog/service'
-import { findActiveProviderAccount, requireActiveDevice } from '@/lib/devices/service'
+import { credentialsFromServer, getCatalog, loadChannelVariants } from '@/lib/catalog/service'
+import { findActiveProviderAccount, getProviderServerForAccount, requireActiveDevice } from '@/lib/devices/service'
 import { getProviderAdapter } from '@/lib/providers/provider-adapter'
 import { issueStreamToken } from '@/lib/security/tokens'
 import { rankVariants } from '@/lib/streaming/variant-health'
@@ -43,8 +43,9 @@ async function probeStream(url: string): Promise<{ ok: boolean; mimeType?: strin
     return { ok: false, format: formatFromUrl(lower) }
   }
   const contentType = response.headers.get('content-type')?.toLowerCase() || ''
+  const contentTypeLooksPlayable = /video|mpegurl|mp2t|octet-stream/.test(contentType)
   const looksHls = head.trimStart().startsWith('#EXTM3U')
-  const looksHtml = /<html|<!doctype|xtream codes|not found|forbidden|unauthorized|error/i.test(head)
+  const looksHtml = /<html|<!doctype|xtream codes|not found|forbidden|unauthorized/i.test(head)
   const format = looksHls || contentType.includes('mpegurl') || lower.includes('.m3u8')
     ? 'hls'
     : contentType.includes('mp2t') || lower.includes('.ts')
@@ -53,7 +54,7 @@ async function probeStream(url: string): Promise<{ ok: boolean; mimeType?: strin
         ? 'mp4'
         : formatFromUrl(lower)
   const mimeType = format === 'hls' ? 'application/x-mpegURL' : format === 'ts' ? 'video/mp2t' : format === 'mp4' ? 'video/mp4' : undefined
-  return { ok: response.ok && !looksHtml, mimeType, format, status: response.status }
+  return { ok: response.ok && (contentTypeLooksPlayable || !looksHtml), mimeType, format, status: response.status }
 }
 
 function formatFromUrl(lowerUrl: string): StreamFormat {
@@ -75,9 +76,9 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
     const { primary, fallbacks } = rankVariants(variants)
     if (!primary) return apiError('no_stream_variant', 'Nenhuma rota de stream disponível para este canal.', 404)
 
-    const server = await getDefaultServer()
     const account = await findActiveProviderAccount(device)
     if (!account) return apiError('provider_account_missing', 'Conta do fornecedor não vinculada ao aparelho.', 403)
+    const server = await getProviderServerForAccount(account)
     const catalog = await getCatalog()
     const channel = catalog.channels.find((item) => item.id === id)
     const base = process.env.PUBLIC_API_BASE_URL || new URL(req.url).origin

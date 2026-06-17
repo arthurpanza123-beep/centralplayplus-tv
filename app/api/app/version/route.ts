@@ -35,8 +35,8 @@ export async function GET(req: Request) {
   }
 
   const res: AppVersionResponse = {
-    latest_version: '1.0.0',
-    latest_version_code: 1,
+    latest_version: '1.3.0',
+    latest_version_code: 4,
     min_required_version_code: 1,
     force_update: false,
     message: 'Bem-vindo à Central Play Plus.',

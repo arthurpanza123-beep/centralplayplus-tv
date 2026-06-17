@@ -14,6 +14,11 @@ export async function GET(_req: Request, ctx: { params: Promise<{ deviceKey: str
   try {
     const device = await getDeviceByKey(deviceKey)
     if (!device) return apiError('device_not_found', 'Device Key não encontrada.', 404)
+    const pendingTtlMs = Number(process.env.TV_DEVICE_KEY_TTL_MINUTES || 30) * 60_000
+    if (device.status === 'pending' && Date.now() - new Date(device.created_at).getTime() > pendingTtlMs) {
+      const res: DeviceStatusResponse = { status: 'expired', message: 'Código expirado. Reabra o app para gerar outro.' }
+      return json(res)
+    }
     if (device.expires_at && new Date(device.expires_at).getTime() < Date.now()) {
       const res: DeviceStatusResponse = { status: 'expired', message: 'Acesso expirado. Fale com o suporte.' }
       return json(res)

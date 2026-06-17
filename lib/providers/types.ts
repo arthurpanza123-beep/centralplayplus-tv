@@ -30,6 +30,7 @@ export interface ProviderCredentials {
 // ──────────────────────────────────────────────────────────────────
 export interface ProviderAccount {
   account_id: string // id interno do fornecedor
+  server_id?: string // provider_servers.id vinculado a esta conta
   username: string
   password: string
   expires_at: string | null

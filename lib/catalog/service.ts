@@ -21,7 +21,7 @@ export type CatalogPayload = {
   loadTimeMs?: number
 }
 
-type ProviderServerRow = {
+export type ProviderServerRow = {
   id: string
   name: string
   kind: ProviderCredentials['kind']
@@ -149,6 +149,17 @@ export async function getDefaultServer(): Promise<ProviderServerRow> {
   }
 }
 
+export async function getProviderServerById(serverId: string): Promise<ProviderServerRow | null> {
+  if (!isDatabaseConfigured) return null
+  const rows = (await sql`
+    select id, name, kind, base_url, username, password, api_key, m3u_url
+    from provider_servers
+    where id = ${serverId}
+    limit 1
+  `) as unknown as ProviderServerRow[]
+  return rows[0] || null
+}
+
 export function credentialsFromServer(server: ProviderServerRow): ProviderCredentials {
   return {
     server_id: server.id,
@@ -164,6 +175,7 @@ export function credentialsFromServer(server: ProviderServerRow): ProviderCreden
 export function providerAccountFromCredentials(credentials: ProviderCredentials, account?: Partial<ProviderAccount> | null): ProviderAccount {
   return {
     account_id: account?.account_id || credentials.username || credentials.server_id,
+    server_id: account?.server_id || credentials.server_id,
     username: account?.username || credentials.username || '',
     password: account?.password || credentials.password || '',
     expires_at: account?.expires_at || null,

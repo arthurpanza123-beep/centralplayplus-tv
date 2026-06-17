@@ -1,6 +1,6 @@
 import { json, apiError } from '@/lib/api/helpers'
 import { verifyActivationPassword } from '@/lib/activation/password'
-import { activateDevice, normalizeDeviceKey } from '@/lib/devices/service'
+import { ActivationProviderError, activateDevice, normalizeDeviceKey } from '@/lib/devices/service'
 import { isDatabaseConfigured, sql } from '@/lib/db/client'
 import { clientId } from '@/lib/redis/rate-limit'
 
@@ -85,6 +85,9 @@ export async function POST(req: Request) {
     return json({ ok: true, status: device.status, message: 'TV ativada com sucesso' })
   } catch (error) {
     await logAttempt({ deviceKey, ip, success: false, reason: 'activation_failed' })
+    if (error instanceof ActivationProviderError) {
+      return apiError(error.code, 'Falha segura ao validar provider de playback.', 502)
+    }
     return apiError('activation_failed', error instanceof Error ? error.message : 'Falha ao ativar TV.', 500)
   }
 }
