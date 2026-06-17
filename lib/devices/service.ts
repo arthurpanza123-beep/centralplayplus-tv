@@ -5,7 +5,7 @@ import { getDefaultServer, getProviderServerById, credentialsFromServer, provide
 import { sql, isDatabaseConfigured } from '@/lib/db/client'
 import { getProviderAdapter } from '@/lib/providers/provider-adapter'
 import { normalizeXtreamBaseUrl } from '@/lib/providers/xtream-url'
-import { parseYellowActivationResponse, type YellowActivationParsed } from '@/lib/providers/yellow-parser'
+import { extractYellowXtreamBaseCandidates, parseYellowActivationResponse, type YellowActivationParsed } from '@/lib/providers/yellow-parser'
 import type { ProviderAccount } from '@/lib/providers/types'
 import {
   accessTokenExpiresAt,
@@ -500,6 +500,31 @@ async function validateProviderBeforeActivation(server: ProviderServerLike, acco
   return result
 }
 
+async function validateYellowCandidatesBeforeActivation(input: {
+  baseUrls: string[]
+  username: string
+  password: string
+}): Promise<{ baseUrl: string; validation: FreshXtreamActivationValidation }> {
+  const baseUrls = Array.from(new Set(input.baseUrls.map(normalizeXtreamBaseUrl).filter(Boolean))).slice(0, 8)
+  let last: FreshXtreamActivationValidation | null = null
+  const retryDelaysMs = [0, 1500, 3500, 7000]
+  for (const delay of retryDelaysMs) {
+    if (delay) await new Promise((resolve) => setTimeout(resolve, delay))
+    for (const baseUrl of baseUrls) {
+      const validation = await validateFreshXtreamAccountForActivation({
+        baseUrl,
+        username: input.username,
+        password: input.password,
+      })
+      if (validation.ok) return { baseUrl, validation }
+      last = validation
+    }
+  }
+
+  const safeReason = last?.safeReason || 'yellow_parse_failed'
+  throw new ActivationProviderError(safeReason, 'Nenhuma base Xtream Yellow validou com player_api/playback.')
+}
+
 function yellowBoxPlaceholderServer(id = 'yellowbox') {
   return {
     id,
@@ -567,9 +592,16 @@ export async function activateDevice(input: {
     assertYellowProvisioning(parsedYellow)
   }
   const providerAccount = accountFromYellow(parsedYellow, fallbackAccount)
-  const yellowBaseUrl = parsedYellow.xtreamBaseUrl
-  const validationServer = yellowBaseUrl ? { ...server, base_url: yellowBaseUrl, username: providerAccount.username, password: providerAccount.password, m3u_url: parsedYellow.m3uUrl || null } : server
-  await validateProviderBeforeActivation(validationServer, providerAccount)
+  const yellowBaseCandidates = [
+    parsedYellow.xtreamBaseUrl,
+    ...extractYellowXtreamBaseCandidates(yellow),
+  ].filter(Boolean)
+  const selectedYellow = await validateYellowCandidatesBeforeActivation({
+    baseUrls: yellowBaseCandidates,
+    username: providerAccount.username,
+    password: providerAccount.password,
+  })
+  const yellowBaseUrl = selectedYellow.baseUrl
   providerAccount.server_id = server.id
 
   if (!isDatabaseConfigured) {

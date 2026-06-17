@@ -54,6 +54,37 @@ export function parseYellowActivationResponse(raw: unknown): YellowActivationPar
   }
 }
 
+export function extractYellowXtreamBaseCandidates(raw: unknown): string[] {
+  const candidates = collectCandidates(raw)
+  const text = rawToText(raw)
+  for (const line of text.split(/\r?\n/)) {
+    const match = line.match(/^\s*([^:：=-]{2,80})\s*[:：=-]\s*(.+?)\s*$/)
+    if (match) candidates.push({ label: match[1], value: match[2] })
+  }
+
+  const scored: Array<{ score: number; baseUrl: string }> = []
+  for (const candidate of candidates) {
+    for (const url of extractUrls(candidate.value)) {
+      if (isIgnoredUrl(url)) continue
+      const baseUrl = normalizeXtreamBaseUrl(url)
+      if (!baseUrl) continue
+      scored.push({ score: candidateScore(candidate, url), baseUrl })
+    }
+    const explicitBase = firstBase([candidate], isPrimaryDnsLabel)
+    if (explicitBase) scored.push({ score: 40, baseUrl: explicitBase })
+  }
+
+  const seen = new Set<string>()
+  return scored
+    .sort((left, right) => right.score - left.score)
+    .map((item) => item.baseUrl)
+    .filter((baseUrl) => {
+      if (seen.has(baseUrl)) return false
+      seen.add(baseUrl)
+      return true
+    })
+}
+
 function collectCandidates(value: unknown, label = '', out: Candidate[] = []): Candidate[] {
   if (value === null || value === undefined) return out
   if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
@@ -154,6 +185,19 @@ function firstXtreamPlaylistUrl(candidates: Candidate[], hint: RegExp) {
     if (url) return url
   }
   return ''
+}
+
+function candidateScore(candidate: Candidate, url: string) {
+  const label = normalizeLabel(candidate.label)
+  let score = 0
+  if (/get\.php/i.test(url) && /[?&]username=/i.test(url) && /[?&]password=/i.test(url)) score += 100
+  if (/player_api\.php/i.test(url) && /[?&]username=/i.test(url) && /[?&]password=/i.test(url)) score += 95
+  if (/output=(?:mpegts|ts|hls)|type=m3u|\.m3u8/i.test(url)) score += 30
+  if (/\bm3u|lista|playlist|hls|xtream\b/.test(label)) score += 20
+  if (/\bdns|servidor|server|host|painel\b/.test(label)) score += 10
+  if (isIgnoredLabel(candidate.label)) score -= 50
+  if (/pay|checkout|smart|webplayer|app\b/i.test(label)) score -= 30
+  return score
 }
 
 function firstUrlFromText(text: string, hint: RegExp) {

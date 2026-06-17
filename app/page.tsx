@@ -18,6 +18,7 @@ import { MascotVideo } from '@/components/tv/mascot-video'
 import { VirtualKeyboard } from '@/components/tv/virtual-keyboard'
 import { LoginScreen } from '@/components/tv/login-screen'
 import { LoadingScreen } from '@/components/tv/loading-screen'
+import { IntroVideo } from '@/components/tv/intro-video'
 import { useTvNavigation } from '@/hooks/use-tv-navigation'
 import { playCue } from '@/lib/sounds'
 import { isDeviceActivated, getDeviceKey, regenerateDeviceKey, getTrialRemainingMs } from '@/lib/activation'
@@ -1154,14 +1155,14 @@ function FavoritosTab() {
 // ─── ROOT SHELL ────────────────────────────��─────────────���────────────────────
 const TABS: TabId[] = ['home', 'canais', 'filmes', 'series', 'kids', 'buscar', 'favoritos', 'configuracoes']
 
-type AppStage = 'boot' | 'login' | 'loading' | 'app'
+type AppStage = 'boot' | 'login' | 'loading' | 'intro' | 'app'
 
 export default function AppShell() {
   const [active, setActive] = useState<TabId>('home')
   const [stage, setStage] = useState<AppStage>('boot')
 
   useEffect(() => {
-    setStage(isDeviceActivated() ? 'app' : 'login')
+    setStage(isDeviceActivated() ? 'intro' : 'login')
   }, [])
 
   // TV-remote-style spatial navigation. Re-focuses when the active tab changes.
@@ -1178,7 +1179,8 @@ export default function AppShell() {
 
   if (stage === 'boot') return <div className="h-screen w-screen bg-background" />
   if (stage === 'login') return <LoginScreen onLogin={() => setStage('loading')} />
-  if (stage === 'loading') return <LoadingScreen onDone={() => setStage('app')} />
+  if (stage === 'loading') return <LoadingScreen onDone={() => setStage('intro')} />
+  if (stage === 'intro') return <IntroVideo onDone={() => setStage('app')} />
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-background animate-cp-power-on">
