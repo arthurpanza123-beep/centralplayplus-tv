@@ -57,6 +57,8 @@ export interface RawStream {
   provider_ref: string
   name: string
   logo?: string
+  image?: string
+  image_candidates?: string[]
   category_ref: string
   type: ContentType
   quality?: StreamQuality
@@ -68,8 +70,11 @@ export interface RawSeries {
   provider_ref: string
   name: string
   cover?: string
+  image?: string
+  image_candidates?: string[]
   category_ref: string
   seasons?: number
+  rating?: number
 }
 
 /** Link de reprodução cru retornado pelo fornecedor (sensível). */

@@ -4,6 +4,7 @@ import { cached } from '@/lib/cache/catalog-cache'
 import { sql, isDatabaseConfigured } from '@/lib/db/client'
 import { getProviderAdapter } from '@/lib/providers/provider-adapter'
 import { normalizeXtreamBaseUrl } from '@/lib/providers/xtream-url'
+import { issueImageToken } from '@/lib/security/tokens'
 import type { ProviderAccount, ProviderCredentials, RawCategory, RawSeries, RawStream } from '@/lib/providers/types'
 import type { CatalogCounts, CatalogItem, Category, Channel, ChannelVariantPublic, ContentType, HomeResponse, StreamQuality } from '@/lib/types/tv'
 import type { StreamVariant } from '@/lib/streaming/variant-health'
@@ -53,8 +54,9 @@ type CatalogCacheRow = {
   version: string
 }
 
-const CATALOG_VERSION = 'real-v2'
+const CATALOG_VERSION = 'real-v4'
 const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/w500'
+const IMAGE_PROXY_PREFIX = '/api/tv/image'
 
 export function isCatalogProviderConfigured() {
   return Boolean(process.env.XTREAM_BASE_URL && process.env.XTREAM_USERNAME && process.env.XTREAM_PASSWORD)
@@ -223,28 +225,108 @@ function ratingFromUnknown(value: unknown) {
 
 function catalogItemFromStream(stream: RawStream, categories: RawCategory[]): CatalogItem {
   const year = extractYear(stream.name)
+  const image = pickCatalogImage(stream)
   return {
     id: slugId('vod', stream.provider_ref),
+    name: stripTitle(stream.name),
     title: stripTitle(stream.name),
-    poster: stream.logo || '',
+    poster: image,
+    image,
+    cover: image,
+    cover_big: image,
+    movie_image: image,
+    stream_icon: image,
     type: 'movie',
     quality: stream.quality,
     year,
     rating: ratingFromUnknown((stream as RawStream & { rating?: unknown }).rating),
+    category: categoryName(categories, stream.category_ref, 'Filmes'),
+    category_id: stream.category_ref,
     genre: categoryName(categories, stream.category_ref, 'Filmes'),
   }
 }
 
 function catalogItemFromSeries(item: RawSeries, categories: RawCategory[]): CatalogItem {
   const year = extractYear(item.name)
+  const image = pickCatalogImage(item)
   return {
     id: slugId('series', item.provider_ref),
+    name: stripTitle(item.name),
     title: stripTitle(item.name),
-    poster: item.cover || '',
+    poster: image,
+    image,
+    cover: image,
+    cover_big: image,
+    series_image: image,
     type: 'series',
     quality: 'HD',
     year,
+    rating: item.rating,
+    category: categoryName(categories, item.category_ref, 'Séries'),
+    category_id: item.category_ref,
     genre: categoryName(categories, item.category_ref, 'Séries'),
+  }
+}
+
+export function pickCatalogImage(item: {
+  image?: string
+  logo?: string
+  cover?: string
+  cover_big?: string
+  movie_image?: string
+  series_image?: string
+  stream_icon?: string
+  image_candidates?: string[]
+}) {
+  return [
+    item.image,
+    item.logo,
+    item.stream_icon,
+    item.movie_image,
+    item.cover_big,
+    item.cover,
+    item.series_image,
+    ...(item.image_candidates || []),
+  ].find((value) => typeof value === 'string' && /^https?:\/\//i.test(value)) || ''
+}
+
+function proxiedImage(src?: string) {
+  if (!src || !/^https?:\/\//i.test(src)) return ''
+  return `${IMAGE_PROXY_PREFIX}/${encodeURIComponent(issueImageToken({ src }))}`
+}
+
+function publicCatalogItem(item: CatalogItem): CatalogItem {
+  const image = proxiedImage(pickCatalogImage(item)) || ''
+  return {
+    ...item,
+    name: item.name || item.title,
+    poster: image,
+    image,
+    cover: image,
+    cover_big: image,
+    movie_image: item.type === 'movie' || item.type === 'vod' ? image : undefined,
+    series_image: item.type === 'series' ? image : undefined,
+    stream_icon: image,
+    category: item.genre,
+  }
+}
+
+function publicChannel(channel: Channel): Channel {
+  const image = proxiedImage(pickCatalogImage(channel)) || ''
+  return {
+    ...channel,
+    logo: image,
+    image,
+    stream_icon: image,
+  }
+}
+
+export function publicCatalog(catalog: CatalogPayload): CatalogPayload {
+  return {
+    ...catalog,
+    channels: catalog.channels.map(publicChannel),
+    movies: catalog.movies.map(publicCatalogItem),
+    series: catalog.series.map(publicCatalogItem),
   }
 }
 
@@ -270,37 +352,29 @@ function catalogCounts(categories: Category[], channels: Channel[], movies: Cata
 }
 
 function mapLiveChannels(liveCategories: RawCategory[], liveStreams: RawStream[]): { channels: Channel[]; variants: VariantRow[] } {
-  const groups = new Map<string, RawStream[]>()
-  for (const stream of liveStreams) {
-    const key = stream.group_key || stream.provider_ref
-    const list = groups.get(key) || []
-    list.push(stream)
-    groups.set(key, list)
-  }
-
   const channels: Channel[] = []
   const variants: VariantRow[] = []
-  for (const [groupKey, streams] of groups) {
-    const primary = streams[0]
-    const channelId = slugId('ch', groupKey)
+  for (const stream of liveStreams) {
+    const channelId = slugId('ch', stream.provider_ref)
+    const variantId = `${channelId}-1`
     channels.push({
       id: channelId,
-      name: primary.name,
-      logo: primary.logo || '',
-      category: categoryName(liveCategories, primary.category_ref, 'Outros'),
+      name: stream.name,
+      logo: pickCatalogImage(stream),
+      image: pickCatalogImage(stream),
+      stream_icon: pickCatalogImage(stream),
+      category: categoryName(liveCategories, stream.category_ref, 'Outros'),
+      category_id: stream.category_ref,
       type: 'live',
-      variants: streams.map((stream, index) => {
-        const id = `${channelId}-${index + 1}`
-        variants.push({
-          id,
-          channel_id: channelId,
-          quality: stream.quality || 'HD',
-          provider_ref: stream.provider_ref,
-          health_score: 100,
-          status: 'active',
-        })
-        return publicVariant(id, stream.quality || 'HD')
-      }),
+      variants: [publicVariant(variantId, stream.quality || 'HD')],
+    })
+    variants.push({
+      id: variantId,
+      channel_id: channelId,
+      quality: stream.quality || 'HD',
+      provider_ref: stream.provider_ref,
+      health_score: 100,
+      status: 'active',
     })
   }
 
@@ -420,7 +494,7 @@ async function loadFromDatabase(allowStaleVersion = false): Promise<CatalogPaylo
     variantsByChannel.set(variant.channel_id, list)
   }
 
-  const channels: Channel[] = channelRows.map((channel) => ({
+  const baseChannels: Channel[] = channelRows.map((channel) => ({
     id: channel.id,
     name: channel.name,
     logo: channel.logo || '',
@@ -428,21 +502,46 @@ async function loadFromDatabase(allowStaleVersion = false): Promise<CatalogPaylo
     type: 'live',
     variants: (variantsByChannel.get(channel.id) || []).map((variant) => publicVariant(variant.id, variant.quality)),
   }))
-  const cachedCategories = (liveRows[0]?.payload as unknown as { categories?: Category[] } | null)?.categories || []
+  const baseChannelsById = new Map(baseChannels.map((channel) => [channel.id, channel]))
+  const channels = variantRows.length > baseChannels.length
+    ? variantRows.map((variant) => {
+      const base = baseChannelsById.get(variant.channel_id)
+      const siblingCount = variantsByChannel.get(variant.channel_id)?.length || 0
+      const name = siblingCount > 1 && variant.quality !== 'HD' ? `${base?.name || 'Canal'} ${variant.quality}` : base?.name || 'Canal'
+      return {
+        id: `chv-${variant.id}`,
+        name,
+        logo: base?.logo || '',
+        category: base?.category || 'Outros',
+        type: 'live' as const,
+        variants: [publicVariant(variant.id, variant.quality)],
+      }
+    })
+    : baseChannels
+  const livePayload = liveRows[0]?.payload as unknown as { categories?: Category[]; channels?: Channel[] } | null
+  const cachedCategories = livePayload?.categories || []
+  const cachedChannelsById = new Map((livePayload?.channels || []).map((channel) => [channel.id, channel]))
   const categories = cachedCategories.length ? cachedCategories : Array.from(new Set(channels.map((channel) => channel.category))).map((name, order) => ({
     id: slugId('cat-live', name),
     name,
     type: 'live' as const,
     order,
   }))
+  const channelsWithCachedMeta = channels.map((channel) => ({
+    ...channel,
+    category_id: cachedChannelsById.get(channel.id)?.category_id,
+    image: channel.logo || cachedChannelsById.get(channel.id)?.image || '',
+    stream_icon: channel.logo || cachedChannelsById.get(channel.id)?.stream_icon || '',
+  }))
+
   return {
     serverId: server.id,
     version: liveRows[0]?.version || vodRows[0]?.version || seriesRows[0]?.version || CATALOG_VERSION,
     categories,
-    channels,
+    channels: channelsWithCachedMeta,
     movies: vodRows[0]?.payload || [],
     series: seriesRows[0]?.payload || [],
-    counts: catalogCounts(categories, channels, vodRows[0]?.payload || [], seriesRows[0]?.payload || []),
+    counts: catalogCounts(categories, channelsWithCachedMeta, vodRows[0]?.payload || [], seriesRows[0]?.payload || []),
     generatedAt: new Date().toISOString(),
   }
 }
@@ -464,7 +563,7 @@ export async function getCatalog(forceSync = false): Promise<CatalogPayload> {
 }
 
 export async function getHome(): Promise<HomeResponse> {
-  const catalog = await getCatalog()
+  const catalog = publicCatalog(await getCatalog())
   return {
     catalog_version: catalog.version,
     counts: catalog.counts,
@@ -513,6 +612,7 @@ export async function loadChannelVariants(channelId: string): Promise<StreamVari
     select id, channel_id, quality, provider_ref, health_score, status
     from channel_variants
     where channel_id = ${channelId}
+       or id = ${channelId.startsWith('chv-') ? channelId.slice(4) : channelId}
     order by health_score desc, id asc
   `) as unknown as VariantRow[]
   return rows.map((row, index) => ({

@@ -133,7 +133,9 @@ export class MainProviderAdapter implements ProviderAdapter {
       .map((item) => ({
         provider_ref: String(item.series_id || ''),
         name: String(item.name || item.title || `Série ${item.series_id || ''}`).trim(),
-        cover: cleanUrl(item.cover || item.stream_icon),
+        cover: pickCatalogImage(item),
+        image: pickCatalogImage(item),
+        image_candidates: imageCandidates(item),
         category_ref: String(item.category_id || firstCategory(item.category_ids) || ''),
         seasons: Array.isArray(item.seasons) ? item.seasons.length : undefined,
       }))
@@ -174,7 +176,18 @@ type XtreamStream = {
   name?: string
   title?: string
   stream_icon?: string
+  icon?: string
+  logo?: string
   cover?: string
+  cover_big?: string
+  movie_image?: string
+  series_image?: string
+  info?: {
+    movie_image?: string
+    cover_big?: string
+    cover?: string
+    stream_icon?: string
+  }
   category_id?: string | number
   category_ids?: unknown
   container_extension?: string
@@ -225,6 +238,28 @@ function cleanUrl(value: unknown) {
   return /^https?:\/\//i.test(text) ? text : undefined
 }
 
+export function pickCatalogImage(item: XtreamStream | XtreamSeries | Record<string, unknown>) {
+  return imageCandidates(item)[0]
+}
+
+function imageCandidates(item: XtreamStream | XtreamSeries | Record<string, unknown>) {
+  const info = typeof item.info === 'object' && item.info ? item.info as Record<string, unknown> : {}
+  const values = [
+    item.stream_icon,
+    item.movie_image,
+    item.cover_big,
+    item.cover,
+    item.series_image,
+    item.logo,
+    item.icon,
+    info.movie_image,
+    info.cover_big,
+    info.cover,
+    info.stream_icon,
+  ]
+  return Array.from(new Set(values.map(cleanUrl).filter(Boolean) as string[]))
+}
+
 function firstCategory(value: unknown) {
   if (Array.isArray(value)) return value[0]
   return undefined
@@ -256,7 +291,9 @@ function normalizeStreams(data: XtreamStream[], type: ContentType): RawStream[] 
       return {
         provider_ref: providerRef,
         name,
-        logo: cleanUrl(item.stream_icon || item.cover),
+        logo: pickCatalogImage(item),
+        image: pickCatalogImage(item),
+        image_candidates: imageCandidates(item),
         category_ref: String(item.category_id || firstCategory(item.category_ids) || '').trim(),
         type,
         quality: inferQuality(name),

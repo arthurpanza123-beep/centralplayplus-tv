@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import type { CSSProperties } from 'react'
 import { createPortal } from 'react-dom'
 import Image from 'next/image'
 import { ArrowLeft, Play, Plus, Star } from 'lucide-react'
@@ -58,6 +59,7 @@ export function ContentDetail({ item, onClose }: ContentDetailProps) {
   if (!current || typeof document === 'undefined') return null
 
   const isMovie = current.type === 'movie'
+  const currentInitials = current.title.split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toUpperCase()
 
   return createPortal(
     <div
@@ -69,14 +71,23 @@ export function ContentDetail({ item, onClose }: ContentDetailProps) {
       <div ref={scrollRef} className="h-full w-full overflow-y-auto scrollbar-none">
         {/* ── Cinematic hero ── */}
         <div className="relative w-full h-[62vh] min-h-[420px]">
-          <Image
-            src={current.poster || `/posters/${current.id}.png`}
-            alt={current.title}
-            fill
-            priority
-            sizes="100vw"
-            className="object-cover object-top"
-          />
+          {current.poster ? (
+            <Image
+              src={current.poster}
+              alt={current.title}
+              fill
+              priority
+              sizes="100vw"
+              className="object-cover object-top"
+            />
+          ) : (
+            <div
+              className="absolute inset-0 flex items-center justify-center bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.2),transparent_32%),linear-gradient(145deg,var(--from),var(--to))]"
+              style={{ '--from': current.colorFrom, '--to': current.colorTo } as CSSProperties}
+            >
+              <span className="text-8xl font-black text-white/90 drop-shadow-2xl">{currentInitials || 'CP'}</span>
+            </div>
+          )}
           {/* Gradients: fade to background at bottom and from the left for text legibility */}
           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-r from-background/90 via-background/30 to-transparent" />
@@ -157,13 +168,24 @@ export function ContentDetail({ item, onClose }: ContentDetailProps) {
                   className="group/rec relative shrink-0 w-[300px] aspect-video rounded-xl overflow-hidden bg-card outline-none transition-transform duration-300 hover:scale-[1.04] focus-visible:scale-[1.04] focus-visible:ring-2 focus-visible:ring-white shadow-lg"
                   aria-label={`Ver ${rec.title}`}
                 >
-                  <Image
-                    src={rec.poster || `/posters/${rec.id}.png`}
-                    alt={rec.title}
-                    fill
-                    sizes="300px"
-                    className="object-cover object-top"
-                  />
+                  {rec.poster ? (
+                    <Image
+                      src={rec.poster}
+                      alt={rec.title}
+                      fill
+                      sizes="300px"
+                      className="object-cover object-top"
+                    />
+                  ) : (
+                    <div
+                      className="absolute inset-0 flex items-center justify-center bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.2),transparent_32%),linear-gradient(145deg,var(--from),var(--to))]"
+                      style={{ '--from': rec.colorFrom, '--to': rec.colorTo } as CSSProperties}
+                    >
+                      <span className="text-4xl font-black text-white/90 drop-shadow-lg">
+                        {rec.title.split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toUpperCase() || 'CP'}
+                      </span>
+                    </div>
+                  )}
                   <span className="absolute top-2 right-2 text-[9px] font-bold px-1.5 py-0.5 rounded bg-black/60 text-white/90 backdrop-blur-sm tracking-wide">
                     {rec.quality}
                   </span>

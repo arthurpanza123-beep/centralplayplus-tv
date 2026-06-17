@@ -1,6 +1,6 @@
 import crypto from 'crypto'
 
-type TokenKind = 'access' | 'refresh' | 'stream'
+type TokenKind = 'access' | 'refresh' | 'stream' | 'image'
 
 export type AccessClaims = {
   kind: 'access'
@@ -25,7 +25,12 @@ export type StreamClaims = {
   type: 'live' | 'vod' | 'series'
 }
 
-type Claims = AccessClaims | RefreshClaims | StreamClaims
+export type ImageClaims = {
+  kind: 'image'
+  src: string
+}
+
+type Claims = AccessClaims | RefreshClaims | StreamClaims | ImageClaims
 
 function base64url(input: Buffer | string) {
   return Buffer.from(input).toString('base64url')
@@ -34,13 +39,15 @@ function base64url(input: Buffer | string) {
 function secret(kind: TokenKind): string {
   if (kind === 'access') return process.env.TV_ACCESS_TOKEN_SECRET || process.env.ADMIN_API_KEY || 'centralplayplus-local-access-secret'
   if (kind === 'refresh') return process.env.TV_REFRESH_TOKEN_SECRET || process.env.ADMIN_API_KEY || 'centralplayplus-local-refresh-secret'
-  return process.env.TV_STREAM_TOKEN_SECRET || process.env.TV_ACCESS_TOKEN_SECRET || process.env.ADMIN_API_KEY || 'centralplayplus-local-stream-secret'
+  if (kind === 'stream') return process.env.TV_STREAM_TOKEN_SECRET || process.env.TV_ACCESS_TOKEN_SECRET || process.env.ADMIN_API_KEY || 'centralplayplus-local-stream-secret'
+  return process.env.TV_IMAGE_TOKEN_SECRET || process.env.TV_STREAM_TOKEN_SECRET || process.env.TV_ACCESS_TOKEN_SECRET || process.env.ADMIN_API_KEY || 'centralplayplus-local-image-secret'
 }
 
 function ttlSeconds(kind: TokenKind) {
   if (kind === 'access') return Number(process.env.TV_ACCESS_TOKEN_TTL_SECONDS || 60 * 60 * 12)
   if (kind === 'refresh') return Number(process.env.TV_REFRESH_TOKEN_TTL_SECONDS || 60 * 60 * 24 * 30)
-  return Number(process.env.TV_STREAM_TOKEN_TTL_SECONDS || 60 * 5)
+  if (kind === 'stream') return Number(process.env.TV_STREAM_TOKEN_TTL_SECONDS || 60 * 5)
+  return Number(process.env.TV_IMAGE_TOKEN_TTL_SECONDS || 60 * 60 * 24 * 7)
 }
 
 function sign(data: string, kind: TokenKind) {
@@ -91,6 +98,10 @@ export function issueStreamToken(claims: Omit<StreamClaims, 'kind'>) {
   return tokenFor({ ...claims, kind: 'stream' }, 'stream')
 }
 
+export function issueImageToken(claims: Omit<ImageClaims, 'kind'>) {
+  return tokenFor({ ...claims, kind: 'image' }, 'image')
+}
+
 export function verifyAccessToken(token: string) {
   return verify<AccessClaims>(token, 'access')
 }
@@ -101,6 +112,10 @@ export function verifyRefreshToken(token: string) {
 
 export function verifyStreamToken(token: string) {
   return verify<StreamClaims>(token, 'stream')
+}
+
+export function verifyImageToken(token: string) {
+  return verify<ImageClaims>(token, 'image')
 }
 
 export function accessTokenExpiresAt() {

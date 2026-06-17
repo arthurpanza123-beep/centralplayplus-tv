@@ -1,4 +1,5 @@
 import { memo } from 'react'
+import type { CSSProperties } from 'react'
 import Image from 'next/image'
 import { Star } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -12,6 +13,7 @@ interface ContentCardProps {
 
 // Memoized: only re-renders if the item reference or onClick changes
 export const ContentCard = memo(function ContentCard({ item, onClick, className }: ContentCardProps) {
+  const initials = item.title.split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toUpperCase()
   return (
     <button
       onClick={() => onClick(item)}
@@ -30,14 +32,22 @@ export const ContentCard = memo(function ContentCard({ item, onClick, className 
       aria-label={`Abrir detalhes de ${item.title}`}
     >
       <div className="relative w-full aspect-[2/3] overflow-hidden rounded-lg">
-        {/* Real poster art */}
-        <Image
-          src={item.poster || `/posters/${item.id}.png`}
-          alt={item.title}
-          fill
-          sizes="(max-width: 1920px) 16vw, 220px"
-          className="object-cover"
-        />
+        {item.poster ? (
+          <Image
+            src={item.poster}
+            alt={item.title}
+            fill
+            sizes="(max-width: 1920px) 16vw, 220px"
+            className="object-cover"
+          />
+        ) : (
+          <div
+            className="absolute inset-0 flex items-center justify-center bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.22),transparent_32%),linear-gradient(145deg,var(--from),var(--to))]"
+            style={{ '--from': item.colorFrom, '--to': item.colorTo } as CSSProperties}
+          >
+            <span className="px-4 text-center text-4xl font-black text-white/90 drop-shadow-lg">{initials || 'CP'}</span>
+          </div>
+        )}
 
         {/* Quality badge */}
         <span className="absolute top-2 right-2 z-20 text-[9px] font-bold px-1.5 py-0.5 rounded bg-black/60 text-white/90 backdrop-blur-sm tracking-wide">

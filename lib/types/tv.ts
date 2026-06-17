@@ -96,7 +96,10 @@ export interface Channel {
   id: string
   name: string
   logo: string
+  image?: string
+  stream_icon?: string
   category: string
+  category_id?: string
   type: ContentType
   variants: ChannelVariantPublic[]
 }
@@ -119,7 +122,16 @@ export interface HomeRow {
 export interface CatalogItem {
   id: string
   title: string
+  name?: string
   poster: string
+  image?: string
+  cover?: string
+  cover_big?: string
+  movie_image?: string
+  series_image?: string
+  stream_icon?: string
+  category?: string
+  category_id?: string
   type: ContentType
   quality?: StreamQuality
   year?: number

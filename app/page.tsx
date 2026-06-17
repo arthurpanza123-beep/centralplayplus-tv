@@ -1,6 +1,7 @@
 'use client'
 
 import { memo, useState, useMemo, useCallback, useEffect, useRef } from 'react'
+import type { CSSProperties } from 'react'
 import { Activity } from 'react'
 import Image from 'next/image'
 import {
@@ -197,6 +198,46 @@ const PosterRow = memo(function PosterRow({
   )
 })
 
+function PosterBackdrop({ item, className, priority = false }: { item: Movie | Series; className?: string; priority?: boolean }) {
+  if (item.poster) {
+    return (
+      <Image
+        src={item.poster}
+        alt={item.title}
+        fill
+        priority={priority}
+        sizes="100vw"
+        className={className || 'object-cover object-center'}
+        style={{ objectPosition: 'center 20%' }}
+      />
+    )
+  }
+  const initials = item.title.split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toUpperCase()
+  return (
+    <div
+      className="absolute inset-0 flex items-center justify-center bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.22),transparent_32%),linear-gradient(145deg,var(--from),var(--to))]"
+      style={{ '--from': item.colorFrom, '--to': item.colorTo } as CSSProperties}
+    >
+      <span className="text-7xl font-black text-white/90 drop-shadow-2xl">{initials || 'CP'}</span>
+    </div>
+  )
+}
+
+function ChannelLogo({ channel, className }: { channel: Channel; className: string }) {
+  return (
+    <div
+      className={cn(className, 'overflow-hidden flex items-center justify-center text-white shrink-0')}
+      style={{ background: channel.logo ? '#070b14' : channel.logoColor }}
+    >
+      {channel.logo ? (
+        <img src={channel.logo} alt={channel.name} className="h-full w-full object-contain p-2" loading="lazy" />
+      ) : (
+        <span className="font-black">{channel.logoText}</span>
+      )}
+    </div>
+  )
+}
+
 function HomeTab({ onNav }: { onNav: (id: TabId) => void }) {
   const { movies, series, loading, error } = useTvCatalog()
   const [selected, setSelected] = useState<Movie | Series | null>(null)
@@ -221,15 +262,7 @@ function HomeTab({ onNav }: { onNav: (id: TabId) => void }) {
         style={{ height: '58vh', minHeight: 340, position: 'relative' }}
       >
         {/* Capa do filme em alta resolução — object-position centro-topo para rostos/ação ficarem visíveis */}
-        <Image
-          src={featured.poster || `/posters/${featured.id}.png`}
-          alt={featured.title}
-          fill
-          priority
-          sizes="100vw"
-          className="object-cover object-center"
-          style={{ objectPosition: 'center 20%' }}
-        />
+        <PosterBackdrop item={featured} priority className="object-cover object-center" />
         {/* Vinheta inferior pesada para emergir o texto */}
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
         {/* Vinheta lateral esquerda */}
@@ -288,7 +321,7 @@ function HomeTab({ onNav }: { onNav: (id: TabId) => void }) {
 
 // ─── FILMES TAB ───────────────────────────────────────────────────────────────
 function FilmesTab() {
-  const { movies, movieCategories } = useTvCatalog()
+  const { movies, movieCategories, moviePage, loadMoreMovies } = useTvCatalog()
   const [category, setCategory] = useState('Todos')
   const [selected, setSelected] = useState<Movie | Series | null>(null)
   const [search, setSearch] = useState('')
@@ -315,7 +348,13 @@ function FilmesTab() {
       <ShellHeader title="Filmes" right={<SearchInput placeholder="Buscar filmes" value={search} onChange={setSearch} />} />
       <div className="flex flex-1 overflow-hidden">
         <CategorySidebar categories={movieCategories} selected={category} onSelect={setCategory} />
-        <div className="flex-1 overflow-y-auto px-6 py-4 scrollbar-none">
+        <div
+          className="flex-1 overflow-y-auto px-6 py-4 scrollbar-none"
+          onScroll={(e) => {
+            const el = e.currentTarget
+            if (el.scrollHeight - el.scrollTop - el.clientHeight < 900) loadMoreMovies()
+          }}
+        >
           {/* Hero de filme em destaque */}
           {!search && (
             <button
@@ -323,14 +362,7 @@ function FilmesTab() {
               className="group/hero relative w-full h-56 rounded-2xl overflow-hidden mb-6 text-left outline-none focus-visible:ring-4 focus-visible:ring-primary/60 shadow-xl"
               aria-label={`Ver ${heroMovie.title}`}
             >
-              <Image
-                src={heroMovie.poster || `/posters/${heroMovie.id}.png`}
-                alt={heroMovie.title}
-                fill
-                sizes="100vw"
-                className="object-cover object-center transition-transform duration-500 group-hover/hero:scale-105"
-                style={{ objectPosition: 'center 25%' }}
-              />
+              <PosterBackdrop item={heroMovie} className="object-cover object-center transition-transform duration-500 group-hover/hero:scale-105" />
               <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/50 to-transparent" />
               <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
               <div className="absolute inset-0 flex flex-col justify-center gap-2 px-8 max-w-lg">
@@ -356,6 +388,7 @@ function FilmesTab() {
             ? <div className="grid grid-cols-5 gap-5">{filtered.map((m) => <ContentCard key={m.id} item={m} onClick={handleSelect} />)}</div>
             : <div className="flex items-center justify-center h-48 text-muted-foreground text-sm">Nenhum filme encontrado.</div>
           }
+          {moviePage.loading && <div className="py-6 text-center text-sm text-muted-foreground">Carregando mais filmes...</div>}
         </div>
       </div>
       <ContentDetail item={selected} onClose={handleClose} />
@@ -365,7 +398,7 @@ function FilmesTab() {
 
 // ─── SÉRIES TAB ───────────────────────────────────────────────────────────────
 function SeriesTab() {
-  const { series, seriesCategories } = useTvCatalog()
+  const { series, seriesCategories, seriesPage, loadMoreSeries } = useTvCatalog()
   const [category, setCategory] = useState('Todos')
   const [selected, setSelected] = useState<Movie | Series | null>(null)
   const [search, setSearch] = useState('')
@@ -387,12 +420,19 @@ function SeriesTab() {
       <ShellHeader title="Séries" right={<SearchInput placeholder="Buscar séries" value={search} onChange={setSearch} />} />
       <div className="flex flex-1 overflow-hidden">
         <CategorySidebar categories={seriesCategories} selected={category} onSelect={setCategory} />
-        <div className="flex-1 overflow-y-auto px-6 py-4 scrollbar-none">
+        <div
+          className="flex-1 overflow-y-auto px-6 py-4 scrollbar-none"
+          onScroll={(e) => {
+            const el = e.currentTarget
+            if (el.scrollHeight - el.scrollTop - el.clientHeight < 900) loadMoreSeries()
+          }}
+        >
           <p className="text-sm font-semibold text-primary mb-4">{category}</p>
           {filtered.length > 0
             ? <div className="grid grid-cols-5 gap-5">{filtered.map((s) => <ContentCard key={s.id} item={s} onClick={handleSelect} />)}</div>
             : <div className="flex items-center justify-center h-48 text-muted-foreground text-sm">Nenhuma série encontrada.</div>
           }
+          {seriesPage.loading && <div className="py-6 text-center text-sm text-muted-foreground">Carregando mais séries...</div>}
         </div>
       </div>
       <ContentDetail item={selected} onClose={handleClose} />
@@ -402,7 +442,7 @@ function SeriesTab() {
 
 // ─── CANAIS TAB ───────────────────────────────────────────────────────────────
 function CanaisTab() {
-  const { channels, channelCategories } = useTvCatalog()
+  const { channels, channelCategories, channelPage, loadMoreChannels } = useTvCatalog()
   const [category, setCategory] = useState(channelCategories[0] || 'Todos')
   const [selectedChannel, setSelectedChannel] = useState<Channel | null>(null)
   const [fullscreen, setFullscreen] = useState(false)
@@ -485,7 +525,14 @@ function CanaisTab() {
         </aside>
 
         {/* Channel list — big icons + titles */}
-        <div className="flex flex-col shrink-0 border-r border-border overflow-y-auto scrollbar-none" style={{ width: 340 }}>
+        <div
+          className="flex flex-col shrink-0 border-r border-border overflow-y-auto scrollbar-none"
+          style={{ width: 340 }}
+          onScroll={(e) => {
+            const el = e.currentTarget
+            if (el.scrollHeight - el.scrollTop - el.clientHeight < 900) loadMoreChannels()
+          }}
+        >
           <div className="px-5 py-4 border-b border-border shrink-0">
             <p className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Canais &bull; {category}</p>
           </div>
@@ -504,11 +551,11 @@ function CanaisTab() {
               {selectedChannel?.id === ch.id && (
                 <span className="absolute left-0 top-0 h-full w-1.5 bg-gradient-to-b from-cyan-300 via-primary to-cyan-300 bg-[length:100%_200%] animate-cp-accent-slide shadow-[0_0_12px_rgba(37,99,235,0.9)]" />
               )}
-              <div className={cn('w-16 h-16 rounded-2xl flex items-center justify-center text-lg font-black text-white shrink-0 shadow-md transition-all duration-300',
-                selectedChannel?.id === ch.id && 'ring-2 ring-cyan-300/70 ring-offset-2 ring-offset-card scale-105')}
-                style={{ background: ch.logoColor }}>
-                {ch.logoText}
-              </div>
+              <ChannelLogo
+                channel={ch}
+                className={cn('w-16 h-16 rounded-2xl text-lg shadow-md transition-all duration-300',
+                  selectedChannel?.id === ch.id && 'ring-2 ring-cyan-300/70 ring-offset-2 ring-offset-card scale-105')}
+              />
               <div className="flex flex-col min-w-0 flex-1">
                 <span className={cn('text-lg font-bold truncate transition-colors', selectedChannel?.id === ch.id ? 'text-white' : 'text-foreground')}>{ch.name}</span>
                 <span className="text-sm text-muted-foreground truncate">{ch.currentProgram}</span>
@@ -523,6 +570,7 @@ function CanaisTab() {
               )}
             </div>
           ))}
+          {channelPage.loading && <div className="py-5 text-center text-sm text-muted-foreground">Carregando mais canais...</div>}
         </div>
 
         {/* Player + EPG — fills the remaining space */}
@@ -900,9 +948,7 @@ function KidsTab() {
                       className="group/kch text-left rounded-3xl p-5 flex flex-col gap-4 shadow-lg outline-none transition-transform duration-300 hover:scale-[1.04] focus:scale-[1.04] focus:ring-4 focus:ring-white/80"
                       style={{ background: `linear-gradient(150deg, ${ch.logoColor} 0%, ${ch.logoColor}99 100%)` }}>
                       <div className="flex items-center gap-3">
-                        <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-lg font-black text-white shrink-0">
-                          {ch.logoText}
-                        </div>
+                        <ChannelLogo channel={ch} className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm text-lg" />
                         <span className="text-white font-black text-lg leading-tight">{ch.name}</span>
                       </div>
                       <div className="flex items-center gap-2 text-white/90 text-sm">
@@ -1017,7 +1063,7 @@ function FavoritosTab() {
   const handleSelect = useCallback((i: Movie | Series) => setSelected(i), [])
   const handleClose = useCallback(() => setSelected(null), [])
 
-  // Curated demo favorites for each type.
+  // Local favorite preview uses the first real loaded items until persisted favorites are available.
   const favChannels = useMemo(() => channels.slice(0, 6), [channels])
   const favMovies = useMemo(() => movies.slice(0, 7), [movies])
   const favSeries = useMemo(() => series.slice(0, 7), [series])
@@ -1070,9 +1116,7 @@ function FavoritosTab() {
                     className="group/fav flex items-center gap-4 p-4 rounded-2xl border border-border bg-card text-left transition-all hover:bg-accent hover:scale-[1.02] outline-none focus-visible:ring-4 focus-visible:ring-primary/50 shadow-sm"
                     aria-label={`Abrir ${ch.name}`}
                   >
-                    <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-base font-black text-white shrink-0 shadow-md" style={{ background: ch.logoColor }}>
-                      {ch.logoText}
-                    </div>
+                    <ChannelLogo channel={ch} className="w-14 h-14 rounded-2xl text-base shadow-md" />
                     <div className="flex flex-col min-w-0 flex-1">
                       <span className="text-base font-bold text-foreground truncate">{ch.name}</span>
                       <span className="text-sm text-muted-foreground truncate">{ch.currentProgram}</span>
