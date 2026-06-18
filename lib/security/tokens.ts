@@ -19,6 +19,8 @@ export type StreamClaims = {
   kind: 'stream'
   device_id: string
   device_key: string
+  account_id?: string
+  server_id?: string
   channel_id: string
   variant_id: string
   provider_ref: string

@@ -6,7 +6,7 @@
  */
 import { apiError, json } from '@/lib/api/helpers'
 import { credentialsFromServer, getCatalog, loadChannelVariants } from '@/lib/catalog/service'
-import { findActiveProviderAccount, getProviderServerForAccount, requireActiveDevice } from '@/lib/devices/service'
+import { findProviderAccountForDevice, getProviderServerForAccount, requireActiveDevice } from '@/lib/devices/service'
 import { getProviderAdapter } from '@/lib/providers/provider-adapter'
 import { issueStreamToken } from '@/lib/security/tokens'
 import { rankVariants } from '@/lib/streaming/variant-health'
@@ -76,9 +76,12 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
     const { primary, fallbacks } = rankVariants(variants)
     if (!primary) return apiError('no_stream_variant', 'Nenhuma rota de stream disponível para este canal.', 404)
 
-    const account = await findActiveProviderAccount(device)
+    const account = await findProviderAccountForDevice(device)
     if (!account) return apiError('provider_account_missing', 'Conta do fornecedor não vinculada ao aparelho.', 403)
+    if (account.status === 'expired') return apiError('provider_account_expired', 'Conta do fornecedor expirada. Reative a TV.', 403)
+    if (account.status !== 'active') return apiError('provider_account_unavailable', 'Conta do fornecedor indisponível. Reative a TV.', 403)
     const server = await getProviderServerForAccount(account)
+    if (!server.base_url) return apiError('provider_server_missing', 'Servidor do fornecedor indisponível.', 502)
     const catalog = await getCatalog()
     const channel = catalog.channels.find((item) => item.id === id)
     const base = process.env.PUBLIC_API_BASE_URL || new URL(req.url).origin
@@ -102,6 +105,8 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
       const token = issueStreamToken({
         device_id: device.id,
         device_key: device.device_key,
+        account_id: account.row_id,
+        server_id: account.server_id,
         channel_id: id,
         variant_id: variant.id,
         provider_ref: variant.providerRef,

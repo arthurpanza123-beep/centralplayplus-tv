@@ -57,6 +57,7 @@ create table if not exists tv_devices (
   device_key    text unique not null,     -- ex: CP-482913
   client_id     uuid references clients(id) on delete set null,
   server_id     uuid references provider_servers(id),
+  provider_account_id uuid references provider_accounts(id) on delete set null,
   install_id    text,
   platform      text not null check (platform in ('android_tv','lg_webos','samsung_tizen','roku')),
   device_model  text,
@@ -70,6 +71,7 @@ create table if not exists tv_devices (
 );
 create index if not exists idx_tv_devices_status on tv_devices(status);
 create index if not exists idx_tv_devices_client on tv_devices(client_id);
+create index if not exists idx_tv_devices_provider_account on tv_devices(provider_account_id);
 
 -- Tokens emitidos por aparelho (access/refresh) — guardar apenas hash
 create table if not exists device_tokens (

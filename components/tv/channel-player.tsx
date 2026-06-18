@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom'
 import type { Channel } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { playCue } from '@/lib/sounds'
-import { getAccessToken } from '@/lib/activation'
+import { clearDeviceActivation, getAccessToken } from '@/lib/activation'
 
 interface ChannelPlayerProps {
   channel: Channel | null
@@ -20,6 +20,17 @@ export function ChannelPlayer({ channel, onClose }: ChannelPlayerProps) {
   const [errorCode, setErrorCode] = useState('')
   const videoRef = useRef<HTMLVideoElement>(null)
   const hintTimer = useRef<number | null>(null)
+  const needsReactivation = [
+    'provider_account_expired',
+    'PROVIDER_ACCOUNT_EXPIRED',
+    'provider_account_missing',
+    'PROVIDER_ACCOUNT_MISSING',
+  ].includes(errorCode)
+
+  function reactivate() {
+    clearDeviceActivation()
+    window.location.reload()
+  }
 
   // Escape / Back closes fullscreen (capture phase, before global nav).
   useEffect(() => {
@@ -134,9 +145,18 @@ export function ChannelPlayer({ channel, onClose }: ChannelPlayerProps) {
 
       {status === 'error' && (
         <div className="absolute inset-0 flex items-center justify-center px-8">
-          <div className="rounded-2xl border border-white/10 bg-black/70 px-8 py-6 text-center shadow-2xl">
-            <div className="text-white text-2xl font-black">Canal indisponível agora</div>
+          <div className="rounded-2xl border border-white/10 bg-black/70 px-8 py-6 text-center shadow-2xl" onClick={(event) => event.stopPropagation()}>
+            <div className="text-white text-2xl font-black">{needsReactivation ? 'Sua sessão precisa ser reativada' : 'Canal indisponível agora'}</div>
             <div className="mt-2 text-white/55 text-xs font-semibold">{errorCode || 'PLAY_FAILED'}</div>
+            {needsReactivation && (
+              <button
+                type="button"
+                onClick={reactivate}
+                className="mt-5 rounded-lg bg-white px-5 py-2 text-sm font-black text-black"
+              >
+                Gerar nova ativação
+              </button>
+            )}
           </div>
         </div>
       )}

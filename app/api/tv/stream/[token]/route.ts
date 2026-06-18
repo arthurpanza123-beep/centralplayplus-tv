@@ -1,6 +1,6 @@
 import { apiError } from '@/lib/api/helpers'
 import { credentialsFromServer } from '@/lib/catalog/service'
-import { findActiveProviderAccount, getDeviceByKey, getProviderServerForAccount } from '@/lib/devices/service'
+import { findProviderAccountByIdForDevice, getDeviceByKey, getProviderServerForAccount } from '@/lib/devices/service'
 import { getProviderAdapter } from '@/lib/providers/provider-adapter'
 import { verifyStreamToken } from '@/lib/security/tokens'
 
@@ -66,9 +66,18 @@ export async function GET(_req: Request, { params }: { params: Promise<{ token: 
     if (!device || device.id !== claims.device_id || device.status !== 'active') {
       return apiError('DEVICE_NOT_ACTIVE', 'Aparelho não autorizado para reproduzir.', 403)
     }
-    const account = await findActiveProviderAccount(device)
+    const account = await findProviderAccountByIdForDevice(device, claims.account_id || null)
     if (!account) return apiError('PROVIDER_ACCOUNT_MISSING', 'Conta do fornecedor não vinculada.', 403)
+    if (account.status === 'expired') return apiError('PROVIDER_ACCOUNT_EXPIRED', 'Conta do fornecedor expirada. Reative a TV.', 403)
+    if (account.status !== 'active') return apiError('PROVIDER_ACCOUNT_UNAVAILABLE', 'Conta do fornecedor indisponível. Reative a TV.', 403)
+    if (claims.server_id && account.server_id && claims.server_id !== account.server_id) {
+      return apiError('PROVIDER_ACCOUNT_MISMATCH', 'Conta do fornecedor não corresponde ao token de stream.', 403)
+    }
     const server = await getProviderServerForAccount(account)
+    if (claims.server_id && server.id !== claims.server_id) {
+      return apiError('PROVIDER_SERVER_MISMATCH', 'Servidor do fornecedor não corresponde ao token de stream.', 403)
+    }
+    if (!server.base_url) return apiError('PROVIDER_SERVER_MISSING', 'Servidor do fornecedor indisponível.', 502)
     const adapter = getProviderAdapter(credentialsFromServer(server))
     let raw = await adapter.getStreamUrl({ account, provider_ref: claims.provider_ref, type: claims.type })
     let playable = await upstreamLooksPlayable(raw.url)

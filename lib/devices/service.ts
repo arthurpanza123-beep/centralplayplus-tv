@@ -23,6 +23,7 @@ export type DeviceRow = {
   device_key: string
   client_id: string | null
   server_id: string | null
+  provider_account_id?: string | null
   install_id: string | null
   platform: Platform
   device_model: string | null
@@ -75,12 +76,15 @@ export type FreshXtreamActivationValidation = {
   seriesCount?: number
   playbackSampleOk: number
   playbackSampleTotal: number
+  accountStatus?: ProviderAccount['status']
+  accountExpiresAt?: string | null
   safeReason?: string
 }
 
 const memoryDevices = new Map<string, DeviceRow>()
 const memoryByInstall = new Map<string, string>()
 const DEVICE_KEY_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+let providerAccountLinkSchemaReady = false
 
 function pendingDeviceTtlMs() {
   return Number(process.env.TV_DEVICE_KEY_TTL_MINUTES || 30) * 60_000
@@ -103,6 +107,16 @@ function isPendingKeyExpired(device: DeviceRow) {
 
 function addDaysIso(days: number) {
   return new Date(Date.now() + Math.max(days || 30, 1) * 86400_000).toISOString()
+}
+
+async function ensureProviderAccountLinkSchema() {
+  if (!isDatabaseConfigured || providerAccountLinkSchemaReady) return
+  await sql`
+    alter table tv_devices
+    add column if not exists provider_account_id uuid references provider_accounts(id) on delete set null
+  `
+  await sql`create index if not exists idx_tv_devices_provider_account on tv_devices(provider_account_id)`
+  providerAccountLinkSchemaReady = true
 }
 
 function planDays(plan: string, days?: number) {
@@ -192,41 +206,81 @@ export async function registerDevice(input: RegisterDeviceRequest): Promise<Devi
 export async function getDeviceByKey(deviceKey: string): Promise<DeviceRow | null> {
   const key = normalizeDeviceKey(deviceKey)
   if (!isDatabaseConfigured) return memoryDevices.get(key) || null
+  await ensureProviderAccountLinkSchema()
   const rows = (await sql`select * from tv_devices where device_key = ${key} limit 1`) as unknown as DeviceRow[]
   return rows[0] || null
 }
 
-export async function findActiveProviderAccount(device: DeviceRow): Promise<ProviderAccount | null> {
-  if (!device.client_id) return null
-  if (!isDatabaseConfigured) {
-    const server = await getDefaultServer()
-    return providerAccountFromCredentials(credentialsFromServer(server))
-  }
-  const rows = (await sql`
-    select * from provider_accounts
-    where client_id = ${device.client_id}
-      and (${device.server_id}::uuid is null or server_id = ${device.server_id})
-      and status = 'active'
-    order by created_at desc
-    limit 1
-  `) as unknown as ProviderAccountRow[]
-  const account = rows[0]
-  if (!account) return null
+function accountExpired(account: { expires_at: string | null }) {
+  return Boolean(account.expires_at && new Date(account.expires_at).getTime() < Date.now())
+}
+
+function providerAccountFromRow(account: ProviderAccountRow): ProviderAccount {
   return {
+    row_id: account.id,
     account_id: account.account_ref,
     server_id: account.server_id,
     username: account.username,
     password: account.password,
     expires_at: account.expires_at,
     max_connections: account.max_conns,
-    status: account.status,
+    status: accountExpired(account) ? 'expired' : account.status,
   }
+}
+
+export async function findProviderAccountForDevice(device: DeviceRow): Promise<ProviderAccount | null> {
+  if (!device.client_id) return null
+  if (!isDatabaseConfigured) {
+    const server = await getDefaultServer()
+    return providerAccountFromCredentials(credentialsFromServer(server))
+  }
+  await ensureProviderAccountLinkSchema()
+
+  if (device.provider_account_id) {
+    const linkedRows = (await sql`
+      select * from provider_accounts
+      where id = ${device.provider_account_id}
+        and client_id = ${device.client_id}
+      limit 1
+    `) as unknown as ProviderAccountRow[]
+    if (linkedRows[0]) return providerAccountFromRow(linkedRows[0])
+  }
+
+  const rows = (await sql`
+    select * from provider_accounts
+    where client_id = ${device.client_id}
+      and (${device.server_id}::uuid is null or server_id = ${device.server_id})
+    order by created_at desc
+    limit 1
+  `) as unknown as ProviderAccountRow[]
+  const account = rows[0]
+  if (!account) return null
+  return providerAccountFromRow(account)
+}
+
+export async function findProviderAccountByIdForDevice(device: DeviceRow, accountId?: string | null): Promise<ProviderAccount | null> {
+  if (!accountId || !device.client_id || !isDatabaseConfigured) return findProviderAccountForDevice(device)
+  await ensureProviderAccountLinkSchema()
+  const rows = (await sql`
+    select * from provider_accounts
+    where id = ${accountId}
+      and client_id = ${device.client_id}
+    limit 1
+  `) as unknown as ProviderAccountRow[]
+  return rows[0] ? providerAccountFromRow(rows[0]) : null
+}
+
+export async function findActiveProviderAccount(device: DeviceRow): Promise<ProviderAccount | null> {
+  const account = await findProviderAccountForDevice(device)
+  if (!account || account.status !== 'active') return null
+  return account
 }
 
 export async function getProviderServerForAccount(account: ProviderAccount) {
   if (account.server_id) {
     const server = await getProviderServerById(account.server_id)
     if (server?.base_url) return server
+    throw new Error('provider_server_missing')
   }
   return getDefaultServer()
 }
@@ -420,6 +474,17 @@ export async function validateFreshXtreamAccountForActivation(input: {
   if (playerApi.status !== 200 || !playerApi.json || typeof playerApi.json !== 'object') {
     return activationValidationResult({ playerApiStatus: playerApi.status, safeReason: safePlayerApiReason(playerApi.status) })
   }
+  const userInfo = (playerApi.json as { user_info?: { status?: string; exp_date?: string | number | null } }).user_info || {}
+  const accountStatus = normalizeProviderStatus(userInfo.status, userInfo.exp_date)
+  const accountExpiresAt = unixExpiryToIso(userInfo.exp_date)
+  if (accountStatus !== 'active') {
+    return activationValidationResult({
+      playerApiStatus: playerApi.status,
+      accountStatus,
+      accountExpiresAt,
+      safeReason: accountStatus === 'expired' ? 'provider_account_expired' : 'provider_account_not_active',
+    })
+  }
 
   const [liveStreamsResponse, vodStreamsResponse, seriesResponse] = await Promise.all([
     fetchXtreamJson<unknown[]>({ baseUrl, username: input.username, password: input.password, action: 'get_live_streams' }).catch(() => ({ status: 0, json: null })),
@@ -483,9 +548,25 @@ export async function validateFreshXtreamAccountForActivation(input: {
     seriesCount: series.length,
     playbackSampleOk,
     playbackSampleTotal: sample.length,
+    accountStatus,
+    accountExpiresAt,
     safeReason: playbackSampleOk > 0 ? undefined : 'playback_sample_failed',
   })
   return result
+}
+
+function unixExpiryToIso(value?: string | number | null) {
+  const timestamp = Number(value || 0)
+  if (!Number.isFinite(timestamp) || timestamp <= 0) return null
+  return new Date(timestamp * 1000).toISOString()
+}
+
+function normalizeProviderStatus(status?: string, expDate?: string | number | null): ProviderAccount['status'] {
+  const normalized = String(status || '').toLowerCase()
+  if (normalized.includes('disabled') || normalized.includes('banned') || normalized.includes('blocked')) return 'blocked'
+  const expiresAt = unixExpiryToIso(expDate)
+  if (expiresAt && new Date(expiresAt).getTime() < Date.now()) return 'expired'
+  return 'active'
 }
 
 async function validateProviderBeforeActivation(server: ProviderServerLike, account: ProviderAccount) {
@@ -571,6 +652,7 @@ export async function activateDevice(input: {
   provider_account_id?: string
   days?: number
 }) {
+  await ensureProviderAccountLinkSchema()
   const device = await getDeviceByKey(input.device_key)
   if (!device) throw new Error('Device Key não encontrada.')
   const plan = input.plan_ref || input.plan || 'Mensal'
@@ -602,6 +684,9 @@ export async function activateDevice(input: {
     password: providerAccount.password,
   })
   const yellowBaseUrl = selectedYellow.baseUrl
+  const providerExpiresAt = selectedYellow.validation.accountExpiresAt && new Date(selectedYellow.validation.accountExpiresAt).getTime() > Date.now()
+    ? selectedYellow.validation.accountExpiresAt
+    : expiresAt
   providerAccount.server_id = server.id
 
   if (!isDatabaseConfigured) {
@@ -629,14 +714,17 @@ export async function activateDevice(input: {
       and ${yellowBaseUrl} <> ''
   `
 
-  await sql`
+  const insertedAccounts = (await sql`
     insert into provider_accounts (client_id, server_id, account_ref, username, password, max_conns, status, expires_at)
-    values (${clientId}, ${server.id}, ${providerAccount.account_id}, ${providerAccount.username}, ${providerAccount.password}, ${providerAccount.max_connections}, 'active', ${providerAccount.expires_at || expiresAt})
-  `
+    values (${clientId}, ${server.id}, ${providerAccount.account_id}, ${providerAccount.username}, ${providerAccount.password}, ${providerAccount.max_connections}, 'active', ${providerExpiresAt})
+    returning id
+  `) as unknown as { id: string }[]
+  const providerAccountId = insertedAccounts[0]?.id || null
   const rows = (await sql`
     update tv_devices
     set client_id = ${clientId},
         server_id = ${server.id},
+        provider_account_id = ${providerAccountId},
         status = 'active',
         activated_at = now(),
         expires_at = ${expiresAt}
