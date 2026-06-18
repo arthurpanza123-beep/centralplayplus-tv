@@ -1177,39 +1177,47 @@ export default function AppShell() {
     if (stage === 'app') playCue('open')
   }, [stage])
 
+  useEffect(() => {
+    const handleSessionExpired = () => setStage('login')
+    window.addEventListener('cpp-session-expired', handleSessionExpired)
+    return () => window.removeEventListener('cpp-session-expired', handleSessionExpired)
+  }, [])
+
   if (stage === 'boot') return <div className="h-screen w-screen bg-background" />
   if (stage === 'login') return <LoginScreen onLogin={() => setStage('loading')} />
   if (stage === 'loading') return <LoadingScreen onDone={() => setStage('intro')} />
   if (stage === 'intro') return <IntroVideo onDone={() => setStage('app')} />
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-background animate-cp-power-on">
-      {/* Sidebar — full on Início, slim icon-rail elsewhere (Claro TV+ style) */}
-      <Sidebar active={active} onNav={setActive} collapsed={active !== 'home'} />
+    <TvCatalogProvider>
+      <div className="flex h-screen w-screen overflow-hidden bg-background animate-cp-power-on">
+        {/* Sidebar — full on Início, slim icon-rail elsewhere (Claro TV+ style) */}
+        <Sidebar active={active} onNav={setActive} collapsed={active !== 'home'} />
 
-      <div className="flex flex-col flex-1 min-w-0 relative bg-background overflow-hidden">
-        {TABS.map((tab) => (
-          <Activity key={tab} mode={active === tab ? 'visible' : 'hidden'}>
-            <div
-              className="absolute inset-0 flex flex-col transition-[opacity,transform] duration-250 ease-out will-change-[opacity,transform]"
-              style={{
-                opacity: active === tab ? 1 : 0,
-                transform: active === tab ? 'translateX(0)' : 'translateX(14px)',
-                pointerEvents: active === tab ? 'auto' : 'none',
-              }}
-            >
-              {tab === 'home' && <HomeTab onNav={setActive} />}
-              {tab === 'filmes' && <FilmesTab />}
-              {tab === 'series' && <SeriesTab />}
-              {tab === 'canais' && <CanaisTab />}
-              {tab === 'configuracoes' && <ConfiguracoesTab onLogout={() => setStage('login')} />}
-              {tab === 'kids' && <KidsTab />}
-              {tab === 'buscar' && <BuscarTab />}
-              {tab === 'favoritos' && <FavoritosTab />}
-            </div>
-          </Activity>
-        ))}
+        <div className="flex flex-col flex-1 min-w-0 relative bg-background overflow-hidden">
+          {TABS.map((tab) => (
+            <Activity key={tab} mode={active === tab ? 'visible' : 'hidden'}>
+              <div
+                className="absolute inset-0 flex flex-col transition-[opacity,transform] duration-250 ease-out will-change-[opacity,transform]"
+                style={{
+                  opacity: active === tab ? 1 : 0,
+                  transform: active === tab ? 'translateX(0)' : 'translateX(14px)',
+                  pointerEvents: active === tab ? 'auto' : 'none',
+                }}
+              >
+                {tab === 'home' && <HomeTab onNav={setActive} />}
+                {tab === 'filmes' && <FilmesTab />}
+                {tab === 'series' && <SeriesTab />}
+                {tab === 'canais' && <CanaisTab />}
+                {tab === 'configuracoes' && <ConfiguracoesTab onLogout={() => setStage('login')} />}
+                {tab === 'kids' && <KidsTab />}
+                {tab === 'buscar' && <BuscarTab />}
+                {tab === 'favoritos' && <FavoritosTab />}
+              </div>
+            </Activity>
+          ))}
+        </div>
       </div>
-    </div>
+    </TvCatalogProvider>
   )
 }

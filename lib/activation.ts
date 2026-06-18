@@ -125,6 +125,17 @@ export function markDeviceActivated(tokens?: { access_token?: string; refresh_to
   }
 }
 
+export function clearDeviceActivation(): void {
+  if (typeof window === 'undefined') return
+  try {
+    window.localStorage.removeItem(ACTIVATION_KEY)
+    window.localStorage.removeItem(ACCESS_TOKEN_KEY)
+    window.localStorage.removeItem(REFRESH_TOKEN_KEY)
+  } catch {
+    /* ignore storage errors (private mode, etc.) */
+  }
+}
+
 export function getAccessToken(): string {
   if (typeof window === 'undefined') return ''
   return window.localStorage.getItem(ACCESS_TOKEN_KEY) || ''

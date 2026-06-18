@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 
-import { getAccessToken, getDeviceKey } from '@/lib/activation'
+import { clearDeviceActivation, getAccessToken, getDeviceKey, getRefreshToken, markDeviceActivated } from '@/lib/activation'
 import type { Channel as ApiChannel, CatalogCounts, CatalogItem, Category, HomeResponse, StreamQuality } from '@/lib/types/tv'
 import type { Channel, KidsItem, Movie, Series, User } from '@/lib/types'
 
@@ -44,14 +44,52 @@ const PAGE_SIZE = {
 
 const EMPTY_PAGE: PageState = { page: 0, hasMore: false, total: 0, loading: false }
 
-function authHeaders(): HeadersInit {
-  const token = getAccessToken()
+async function renewFromStatus(): Promise<string> {
+  const deviceKey = getDeviceKey()
+  if (!deviceKey || deviceKey === '----' || deviceKey === 'CP-000000') return ''
+  const res = await fetch(`/api/tv/status/${encodeURIComponent(deviceKey)}`, { cache: 'no-store' })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok || data?.status !== 'active' || !data?.access_token) return ''
+  markDeviceActivated({ access_token: data.access_token, refresh_token: data.refresh_token })
+  return data.access_token
+}
+
+async function renewFromRefreshToken(): Promise<string> {
+  const deviceKey = getDeviceKey()
+  const refreshToken = getRefreshToken()
+  if (!deviceKey || !refreshToken) return ''
+  const res = await fetch('/api/tv/activate-token', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    cache: 'no-store',
+    body: JSON.stringify({ device_key: deviceKey, refresh_token: refreshToken }),
+  })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok || !data?.access_token) return ''
+  markDeviceActivated({ access_token: data.access_token, refresh_token: data.refresh_token })
+  return data.access_token
+}
+
+async function ensureAccessToken(): Promise<string> {
+  return getAccessToken() || await renewFromStatus()
+}
+
+function authHeaders(token: string): HeadersInit {
   return token ? { authorization: `Bearer ${token}` } : {}
 }
 
 async function apiJson<T>(path: string): Promise<T> {
-  const res = await fetch(path, { headers: authHeaders(), cache: 'no-store' })
+  let token = await ensureAccessToken()
+  let res = await fetch(path, { headers: authHeaders(token), cache: 'no-store' })
+  if (res.status === 401) {
+    token = await renewFromRefreshToken() || await renewFromStatus()
+    res = await fetch(path, { headers: authHeaders(token), cache: 'no-store' })
+  }
   const data = await res.json().catch(() => ({}))
+  if (res.status === 401 || res.status === 403) {
+    clearDeviceActivation()
+    window.dispatchEvent(new Event('cpp-session-expired'))
+  }
   if (!res.ok) throw new Error(data?.error?.message || `HTTP ${res.status}`)
   return data as T
 }
@@ -140,11 +178,18 @@ function unique(values: string[]) {
 }
 
 type PageResponse<T> = {
-  items: T[]
+  items?: T[]
+  channels?: T[]
+  movies?: T[]
+  series?: T[]
   page: number
   total: number
   has_more: boolean
   counts?: CatalogCounts
+}
+
+function pageItems<T>(data: PageResponse<T>, key: 'channels' | 'movies' | 'series'): T[] {
+  return data.items || data[key] || []
 }
 
 function defaultUser(): User {
@@ -178,26 +223,44 @@ export function TvCatalogProvider({ children }: { children: React.ReactNode }) {
 
   const loadChannelsPage = useCallback(async (page: number, replace = false) => {
     setChannelPage((state) => ({ ...state, loading: true }))
-    const data = await apiJson<PageResponse<ApiChannel>>(`/api/tv/channels?page=${page}&limit=${PAGE_SIZE.channels}`)
-    setChannels((current) => replace ? data.items.map(channelFromApi) : [...current, ...data.items.map((item, index) => channelFromApi(item, current.length + index))])
-    setCounts(data.counts)
-    setChannelPage({ page: data.page, hasMore: data.has_more, total: data.total, loading: false })
+    try {
+      const data = await apiJson<PageResponse<ApiChannel>>(`/api/tv/channels?page=${page}&limit=${PAGE_SIZE.channels}`)
+      const items = pageItems(data, 'channels')
+      setChannels((current) => replace ? items.map(channelFromApi) : [...current, ...items.map((item, index) => channelFromApi(item, current.length + index))])
+      setCounts((current) => data.counts || current)
+      setChannelPage({ page: data.page, hasMore: data.has_more, total: data.total, loading: false })
+    } catch (error) {
+      setChannelPage((state) => ({ ...state, loading: false }))
+      throw error
+    }
   }, [])
 
   const loadMoviesPage = useCallback(async (page: number, replace = false) => {
     setMoviePage((state) => ({ ...state, loading: true }))
-    const data = await apiJson<PageResponse<CatalogItem>>(`/api/tv/movies?page=${page}&limit=${PAGE_SIZE.movies}`)
-    setMovies((current) => replace ? data.items.map(movieFromItem) : [...current, ...data.items.map((item, index) => movieFromItem(item, current.length + index))])
-    setCounts(data.counts)
-    setMoviePage({ page: data.page, hasMore: data.has_more, total: data.total, loading: false })
+    try {
+      const data = await apiJson<PageResponse<CatalogItem>>(`/api/tv/movies?page=${page}&limit=${PAGE_SIZE.movies}`)
+      const items = pageItems(data, 'movies')
+      setMovies((current) => replace ? items.map(movieFromItem) : [...current, ...items.map((item, index) => movieFromItem(item, current.length + index))])
+      setCounts((current) => data.counts || current)
+      setMoviePage({ page: data.page, hasMore: data.has_more, total: data.total, loading: false })
+    } catch (error) {
+      setMoviePage((state) => ({ ...state, loading: false }))
+      throw error
+    }
   }, [])
 
   const loadSeriesPage = useCallback(async (page: number, replace = false) => {
     setSeriesPage((state) => ({ ...state, loading: true }))
-    const data = await apiJson<PageResponse<CatalogItem>>(`/api/tv/series?page=${page}&limit=${PAGE_SIZE.series}`)
-    setSeries((current) => replace ? data.items.map(seriesFromItem) : [...current, ...data.items.map((item, index) => seriesFromItem(item, current.length + index))])
-    setCounts(data.counts)
-    setSeriesPage({ page: data.page, hasMore: data.has_more, total: data.total, loading: false })
+    try {
+      const data = await apiJson<PageResponse<CatalogItem>>(`/api/tv/series?page=${page}&limit=${PAGE_SIZE.series}`)
+      const items = pageItems(data, 'series')
+      setSeries((current) => replace ? items.map(seriesFromItem) : [...current, ...items.map((item, index) => seriesFromItem(item, current.length + index))])
+      setCounts((current) => data.counts || current)
+      setSeriesPage({ page: data.page, hasMore: data.has_more, total: data.total, loading: false })
+    } catch (error) {
+      setSeriesPage((state) => ({ ...state, loading: false }))
+      throw error
+    }
   }, [])
 
   const loadMoreChannels = useCallback(async () => {
@@ -218,29 +281,35 @@ export function TvCatalogProvider({ children }: { children: React.ReactNode }) {
   const refresh = useCallback(async () => {
     setLoading(true)
     setError('')
-    try {
-      const [home, allCategories] = await Promise.all([
-        apiJson<HomeResponse>('/api/tv/home'),
-        apiJson<Category[]>('/api/tv/categories'),
-      ])
+    const catalogErrors: string[] = []
+    const home = await apiJson<HomeResponse>('/api/tv/home').catch((err) => {
+      catalogErrors.push(err instanceof Error ? err.message : 'Home indisponível.')
+      return null
+    })
+    const allCategories = await apiJson<Category[]>('/api/tv/categories').catch(() => [])
+    if (home?.counts) {
       setCounts(home.counts)
-      setCategories(allCategories)
-      await Promise.all([
-        loadChannelsPage(1, true),
-        loadMoviesPage(1, true),
-        loadSeriesPage(1, true),
-      ])
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Catálogo indisponível.')
-      setMovies([])
-      setSeries([])
-      setChannels([])
+    }
+    setCategories(allCategories)
+    const results = await Promise.allSettled([
+      loadChannelsPage(1, true),
+      loadMoviesPage(1, true),
+      loadSeriesPage(1, true),
+    ])
+    results.forEach((result) => {
+      if (result.status === 'rejected') {
+        catalogErrors.push(result.reason instanceof Error ? result.reason.message : 'Seção indisponível.')
+      }
+    })
+    setLoading(false)
+    if (results.every((result) => result.status === 'rejected')) {
+      setError(catalogErrors[0] || 'Catálogo indisponível.')
       setMoviePage(EMPTY_PAGE)
       setSeriesPage(EMPTY_PAGE)
       setChannelPage(EMPTY_PAGE)
-    } finally {
-      setLoading(false)
+      return
     }
+    setError('')
   }, [loadChannelsPage, loadMoviesPage, loadSeriesPage])
 
   useEffect(() => {
