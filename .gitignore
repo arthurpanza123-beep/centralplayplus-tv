@@ -6,24 +6,30 @@ __v0_jsx-dev-runtime.ts
 .v0-trash/
 .vercel/
 
-# Environment variables
-.env*.local
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.sql
+*.dump
 
 # Common ignores
 node_modules
 .next/
+dist/
+coverage/
+backups/
+*.log
 .DS_Store
 
-# Environment files
-.env
-.env.local
-.env.production
 # Sensitive env backups and build info
-.env.local.bak*
 *.tsbuildinfo
 validate_https.sh
 
 # Android local build/cache output
 apps/android-tv/.gradle/
-apps/android-tv/app/build/intermediates/
-apps/android-tv/app/build/tmp/
+apps/android-tv/app/build/
